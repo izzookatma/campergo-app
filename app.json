@@ -7,18 +7,55 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "it.naturago.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Usiamo la tua posizione per mostrarti le strutture più vicine a te.",
+        "NSPhotoLibraryUsageDescription": "Per aggiungere foto ai tuoi annunci del mercatino."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+        "backgroundColor": "#0e3a53",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Usiamo la tua posizione per mostrarti le strutture più vicine a te."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Per aggiungere foto ai tuoi annunci del mercatino."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0e3a53"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a00761bf-354c-44cc-853b-5a06a22ffed4"
+      }
+    },
+    "owner": "naturago"
   }
 }
