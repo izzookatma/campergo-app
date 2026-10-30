@@ -1,0 +1,45 @@
+name: Verifica app nativa
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * *'
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run verificare
+
+      # Segnala l'esito a /admin/agenti (tabella esecuzioni_agenti) del sito
+      # naturago.it, stesso canale già usato dalle routine del sito (segreto
+      # condiviso "reel_automatico_secret" del Vault, da aggiungere come
+      # secret di repository REEL_AUTOMATICO_SECRET, insieme a
+      # VITE_SUPABASE_URL).
+      - name: Segnala esito al pannello admin (ok)
+        if: success()
+        run: |
+          curl -sf -X POST "${{ secrets.VITE_SUPABASE_URL }}/functions/v1/registra-esecuzione-agente" \
+            -H "Content-Type: application/json" \
+            -H "x-reel-secret: ${{ secrets.REEL_AUTOMATICO_SECRET }}" \
+            -d '{"agente":"verifica_app_nativa","stato":"ok","azione":"Verifica app nativa (Expo)","risultato":"expo-doctor ed eslint superati."}'
+
+      - name: Segnala esito al pannello admin (errore)
+        if: failure()
+        run: |
+          curl -sf -X POST "${{ secrets.VITE_SUPABASE_URL }}/functions/v1/registra-esecuzione-agente" \
+            -H "Content-Type: application/json" \
+            -H "x-reel-secret: ${{ secrets.REEL_AUTOMATICO_SECRET }}" \
+            -d '{"agente":"verifica_app_nativa","stato":"errore","azione":"Verifica app nativa (Expo)","risultato":"expo-doctor o eslint falliti: vedi il log del workflow su GitHub."}'
