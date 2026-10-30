@@ -5,6 +5,7 @@ import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { caricaStrutture, cercaStrutture } from "../lib/strutture";
+import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import { usePreferenze } from "../context/PreferenzeContext";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 
@@ -54,19 +55,40 @@ function MappaVera({ navigation, motoreMappa, cambiaMotore }) {
   const [caricamento, setCaricamento] = useState(true);
   const [termine, setTermine] = useState("");
   const [cercando, setCercando] = useState(false);
+  const [senzaConnessione, setSenzaConnessione] = useState(false);
 
-  useEffect(() => {
+  const caricaDefault = () => {
+    setCaricamento(true);
     caricaStrutture({ limite: 100 })
-      .then((dati) => setStrutture(dati.filter((s) => s.lat && s.lng)))
-      .catch(() => {})
+      .then((dati) => {
+        const conPosizione = dati.filter((s) => s.lat && s.lng);
+        setStrutture(conPosizione);
+        setSenzaConnessione(false);
+        salvaInCache("mappa_strutture", conPosizione);
+      })
+      .catch(async () => {
+        const cache = await leggiDaCache("mappa_strutture");
+        if (cache) {
+          setStrutture(cache.dati);
+          setSenzaConnessione(true);
+        }
+      })
       .finally(() => setCaricamento(false));
-  }, []);
+  };
+
+  useEffect(caricaDefault, []);
 
   // Ricerca per zona/regione/struttura su tutto il database (stessa
   // `cercaStrutture` già usata in Esplora), non solo le 100 già caricate
   // per rating — altrimenti una zona poco "votata" non si trova mai.
+  // Svuotare il campo (anche a mano, lettera per lettera, non solo con la
+  // ×) deve far tornare subito l'elenco di partenza, non restare bloccato
+  // sull'ultima ricerca.
   useEffect(() => {
-    if (!termine.trim()) return;
+    if (!termine.trim()) {
+      caricaDefault();
+      return;
+    }
     setCercando(true);
     const scaduto = setTimeout(() => {
       cercaStrutture({ termine })
@@ -86,14 +108,7 @@ function MappaVera({ navigation, motoreMappa, cambiaMotore }) {
     return () => clearTimeout(scaduto);
   }, [termine]);
 
-  const svuotaRicerca = () => {
-    setTermine("");
-    setCaricamento(true);
-    caricaStrutture({ limite: 100 })
-      .then((dati) => setStrutture(dati.filter((s) => s.lat && s.lng)))
-      .catch(() => {})
-      .finally(() => setCaricamento(false));
-  };
+  const svuotaRicerca = () => setTermine("");
 
   return (
     <View style={styles.schermo}>
@@ -138,6 +153,12 @@ function MappaVera({ navigation, motoreMappa, cambiaMotore }) {
           <Ionicons name="layers-outline" size={13} color={colori.blu} />
           <Text style={styles.selettoreMappaTesto}>Mappa: {ETICHETTA_MOTORE[motoreMappa]}</Text>
         </Pressable>
+        {senzaConnessione && (
+          <View style={styles.bannerOffline}>
+            <Ionicons name="cloud-offline-outline" size={14} color={colori.testoSecondario} />
+            <Text style={styles.bannerOfflineTesto}>Senza connessione: ultimi risultati salvati.</Text>
+          </View>
+        )}
       </SafeAreaView>
 
       {caricamento && (
@@ -188,6 +209,19 @@ const styles = StyleSheet.create({
     borderColor: colori.bordo,
   },
   selettoreMappaTesto: { fontSize: 10.5, fontWeight: "700", color: "#374151" },
+  bannerOffline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: colori.bianco,
+    borderWidth: 1,
+    borderColor: colori.bordo,
+  },
+  bannerOfflineTesto: { fontSize: 10.5, fontWeight: "600", color: colori.testoSecondario },
   centro: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 30 },
   messaggioCentro: { fontWeight: "700", color: colori.testo },
   messaggioCentroPiccolo: { fontSize: 11, color: colori.testoSecondario, textAlign: "center" },

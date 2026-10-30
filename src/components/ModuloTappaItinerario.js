@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Pressable, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
@@ -40,7 +40,10 @@ export default function ModuloTappaItinerario({ tappa, indice, totale, onCambia,
 
   const sceglieFoto = async () => {
     const permesso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permesso.granted) return;
+    if (!permesso.granted) {
+      Alert.alert("Foto non disponibili", "Consenti l'accesso alle foto per aggiungerle alla tappa.");
+      return;
+    }
     const risultato = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,

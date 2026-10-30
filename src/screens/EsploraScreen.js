@@ -22,6 +22,7 @@ import { caricaStrutture, caricaStruttureVicine, cercaStrutture } from "../lib/s
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
+import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import { useAuth } from "../context/AuthContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
@@ -37,6 +38,7 @@ export default function EsploraScreen({ navigation, route }) {
   const [caricamento, setCaricamento] = useState(true);
   const [aggiornamento, setAggiornamento] = useState(false);
   const [errore, setErrore] = useState(null);
+  const [senzaConnessione, setSenzaConnessione] = useState(false);
   // Arrivando dall'hub di Esplora con una tessera già scelta (es.
   // "Rifugi"): il filtro parte già impostato, modificabile come sempre
   // una volta sulla pagina.
@@ -68,8 +70,20 @@ export default function EsploraScreen({ navigation, route }) {
       setStrutture(dati);
       setPagina(0);
       setFineLista(dati.length < STRUTTURE_PER_PAGINA);
+      setSenzaConnessione(false);
+      // Solo la lista di base (nessun filtro servizi), così la cache ha
+      // sempre un senso ovvio da mostrare offline, non il risultato
+      // di una combinazione di filtri che l'utente potrebbe non ricordare.
+      if (filtriServizi.length === 0) salvaInCache("esplora_lista", dati);
     } catch (e) {
-      setErrore("Non riesco a caricare le strutture. Controlla la connessione.");
+      const cache = filtriServizi.length === 0 ? await leggiDaCache("esplora_lista") : null;
+      if (cache) {
+        setStrutture(cache.dati);
+        setFineLista(true);
+        setSenzaConnessione(true);
+      } else {
+        setErrore("Non riesco a caricare le strutture. Controlla la connessione.");
+      }
     }
   }, [filtriServizi]);
 
@@ -393,6 +407,13 @@ export default function EsploraScreen({ navigation, route }) {
           <Pressable onPress={() => setBannerHostVisibile(false)} hitSlop={8}>
             <Ionicons name="close" size={16} color={colori.testoSecondario} />
           </Pressable>
+        </View>
+      )}
+
+      {senzaConnessione && (
+        <View style={styles.bannerOffline}>
+          <Ionicons name="cloud-offline-outline" size={16} color={colori.testoSecondario} />
+          <Text style={styles.bannerOfflineTesto}>Senza connessione: stai vedendo gli ultimi risultati salvati.</Text>
         </View>
       )}
 
@@ -723,4 +744,15 @@ const styles = StyleSheet.create({
   cardLocalita: { fontSize: 11, color: colori.testoSecondario },
   cardPrezzo: { fontSize: 13, fontWeight: "800", color: colori.testo },
   messaggioErrore: { textAlign: "center", marginTop: 40, color: colori.testoSecondario, paddingHorizontal: 30 },
+  bannerOffline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#f1f5f9",
+  },
+  bannerOfflineTesto: { flex: 1, fontSize: 11.5, color: colori.testoSecondario, fontWeight: "600" },
 });

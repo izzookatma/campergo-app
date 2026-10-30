@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usiamo la tua posizione per mostrarti le strutture più vicine a te.",
-        "NSPhotoLibraryUsageDescription": "Per aggiungere foto ai tuoi annunci del mercatino."
+        "NSPhotoLibraryUsageDescription": "Per aggiungere foto ai tuoi annunci del mercatino.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -49,7 +50,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#0e3a53"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

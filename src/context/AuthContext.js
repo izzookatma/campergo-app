@@ -28,8 +28,13 @@ export function AuthProvider({ children }) {
   // Stessa logica del sito (AccountArea.jsx): il link porta alla pagina
   // di reimpostazione del sito, non serve costruire un deep link dentro
   // l'app — dopo aver cambiato la password lì, si torna ad accedere qui.
+  // www.naturago.it, non naturago.it: Supabase controlla `redirectTo`
+  // contro l'elenco degli URL consentiti configurato nel progetto, che
+  // probabilmente elenca il dominio canonico — naturago.it è solo un
+  // redirect 308 a livello Vercel, un controllo "a stringa" lato Supabase
+  // lo vedrebbe come un dominio diverso.
   const recuperaPassword = (email) =>
-    supabase.auth.resetPasswordForEmail(email, { redirectTo: "https://naturago.it/reimposta-password" });
+    supabase.auth.resetPasswordForEmail(email, { redirectTo: "https://www.naturago.it/reimposta-password" });
 
   // Stessa RPC del sito (elimina_mio_account): richiede di aver appena
   // verificato la password (fatto dalla schermata chiamante) e il testo

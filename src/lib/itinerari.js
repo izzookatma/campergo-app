@@ -212,6 +212,35 @@ export async function creaItinerario({
   const ePercorso4x4 = categoria === "percorso_4x4";
   const eTracciato = eSentiero || ePercorso4x4;
 
+  // Prima si preparano TUTTE le tappe (foto caricate, indirizzi
+  // geocodificati) e solo se va tutto bene si crea la riga `itinerari`:
+  // non esiste un modo per il cliente di cancellare un proprio itinerario
+  // (nessuna RLS di delete, solo insert/select), quindi un errore a metà
+  // — es. una foto che non si carica alla tappa 3 di 5 — lascerebbe per
+  // sempre un itinerario fantasma "in_attesa" senza tappe se l'ordine
+  // fosse quello originale (riga creata subito, poi le tappe).
+  const tappePreparate = [];
+  for (const t of tappe) {
+    const fotoUrls = [];
+    for (const uri of t.foto) {
+      fotoUrls.push(await caricaFotoTappa(autoreId, uri));
+    }
+
+    let coordinate = null;
+    if (t.tipo === "punto_interesse" && t.luogo?.trim()) {
+      coordinate = await geocodificaOCoordinate(t.luogo.trim());
+    }
+
+    tappePreparate.push({
+      tipo: t.tipo,
+      campeggio_id: t.tipo === "struttura" ? t.campeggioId : null,
+      nome: t.tipo === "punto_interesse" ? t.nome.trim() : null,
+      descrizione: t.descrizione.trim(),
+      foto: fotoUrls,
+      ...(coordinate ? { lat: coordinate.lat, lng: coordinate.lng } : {}),
+    });
+  }
+
   const { data: itinerario, error: erroreItinerario } = await supabase
     .from("itinerari")
     .insert({
@@ -231,30 +260,13 @@ export async function creaItinerario({
     .single();
   if (erroreItinerario) throw erroreItinerario;
 
-  for (let i = 0; i < tappe.length; i++) {
-    const t = tappe[i];
-    const fotoUrls = [];
-    for (const uri of t.foto) {
-      fotoUrls.push(await caricaFotoTappa(autoreId, uri));
-    }
-
-    let coordinate = null;
-    if (t.tipo === "punto_interesse" && t.luogo?.trim()) {
-      coordinate = await geocodificaOCoordinate(t.luogo.trim());
-    }
-
-    const { error: erroreTappa } = await supabase.from("itinerario_tappe").insert({
-      itinerario_id: itinerario.id,
-      ordine: i,
-      tipo: t.tipo,
-      campeggio_id: t.tipo === "struttura" ? t.campeggioId : null,
-      nome: t.tipo === "punto_interesse" ? t.nome.trim() : null,
-      descrizione: t.descrizione.trim(),
-      foto: fotoUrls,
-      ...(coordinate ? { lat: coordinate.lat, lng: coordinate.lng } : {}),
-    });
-    if (erroreTappa) throw erroreTappa;
-  }
+  const { error: erroreTappe } = await supabase.from("itinerario_tappe").insert(
+    tappePreparate.map((t, i) => ({ ...t, itinerario_id: itinerario.id, ordine: i }))
+  );
+  // Le tappe non sono andate a buon fine ma l'itinerario esiste già: può
+  // ancora succedere (errore di rete proprio qui), ma è una finestra
+  // molto più piccola — un solo insert, niente più upload nel mezzo.
+  if (erroreTappe) throw erroreTappe;
 
   return itinerario;
 }
