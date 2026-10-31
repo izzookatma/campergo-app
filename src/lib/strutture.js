@@ -124,10 +124,24 @@ function normalizzaRifugio(r) {
   };
 }
 
+// scaricoAcqueNere/scaricoAcqueGrigie contano anche per il vecchio tag
+// combinato "scaricoPozzetto" (prima che i due filtri fossero separati,
+// vedi AMENITY_META e il commento su matchFiltri in src/App.jsx sul
+// sito), o se lo conferma la colonna dedicata della struttura
+// (camper_service_non_ospiti_scarico_nere/_grigie).
+const FALLBACK_SERVIZIO = {
+  scaricoAcqueNere: ["amenities.cs.{scaricoAcqueNere}", "amenities.cs.{scaricoPozzetto}", "camper_service_non_ospiti_scarico_nere.eq.true"],
+  scaricoAcqueGrigie: ["amenities.cs.{scaricoAcqueGrigie}", "amenities.cs.{scaricoPozzetto}", "camper_service_non_ospiti_scarico_grigie.eq.true"],
+};
+
 // I rifugi non hanno la colonna amenities (niente servizi da campeggio):
 // quando è attivo un filtro servizi restano fuori dai risultati.
 function conServizi(query, servizi) {
-  return servizi && servizi.length > 0 ? query.contains("amenities", servizi) : query;
+  if (!servizi || servizi.length === 0) return query;
+  return servizi.reduce((q, chiave) => {
+    const alternative = FALLBACK_SERVIZIO[chiave];
+    return alternative ? q.or(alternative.join(",")) : q.contains("amenities", [chiave]);
+  }, query);
 }
 
 // Ricerca unificata su tutte le tipologie di struttura (campeggi, agriturismi,
