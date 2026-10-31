@@ -23,16 +23,18 @@ export default function MessaggiScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!session?.user?.id) {
-        setCaricamento(false);
-        return;
-      }
-      setCaricamento(true);
-      caricaConversazioni(session.user.id)
-        .then(setConversazioni)
-        .catch((e) => console.error("Errore nel caricare i messaggi:", e))
-        .finally(() => setCaricamento(false));
-    }, [session?.user?.id])
+      Promise.resolve().then(() => {
+        if (!session?.user?.id) {
+          setCaricamento(false);
+          return;
+        }
+        setCaricamento(true);
+        caricaConversazioni(session.user.id)
+          .then(setConversazioni)
+          .catch((e) => console.error("Errore nel caricare i messaggi:", e))
+          .finally(() => setCaricamento(false));
+      });
+    }, [session])
   );
 
   return (

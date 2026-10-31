@@ -69,7 +69,7 @@ export default function EliminaAccountScreen({ navigation }) {
           una struttura, sparirà da ricerca e mappa. Le recensioni scritte restano visibili ma con autore anonimo. Le
           prenotazioni concluse vengono mantenute in forma anonima per obblighi fiscali.{"\n\n"}
           Se hai prenotazioni future attive (come cliente o sulle tue strutture come host), cancellale prima di
-          procedere: l'eliminazione verrebbe altrimenti rifiutata.
+          procedere: l&apos;eliminazione verrebbe altrimenti rifiutata.
         </Text>
 
         <Text style={styles.etichetta}>Conferma la tua password attuale</Text>

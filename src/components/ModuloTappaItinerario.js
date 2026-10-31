@@ -9,24 +9,23 @@ import { cercaCampeggiPerNome, MAX_FOTO_TAPPA_ITINERARIO } from "../lib/itinerar
 // query per ogni tasto premuto, stessa idea già usata in CulturaScreen.js.
 function useRicercaStrutture(termine) {
   const [risultati, setRisultati] = useState([]);
-  const [cercando, setCercando] = useState(false);
+  const [ultimoTermineCaricato, setUltimoTermineCaricato] = useState(null);
 
   useEffect(() => {
     if (!termine?.trim()) {
-      setRisultati([]);
       return;
     }
-    setCercando(true);
     const timer = setTimeout(() => {
       cercaCampeggiPerNome(termine)
         .then(setRisultati)
         .catch(() => setRisultati([]))
-        .finally(() => setCercando(false));
+        .finally(() => setUltimoTermineCaricato(termine));
     }, 300);
     return () => clearTimeout(timer);
   }, [termine]);
 
-  return { risultati, cercando };
+  const cercando = !!termine?.trim() && ultimoTermineCaricato !== termine;
+  return { risultati: termine?.trim() ? risultati : [], cercando };
 }
 
 export default function ModuloTappaItinerario({ tappa, indice, totale, onCambia, onRimuovi, onSposta }) {

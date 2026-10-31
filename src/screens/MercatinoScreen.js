@@ -31,11 +31,11 @@ export default function MercatinoScreen({ navigation }) {
     } finally {
       setCaricamento(false);
     }
-  }, [vista, categoria, citta, session?.user?.id]);
+  }, [vista, categoria, citta, session]);
 
   useFocusEffect(
     useCallback(() => {
-      carica();
+      Promise.resolve().then(() => carica());
     }, [carica])
   );
 

@@ -15,7 +15,6 @@ export default function CulturaScreen({ route, navigation }) {
   const [caricamento, setCaricamento] = useState(true);
 
   useEffect(() => {
-    setCaricamento(true);
     const scaduto = setTimeout(() => {
       caricaSchedeCulturali({ categoria, termine: termine.trim() || undefined })
         .then(setSchede)
@@ -40,7 +39,10 @@ export default function CulturaScreen({ route, navigation }) {
               <Pressable
                 key={c}
                 style={[styles.chip, attivo && { backgroundColor: m.colore, borderColor: m.colore }]}
-                onPress={() => setCategoria(c)}
+                onPress={() => {
+                  setCategoria(c);
+                  setCaricamento(true);
+                }}
               >
                 <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{m.etichetta}</Text>
               </Pressable>
@@ -54,7 +56,10 @@ export default function CulturaScreen({ route, navigation }) {
             placeholder="Città, regione o nome…"
             placeholderTextColor={colori.testoSecondario}
             value={termine}
-            onChangeText={setTermine}
+            onChangeText={(t) => {
+              setTermine(t);
+              setCaricamento(true);
+            }}
           />
         </View>
       </View>

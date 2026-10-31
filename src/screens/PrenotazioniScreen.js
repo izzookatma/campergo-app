@@ -74,14 +74,16 @@ export default function PrenotazioniScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!session?.user?.id) return;
-      setCaricamento(true);
-      caricaPrenotazioni(session.user.id).then((dati) => {
-        setFuture(dati.future);
-        setPassate(dati.passate);
-        setCaricamento(false);
+      Promise.resolve().then(() => {
+        if (!session?.user?.id) return;
+        setCaricamento(true);
+        caricaPrenotazioni(session.user.id).then((dati) => {
+          setFuture(dati.future);
+          setPassate(dati.passate);
+          setCaricamento(false);
+        });
       });
-    }, [session?.user?.id])
+    }, [session])
   );
 
   if (!session) return <AccediScreen />;

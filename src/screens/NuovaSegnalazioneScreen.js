@@ -61,7 +61,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
         <Text style={styles.sottotitolo}>
-          Conosci un campeggio o un'area sosta non ancora su NaturaGo? Segnalacela.
+          Conosci un campeggio o un&apos;area sosta non ancora su NaturaGo? Segnalacela.
         </Text>
 
         <Text style={styles.etichetta}>Tipo struttura</Text>

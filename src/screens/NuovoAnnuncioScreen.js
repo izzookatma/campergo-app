@@ -185,7 +185,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           <Pressable style={styles.pulsantePubblica} onPress={pubblica} disabled={pubblicando}>
             {pubblicando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.pulsantePubblicaTesto}>Pubblica annuncio</Text>}
           </Pressable>
-          <Text style={styles.nota}>Il tuo annuncio sarà visibile a tutti dopo l'approvazione di un amministratore.</Text>
+          <Text style={styles.nota}>Il tuo annuncio sarà visibile a tutti dopo l&apos;approvazione di un amministratore.</Text>
         </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>

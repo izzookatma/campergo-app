@@ -16,7 +16,6 @@ function useTracciatoStradale(tappe) {
 
   useEffect(() => {
     if (tappe.length < 2) {
-      setPercorso(null);
       return;
     }
     let attivo = true;
@@ -36,7 +35,7 @@ function useTracciatoStradale(tappe) {
     };
   }, [tappe]);
 
-  return percorso;
+  return tappe.length < 2 ? null : percorso;
 }
 
 function MappaVera({ tappe, colore }) {

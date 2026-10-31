@@ -65,18 +65,18 @@ export default function EsploraScreen({ navigation, route }) {
 
   const carica = useCallback(async () => {
     try {
-      setErrore(null);
-      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: 0, servizi: filtriServizi });
+      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: 0, servizi: filtriServizi, tipi: filtriTipo });
       setStrutture(dati);
       setPagina(0);
       setFineLista(dati.length < STRUTTURE_PER_PAGINA);
       setSenzaConnessione(false);
-      // Solo la lista di base (nessun filtro servizi), così la cache ha
-      // sempre un senso ovvio da mostrare offline, non il risultato
+      setErrore(null);
+      // Solo la lista di base (nessun filtro servizi/tipo), così la cache
+      // ha sempre un senso ovvio da mostrare offline, non il risultato
       // di una combinazione di filtri che l'utente potrebbe non ricordare.
-      if (filtriServizi.length === 0) salvaInCache("esplora_lista", dati);
-    } catch (e) {
-      const cache = filtriServizi.length === 0 ? await leggiDaCache("esplora_lista") : null;
+      if (filtriServizi.length === 0 && filtriTipo.length === 0) salvaInCache("esplora_lista", dati);
+    } catch (_e) {
+      const cache = filtriServizi.length === 0 && filtriTipo.length === 0 ? await leggiDaCache("esplora_lista") : null;
       if (cache) {
         setStrutture(cache.dati);
         setFineLista(true);
@@ -85,10 +85,12 @@ export default function EsploraScreen({ navigation, route }) {
         setErrore("Non riesco a caricare le strutture. Controlla la connessione.");
       }
     }
-  }, [filtriServizi]);
+  }, [filtriServizi, filtriTipo]);
 
   useEffect(() => {
-    carica().finally(() => setCaricamento(false));
+    Promise.resolve()
+      .then(() => carica())
+      .finally(() => setCaricamento(false));
   }, [carica]);
 
   useEffect(() => {
@@ -115,9 +117,9 @@ export default function EsploraScreen({ navigation, route }) {
       try {
         let dati;
         if (posizione) {
-          dati = await caricaStruttureVicine({ lat: posizione.lat, lng: posizione.lng, servizi: filtriServizi });
+          dati = await caricaStruttureVicine({ lat: posizione.lat, lng: posizione.lng, servizi: filtriServizi, tipi: filtriTipo });
         } else if (termine.length >= 2) {
-          dati = await cercaStrutture({ termine, servizi: filtriServizi });
+          dati = await cercaStrutture({ termine, servizi: filtriServizi, tipi: filtriTipo });
           salvaRicercaRecente(termine).then(setRicercheRecenti);
           // Promemoria per i gestori che usano l'app senza account: compare
           // una sola volta per apertura dell'app, dopo la prima ricerca.
@@ -141,7 +143,7 @@ export default function EsploraScreen({ navigation, route }) {
       annullato = true;
       clearTimeout(timer);
     };
-  }, [ricerca, filtriServizi, posizione, carica]);
+  }, [ricerca, filtriServizi, filtriTipo, posizione, carica]);
 
   const onRefresh = async () => {
     setAggiornamento(true);
@@ -154,7 +156,7 @@ export default function EsploraScreen({ navigation, route }) {
     setCaricandoAltre(true);
     try {
       const prossimaPagina = pagina + 1;
-      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: prossimaPagina, servizi: filtriServizi });
+      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: prossimaPagina, servizi: filtriServizi, tipi: filtriTipo });
       setStrutture((prev) => [...prev, ...dati]);
       setPagina(prossimaPagina);
       if (dati.length < STRUTTURE_PER_PAGINA) setFineLista(true);

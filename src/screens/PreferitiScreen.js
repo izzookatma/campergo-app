@@ -15,16 +15,18 @@ export default function PreferitiScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!session?.user?.id) {
-        setPreferiti([]);
-        setCaricamento(false);
-        return;
-      }
-      setCaricamento(true);
-      caricaStrutturePreferite(session.user.id)
-        .then(setPreferiti)
-        .finally(() => setCaricamento(false));
-    }, [session?.user?.id])
+      Promise.resolve().then(() => {
+        if (!session?.user?.id) {
+          setPreferiti([]);
+          setCaricamento(false);
+          return;
+        }
+        setCaricamento(true);
+        caricaStrutturePreferite(session.user.id)
+          .then(setPreferiti)
+          .finally(() => setCaricamento(false));
+      });
+    }, [session])
   );
 
   return (

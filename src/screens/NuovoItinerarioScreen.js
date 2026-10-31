@@ -223,7 +223,7 @@ export default function NuovoItinerarioScreen({ route, navigation }) {
           </Pressable>
 
           <Text style={styles.nota}>
-            {ePercorso4x4 ? "Il tuo percorso" : "Il tuo sentiero"} sarà pubblicato dopo l'approvazione del team NaturaGo.
+            {ePercorso4x4 ? "Il tuo percorso" : "Il tuo sentiero"} sarà pubblicato dopo l&apos;approvazione del team NaturaGo.
           </Text>
 
           {errore && <Text style={styles.errore}>{errore}</Text>}

@@ -76,7 +76,9 @@ function MappaVera({ navigation, motoreMappa, cambiaMotore }) {
       .finally(() => setCaricamento(false));
   };
 
-  useEffect(caricaDefault, []);
+  useEffect(() => {
+    Promise.resolve().then(() => caricaDefault());
+  }, []);
 
   // Ricerca per zona/regione/struttura su tutto il database (stessa
   // `cercaStrutture` già usata in Esplora), non solo le 100 già caricate
@@ -86,10 +88,13 @@ function MappaVera({ navigation, motoreMappa, cambiaMotore }) {
   // sull'ultima ricerca.
   useEffect(() => {
     if (!termine.trim()) {
-      caricaDefault();
+      Promise.resolve().then(() => caricaDefault());
       return;
     }
-    setCercando(true);
+    let annullato = false;
+    Promise.resolve().then(() => {
+      if (!annullato) setCercando(true);
+    });
     const scaduto = setTimeout(() => {
       cercaStrutture({ termine })
         .then((dati) => {
@@ -105,7 +110,10 @@ function MappaVera({ navigation, motoreMappa, cambiaMotore }) {
         .catch(() => {})
         .finally(() => setCercando(false));
     }, 400);
-    return () => clearTimeout(scaduto);
+    return () => {
+      annullato = true;
+      clearTimeout(scaduto);
+    };
   }, [termine]);
 
   const svuotaRicerca = () => setTermine("");

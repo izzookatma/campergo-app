@@ -83,7 +83,7 @@ export default function AnnuncioScreen({ route, navigation }) {
           <View style={styles.avviso}>
             <Ionicons name="shield-checkmark-outline" size={16} color={colori.blu} />
             <Text style={styles.avvisoTesto}>
-              Incontrati sempre in un luogo pubblico e verifica l'oggetto prima di pagare. NaturaGo non gestisce né
+              Incontrati sempre in un luogo pubblico e verifica l&apos;oggetto prima di pagare. NaturaGo non gestisce né
               garantisce le transazioni tra utenti.
             </Text>
           </View>
@@ -100,7 +100,7 @@ export default function AnnuncioScreen({ route, navigation }) {
           {!propio && session && (
             <View style={styles.contatta}>
               {inviato ? (
-                <Text style={styles.inviatoTesto}>Messaggio inviato. Trovi la conversazione in "I miei messaggi".</Text>
+                <Text style={styles.inviatoTesto}>Messaggio inviato. Trovi la conversazione in &quot;I miei messaggi&quot;.</Text>
               ) : (
                 <>
                   <Text style={styles.contattaTitolo}>Contatta il venditore</Text>

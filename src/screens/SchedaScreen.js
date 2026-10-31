@@ -74,7 +74,9 @@ export default function SchedaScreen({ route, navigation }) {
       .finally(() => setCaricandoRecensioni(false));
   };
 
-  useEffect(caricaRecensioniStruttura, [struttura.origine, struttura.idOriginale]);
+  useEffect(() => {
+    Promise.resolve().then(() => caricaRecensioniStruttura());
+  }, [struttura.origine, struttura.idOriginale]);
 
   // Direzione "struttura -> cultura", il cuore del sito: musei, borghi ed
   // eventi da visitare entro 50 km, per incrociare i dati con l'interesse
