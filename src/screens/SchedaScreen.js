@@ -18,6 +18,23 @@ const MESI = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
 ];
 
+// Stesse etichette di TIPO_AMBIENTE_META sul sito (src/App.jsx).
+const ETICHETTA_AMBIENTE = {
+  lago: "Lago",
+  mare: "Mare",
+  montagna: "Montagna",
+  collina: "Collina",
+  agriturismo: "Agriturismo",
+  valle: "Valle",
+};
+
+// Uniche 3 categorie in uso sul database (verificate dal vivo).
+const ETICHETTA_INTERESSE = {
+  cultura: "Cultura",
+  relax: "Relax",
+  natura: "Natura",
+};
+
 function RigaStelle({ punteggio, size = 12 }) {
   return (
     <View style={{ flexDirection: "row", gap: 1 }}>
@@ -258,6 +275,24 @@ export default function SchedaScreen({ route, navigation }) {
               icona="footsteps-outline"
               testo={dettaglio?.attivitaVicinanze?.length > 0 ? `Nelle vicinanze: ${dettaglio.attivitaVicinanze.join(", ")}` : null}
             />
+            <RigaDettaglio
+              icona="leaf-outline"
+              testo={
+                dettaglio?.tipoAmbiente?.length > 0
+                  ? dettaglio.tipoAmbiente.map((a) => ETICHETTA_AMBIENTE[a] || a).join(", ")
+                  : null
+              }
+            />
+            <RigaDettaglio
+              icona="heart-outline"
+              testo={
+                dettaglio?.categorieInteresse?.length > 0
+                  ? `Adatta a chi cerca: ${dettaglio.categorieInteresse.map((c) => ETICHETTA_INTERESSE[c] || c).join(", ")}`
+                  : null
+              }
+            />
+            <RigaDettaglio icona="home-outline" testo={dettaglio?.haAlloggiFissi ? "Offre anche alloggi fissi, oltre alle piazzole" : null} />
+            <RigaDettaglio icona="sparkles-outline" testo={dettaglio?.haEventiFuturi ? "Eventi culturali in programma" : null} />
             {dettaglio?.sitoWeb && (
               <Pressable style={styles.rigaDettaglio} onPress={apriSito}>
                 <Ionicons name="globe-outline" size={15} color={colori.blu} />
