@@ -28,6 +28,10 @@ import MessaggiScreen from "./src/screens/MessaggiScreen";
 import ConversazioneScreen from "./src/screens/ConversazioneScreen";
 import SchermataAvvio from "./src/screens/SchermataAvvio";
 import AccediScreen from "./src/screens/AccediScreen";
+import BlogScreen from "./src/screens/BlogScreen";
+import ArticoloBlogScreen from "./src/screens/ArticoloBlogScreen";
+import FaqScreen from "./src/screens/FaqScreen";
+import NuovaDomandaScreen from "./src/screens/NuovaDomandaScreen";
 import { colori } from "./src/theme/colors";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { PreferenzeProvider } from "./src/context/PreferenzeContext";
@@ -56,6 +60,10 @@ function EsploraStackNavigator() {
       <EsploraStack.Screen name="Cultura" component={CulturaScreen} />
       <EsploraStack.Screen name="SchedaCulturale" component={SchedaCulturaleScreen} />
       <EsploraStack.Screen name="NuovoItinerario" component={NuovoItinerarioScreen} />
+      <EsploraStack.Screen name="Blog" component={BlogScreen} />
+      <EsploraStack.Screen name="ArticoloBlog" component={ArticoloBlogScreen} />
+      <EsploraStack.Screen name="Faq" component={FaqScreen} />
+      <EsploraStack.Screen name="NuovaDomanda" component={NuovaDomandaScreen} />
     </EsploraStack.Navigator>
   );
 }

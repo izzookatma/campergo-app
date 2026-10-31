@@ -1,15 +1,21 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ImageBackground } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 
+// Foto Unsplash: "Montagna e sentieri" e "Musei, borghi e attività" riusano
+// quelle già in uso sul sito per lo stesso tema (CATEGORIE_INTERESSE in
+// src/App.jsx), per coerenza visiva app/sito. "Dove dormire" usa invece un
+// furgone in spiaggia al tramonto sul mare (Stefan Kranz su Unsplash): il
+// furgone cade in basso a destra, lontano dall'etichetta in alto a sinistra.
 const SEZIONI = [
   {
     titolo: "Dove dormire",
     icona: "bonfire-outline",
-    colore: colori.bluChiaro,
-    coloreTesto: colori.blu,
+    colore: "#1d4ed8",
+    tinta: "rgba(29,78,216,0.08)",
+    immagine: "https://images.unsplash.com/photo-1665677455995-9680bb0a5e18?auto=format&fit=crop&w=1000&h=280&q=70",
     tessere: [
       { etichetta: "Campeggi", icona: "bonfire-outline", filtro: "Campeggi" },
       { etichetta: "Agriturismi", icona: "leaf-outline", filtro: "Agriturismi" },
@@ -21,8 +27,9 @@ const SEZIONI = [
   {
     titolo: "Montagna e sentieri",
     icona: "trail-sign-outline",
-    colore: "#eef6ec",
-    coloreTesto: "#2f6b3f",
+    colore: "#15803d",
+    tinta: "rgba(21,128,61,0.08)",
+    immagine: "https://images.unsplash.com/photo-1761415451904-0a0a2c630ea9?auto=format&fit=crop&w=800&q=70",
     tessere: [
       { etichetta: "Sentieri", icona: "trail-sign-outline", schermo: "Sentieri" },
       { etichetta: "Rifugi", icona: "home-outline", filtro: "Rifugi" },
@@ -38,8 +45,9 @@ const SEZIONI = [
     // distinta dalla colonna categoria: 'musei' / 'borghi' / 'attivita'.
     titolo: "Musei, borghi e attività",
     icona: "color-palette-outline",
-    colore: "#fdf2e9",
-    coloreTesto: "#b45309",
+    colore: "#c2410c",
+    tinta: "rgba(194,65,12,0.08)",
+    immagine: "https://images.unsplash.com/photo-1775685921744-6f6596d33dd0?auto=format&fit=crop&w=800&q=70",
     tessere: [
       { etichetta: "Musei", icona: "color-palette-outline", categoriaCulturale: "musei", colore: "#7c3aed" },
       { etichetta: "Borghi", icona: "business-outline", categoriaCulturale: "borghi", colore: "#b45309" },
@@ -75,16 +83,18 @@ export default function EsploraHubScreen({ navigation }) {
         <Text style={styles.sottotitolo}>Cosa stai cercando?</Text>
 
         {SEZIONI.map((sezione) => (
-          <View key={sezione.titolo} style={[styles.sezione, { backgroundColor: sezione.colore }]}>
-            <View style={styles.sezioneIntestazione}>
-              <Ionicons name={sezione.icona} size={15} color={sezione.coloreTesto} />
-              <Text style={[styles.sezioneTitolo, { color: sezione.coloreTesto }]}>{sezione.titolo}</Text>
-            </View>
+          <View key={sezione.titolo} style={[styles.sezione, { backgroundColor: sezione.tinta }]}>
+            <ImageBackground source={{ uri: sezione.immagine }} style={styles.sezioneBanner} imageStyle={styles.sezioneBannerImmagine}>
+              <View style={[styles.sezioneEtichetta, { backgroundColor: sezione.colore }]}>
+                <Ionicons name={sezione.icona} size={14} color="#fff" />
+                <Text style={styles.sezioneTitolo}>{sezione.titolo}</Text>
+              </View>
+            </ImageBackground>
             <View style={styles.griglia}>
               {sezione.tessere.map((tessera) => (
                 <Pressable key={tessera.etichetta} style={styles.tessera} onPress={() => vaiA(tessera)}>
-                  <View style={styles.tesseraIcona}>
-                    <Ionicons name={tessera.icona} size={16} color={tessera.colore || sezione.coloreTesto} />
+                  <View style={[styles.tesseraIcona, { backgroundColor: colori.bianco }]}>
+                    <Ionicons name={tessera.icona} size={16} color={tessera.colore || sezione.colore} />
                   </View>
                   <Text style={styles.tesseraTesto}>{tessera.etichetta}</Text>
                   {tessera.inArrivo && <Text style={styles.tesseraArrivo}>In arrivo</Text>}
@@ -98,6 +108,17 @@ export default function EsploraHubScreen({ navigation }) {
           <Text style={styles.pulsanteTutteTesto}>Vedi tutte le strutture</Text>
           <Ionicons name="arrow-forward" size={15} color={colori.blu} />
         </Pressable>
+
+        <View style={styles.rigaInfo}>
+          <Pressable style={styles.pillInfo} onPress={() => navigation.push("Blog")}>
+            <Ionicons name="book-outline" size={14} color={colori.testo} />
+            <Text style={styles.pillInfoTesto}>Blog</Text>
+          </Pressable>
+          <Pressable style={styles.pillInfo} onPress={() => navigation.push("Faq")}>
+            <Ionicons name="help-circle-outline" size={14} color={colori.testo} />
+            <Text style={styles.pillInfoTesto}>Domande frequenti</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -105,26 +126,41 @@ export default function EsploraHubScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, gap: 8 },
+  contenuto: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 6 },
   sottotitolo: { fontSize: 15, fontWeight: "800", color: colori.testo, textAlign: "center", marginBottom: 2 },
-  sezione: { borderRadius: 16, padding: 10, gap: 6 },
-  sezioneIntestazione: { flexDirection: "row", alignItems: "center", gap: 6 },
-  sezioneTitolo: { fontSize: 12.5, fontWeight: "800" },
-  griglia: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  sezione: { borderRadius: 16, overflow: "hidden", paddingBottom: 8, gap: 4 },
+  sezioneBanner: { width: "100%", height: 140 },
+  sezioneBannerImmagine: { resizeMode: "cover" },
+  // Riquadro piccolo, non una fascia su tutta la larghezza/altezza: così
+  // non rischia di finire sopra al soggetto della foto (vedi commento sopra
+  // a SEZIONI per "Dove dormire", dov'è già successo con una fascia intera).
+  sezioneEtichetta: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  sezioneTitolo: { fontSize: 13, fontWeight: "800", color: "#fff" },
+  griglia: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 10, paddingTop: 6 },
   tessera: {
     width: "31%",
-    aspectRatio: 1.35,
+    aspectRatio: 1.7,
     backgroundColor: "rgba(255,255,255,0.75)",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
-    padding: 4,
+    padding: 3,
   },
   tesseraIcona: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: colori.bianco,
     alignItems: "center",
     justifyContent: "center",
@@ -136,7 +172,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   pulsanteTutteTesto: { fontSize: 12, fontWeight: "700", color: colori.blu },
+  rigaInfo: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 2 },
+  pillInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colori.bianco,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  pillInfoTesto: { fontSize: 11, fontWeight: "700", color: colori.testo },
 });
