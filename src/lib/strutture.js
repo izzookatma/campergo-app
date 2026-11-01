@@ -257,7 +257,18 @@ export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], t
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).range(daCampeggi, daCampeggi + limite - 1);
 
-  let queryRifugi = supabase.from("rifugi").select(COLONNE_RIFUGIO).eq("stato", "approvato").order("id", { ascending: true });
+  // Stesso ordine di /rifugi sul sito (alfabetico per nome, vedi
+  // Rifugi.jsx): prima qui era per id (ordine di importazione), diverso
+  // da quello che l'utente vede sul sito per le stesse strutture. L'id
+  // come secondo ordinamento, stesso motivo di quello sui campeggi sopra
+  // (più nomi uguali a parità di range() renderebbero l'ordine instabile
+  // tra una pagina e l'altra di "carica altre").
+  let queryRifugi = supabase
+    .from("rifugi")
+    .select(COLONNE_RIFUGIO)
+    .eq("stato", "approvato")
+    .order("nome", { ascending: true })
+    .order("id", { ascending: true });
   if (tipiRifugioScelti.length > 0) queryRifugi = queryRifugi.in("tipo", tipiRifugioScelti);
   queryRifugi = queryRifugi.range(daRifugi, daRifugi + limiteRifugi - 1);
 
@@ -340,11 +351,15 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).limit(limite);
 
+  // Stesso ordine alfabetico di /rifugi sul sito (vedi il commento in
+  // caricaStrutture sopra): qui non c'era nessun `.order()`, l'ordine era
+  // quello implicito del database (non garantito, in pratica l'id).
   let queryRifugi = supabase
     .from("rifugi")
     .select(COLONNE_RIFUGIO)
     .eq("stato", "approvato")
-    .or(`nome.ilike.${pattern},comune.ilike.${pattern},provincia.ilike.${pattern}`);
+    .or(`nome.ilike.${pattern},comune.ilike.${pattern},provincia.ilike.${pattern}`)
+    .order("nome", { ascending: true });
   if (tipiRifugioScelti.length > 0) queryRifugi = queryRifugi.in("tipo", tipiRifugioScelti);
   queryRifugi = queryRifugi.limit(limiteRifugi);
 
