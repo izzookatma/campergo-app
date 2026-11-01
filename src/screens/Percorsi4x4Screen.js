@@ -16,6 +16,12 @@ const FILTRI = [
   { chiave: "estremo", etichetta: "Estremo" },
 ];
 
+const FILTRI_VEICOLO = [
+  { chiave: null, etichetta: "Tutti i veicoli" },
+  { chiave: "4x4", etichetta: "4x4" },
+  { chiave: "moto", etichetta: "Moto" },
+];
+
 export default function Percorsi4x4Screen({ navigation, route }) {
   const { session } = useAuth();
   const [percorsi, setPercorsi] = useState([]);
@@ -23,6 +29,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
   // Arrivando dalla ricerca IA con una difficoltà/regione già riconosciute:
   // partono già impostate, modificabili come sempre una volta qui.
   const [difficolta, setDifficolta] = useState(() => route.params?.difficoltaIniziale ?? null);
+  const [tipoVeicolo, setTipoVeicolo] = useState(() => route.params?.tipoVeicoloIniziale ?? null);
   const [termine, setTermine] = useState(() => route.params?.regioneIniziale || "");
 
   const creaPercorso = () => {
@@ -36,11 +43,11 @@ export default function Percorsi4x4Screen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       setCaricamento(true);
-      caricaPercorsi4x4({ difficolta })
+      caricaPercorsi4x4({ difficolta, tipoVeicolo })
         .then(setPercorsi)
         .catch((e) => console.error("Errore nel caricare i percorsi 4x4:", e))
         .finally(() => setCaricamento(false));
-    }, [difficolta])
+    }, [difficolta, tipoVeicolo])
   );
 
   // Filtro lato app sui percorsi già caricati (al massimo poche centinaia
@@ -74,6 +81,21 @@ export default function Percorsi4x4Screen({ navigation, route }) {
               onPress={() => setDifficolta(f.chiave)}
             >
               <Text style={[styles.chipTesto, difficolta === f.chiave && styles.chipTestoAttivo]}>{f.etichetta}</Text>
+            </Pressable>
+          )}
+        />
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={FILTRI_VEICOLO}
+          keyExtractor={(f) => f.etichetta}
+          contentContainerStyle={{ gap: 8 }}
+          renderItem={({ item: f }) => (
+            <Pressable
+              style={[styles.chip, tipoVeicolo === f.chiave && styles.chipAttivo]}
+              onPress={() => setTipoVeicolo(f.chiave)}
+            >
+              <Text style={[styles.chipTesto, tipoVeicolo === f.chiave && styles.chipTestoAttivo]}>{f.etichetta}</Text>
             </Pressable>
           )}
         />

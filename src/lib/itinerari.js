@@ -108,9 +108,10 @@ export async function caricaSentieri({ modalita } = {}) {
   return arricchisciConTappe((data || []).map(normalizzaItinerario));
 }
 
-export async function caricaPercorsi4x4({ difficolta } = {}) {
+export async function caricaPercorsi4x4({ difficolta, tipoVeicolo } = {}) {
   let query = supabase.from("itinerari").select(COLONNE_ITINERARIO).eq("stato", "approvato").eq("categoria", "percorso_4x4");
   if (difficolta) query = query.eq("difficolta", difficolta);
+  if (tipoVeicolo) query = query.or(`tipo_veicolo.eq.${tipoVeicolo},tipo_veicolo.eq.entrambi`);
   const { data, error } = await query.order("creato_il", { ascending: false });
   if (error) throw error;
   return arricchisciConTappe((data || []).map(normalizzaItinerario));

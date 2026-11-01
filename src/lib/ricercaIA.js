@@ -39,6 +39,15 @@ function modalitaPerSentieri(modalita) {
   return modalita && modalita !== "entrambi" ? modalita : null;
 }
 
+// Stesso principio di modalitaPerSentieri sopra: "entrambi" per il tipo di
+// veicolo significa nessuna preferenza, non un valore da passare a
+// caricaPercorsi4x4 (che con "entrambi" mostrerebbe solo i percorsi taggati
+// proprio "4x4 e moto", escludendo quelli solo 4x4 o solo moto che invece
+// andrebbero bene comunque).
+function tipoVeicoloPerPercorsi4x4(tipoVeicolo) {
+  return tipoVeicolo && tipoVeicolo !== "entrambi" ? tipoVeicolo : null;
+}
+
 // Oltre alle strutture (vedi sotto), la ricerca IA riconosce anche sentieri
 // e percorsi 4x4 (campo "categoria" della funzione Edge): queste due
 // sezioni vivono in schermate a parte (SentieriScreen, Percorsi4x4Screen),
@@ -56,7 +65,12 @@ export function mappaFiltriIA(filtri) {
     return { categoria: "sentiero", regione: filtri.regione || "", modalita: modalitaPerSentieri(filtri.modalita) };
   }
   if (filtri.categoria === "percorso_4x4") {
-    return { categoria: "percorso_4x4", regione: filtri.regione || "", difficolta: filtri.difficolta || null };
+    return {
+      categoria: "percorso_4x4",
+      regione: filtri.regione || "",
+      difficolta: filtri.difficolta || null,
+      tipoVeicolo: tipoVeicoloPerPercorsi4x4(filtri.tipo_veicolo),
+    };
   }
   const luogo = filtri.testo_libero || filtri.regione || "";
   // Rifugi e bivacchi, a differenza di sentieri/percorsi 4x4, non hanno una

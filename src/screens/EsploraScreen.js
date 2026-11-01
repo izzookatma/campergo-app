@@ -205,7 +205,11 @@ export default function EsploraScreen({ navigation, route }) {
       return;
     }
     if (risultato.categoria === "percorso_4x4") {
-      navigation.push("Percorsi4x4", { regioneIniziale: risultato.regione, difficoltaIniziale: risultato.difficolta });
+      navigation.push("Percorsi4x4", {
+        regioneIniziale: risultato.regione,
+        difficoltaIniziale: risultato.difficolta,
+        tipoVeicoloIniziale: risultato.tipoVeicolo,
+      });
       return;
     }
     if (risultato.filtriTipo.length > 0) setFiltriTipo(risultato.filtriTipo);
