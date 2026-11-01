@@ -16,12 +16,14 @@ const FILTRI = [
   { chiave: "estremo", etichetta: "Estremo" },
 ];
 
-export default function Percorsi4x4Screen({ navigation }) {
+export default function Percorsi4x4Screen({ navigation, route }) {
   const { session } = useAuth();
   const [percorsi, setPercorsi] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
-  const [difficolta, setDifficolta] = useState(null);
-  const [termine, setTermine] = useState("");
+  // Arrivando dalla ricerca IA con una difficoltà/regione già riconosciute:
+  // partono già impostate, modificabili come sempre una volta qui.
+  const [difficolta, setDifficolta] = useState(() => route.params?.difficoltaIniziale ?? null);
+  const [termine, setTermine] = useState(() => route.params?.regioneIniziale || "");
 
   const creaPercorso = () => {
     if (!session) {

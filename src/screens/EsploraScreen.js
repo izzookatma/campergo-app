@@ -24,6 +24,7 @@ import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import RicercaIA from "../components/RicercaIA";
 import { useAuth } from "../context/AuthContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
 import { distanzaKm } from "../lib/geo";
@@ -52,7 +53,9 @@ export default function EsploraScreen({ navigation, route }) {
   const primoRendering = useRef(true);
   const ricercaAttiva = ricerca.trim().length >= 2;
   const [inputAFocus, setInputAFocus] = useState(false);
-  const [filtriServizi, setFiltriServizi] = useState([]);
+  // Arrivando dall'hub con servizi già riconosciuti dalla ricerca IA
+  // (es. "piscina"): parte già impostato, come filtriTipo/ricerca sopra.
+  const [filtriServizi, setFiltriServizi] = useState(() => route.params?.serviziIniziali || []);
   const [modalFiltriAperto, setModalFiltriAperto] = useState(false);
   const [sezioniAperte, setSezioniAperte] = useState({ [CATEGORIE_FILTRI_SERVIZI[0].titolo]: true });
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
@@ -191,6 +194,23 @@ export default function EsploraScreen({ navigation, route }) {
     } finally {
       setCercandoPosizione(false);
     }
+  };
+
+  // Sentieri e percorsi 4x4 non sono strutture: questa schermata non li
+  // mostra mai, serve passare a quella giusta (stesso principio del sito,
+  // dove Home manda a /sentieri o /percorsi-4x4 invece di filtrare).
+  const onRicercaIA = (risultato) => {
+    if (risultato.categoria === "sentiero") {
+      navigation.push("Sentieri", { regioneIniziale: risultato.regione, modalitaIniziale: risultato.modalita });
+      return;
+    }
+    if (risultato.categoria === "percorso_4x4") {
+      navigation.push("Percorsi4x4", { regioneIniziale: risultato.regione, difficoltaIniziale: risultato.difficolta });
+      return;
+    }
+    if (risultato.filtriTipo.length > 0) setFiltriTipo(risultato.filtriTipo);
+    if (risultato.ricerca) setRicerca(risultato.ricerca);
+    if (risultato.filtriServizi.length > 0) setFiltriServizi(risultato.filtriServizi);
   };
 
   const toggleServizio = (chiave) => {
@@ -344,6 +364,8 @@ export default function EsploraScreen({ navigation, route }) {
             ))}
           </View>
         )}
+
+        {session && <RicercaIA onRisultato={onRicercaIA} />}
 
         <View style={styles.rigaFiltri}>
           <ScrollView

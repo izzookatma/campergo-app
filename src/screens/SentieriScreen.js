@@ -14,12 +14,15 @@ const FILTRI = [
   { chiave: "bici", etichetta: "In bici" },
 ];
 
-export default function SentieriScreen({ navigation }) {
+export default function SentieriScreen({ navigation, route }) {
   const { session } = useAuth();
   const [sentieri, setSentieri] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
-  const [modalita, setModalita] = useState(null);
-  const [termine, setTermine] = useState("");
+  // Arrivando dalla ricerca IA con una modalità/regione già riconosciute
+  // (es. "percorso bici in Lombardia"): partono già impostate, modificabili
+  // come sempre una volta sulla schermata.
+  const [modalita, setModalita] = useState(() => route.params?.modalitaIniziale ?? null);
+  const [termine, setTermine] = useState(() => route.params?.regioneIniziale || "");
 
   const creaSentiero = () => {
     if (!session) {
