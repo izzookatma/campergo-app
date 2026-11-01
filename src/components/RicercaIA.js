@@ -10,12 +10,14 @@ import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 // moduli nativi di riconoscimento vocale, servirebbe una build di sviluppo
 // dedicata (vedi AGENTS.md, "Expo Go only includes its bundled native
 // modules"). Solo testo, per ora.
-// Riservata a chi ha fatto login, come sul sito: va renderizzata solo se
-// c'è una sessione (vedi EsploraHubScreen/EsploraScreen). supabase-js manda
-// già da solo l'access_token dell'utente al posto della anon key nelle
-// chiamate a supabase.functions.invoke, non serve passarlo a mano qui - la
-// funzione Edge lo verifica comunque di nuovo lato server.
-export default function RicercaIA({ onRisultato }) {
+// Visibile a tutti, come sul sito dal 1/11 (prima era nascosta a chi non
+// aveva fatto login): il gate scatta solo al momento di cercare, tramite
+// `onRichiedeAccesso` passato dal chiamante (EsploraHubScreen/EsploraScreen),
+// non nascondendo più il riquadro. supabase-js manda già da solo
+// l'access_token dell'utente al posto della anon key nelle chiamate a
+// supabase.functions.invoke quando c'è una sessione - la funzione Edge
+// verifica comunque di nuovo il login lato server.
+export default function RicercaIA({ onRisultato, loggato, onRichiedeAccesso }) {
   const [testo, setTesto] = useState("");
   const [caricando, setCaricando] = useState(false);
   const [errore, setErrore] = useState("");
@@ -23,6 +25,10 @@ export default function RicercaIA({ onRisultato }) {
   const cerca = async () => {
     const frase = testo.trim();
     if (!frase || caricando) return;
+    if (!loggato) {
+      onRichiedeAccesso?.();
+      return;
+    }
     setCaricando(true);
     setErrore("");
     try {
@@ -37,8 +43,12 @@ export default function RicercaIA({ onRisultato }) {
 
   return (
     <View style={styles.contenitore}>
+      <View style={styles.badge}>
+        <Text style={styles.badgeNovita}>NOVITÀ</Text>
+        <Text style={styles.badgeGratis}>gratis se ti iscrivi</Text>
+      </View>
       <View style={styles.pill}>
-        <Ionicons name="sparkles-outline" size={16} color={colori.blu} />
+        <Ionicons name="sparkles-outline" size={16} color={colori.rosso} />
         <TextInput
           style={styles.input}
           placeholder="Oppure descrivi cosa cerchi…"
@@ -66,7 +76,22 @@ export default function RicercaIA({ onRisultato }) {
 }
 
 const styles = StyleSheet.create({
-  contenitore: { marginTop: 10 },
+  contenitore: { marginTop: 18 },
+  badge: {
+    position: "absolute",
+    top: -10,
+    left: 18,
+    zIndex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colori.rosso,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  badgeNovita: { color: colori.bianco, fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
+  badgeGratis: { color: colori.bianco, fontSize: 9, opacity: 0.9 },
   pill: {
     flexDirection: "row",
     alignItems: "center",
@@ -75,12 +100,12 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     height: 44,
     paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: colori.bordo,
+    borderWidth: 2,
+    borderColor: colori.rosso,
   },
   input: { flex: 1, fontSize: 12.5, color: colori.testo },
   bottone: {
-    backgroundColor: colori.blu,
+    backgroundColor: colori.rosso,
     borderRadius: 16,
     paddingHorizontal: 12,
     height: 30,

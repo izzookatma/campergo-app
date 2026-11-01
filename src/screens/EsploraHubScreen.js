@@ -136,6 +136,13 @@ export default function EsploraHubScreen({ navigation }) {
     });
   };
 
+  const onRicercaIARichiedeAccesso = () => {
+    Alert.alert("Accedi", "La ricerca con l'IA è gratuita per chi si registra. Accedi o registrati per usarla.", [
+      { text: "Annulla", style: "cancel" },
+      { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+    ]);
+  };
+
   const vaiA = (tessera) => {
     if (tessera.inArrivo) {
       Alert.alert(tessera.etichetta, "Questa sezione arriverà in una prossima versione dell'app.");
@@ -262,7 +269,7 @@ export default function EsploraHubScreen({ navigation }) {
             <Text style={styles.vicinoAMeRapidoTesto}>Vicino a te ora</Text>
           </Pressable>
 
-          {session && <RicercaIA onRisultato={onRicercaIA} />}
+          <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />
         </View>
 
         <Text style={styles.sottotitolo}>Oppure scegli cosa stai cercando</Text>

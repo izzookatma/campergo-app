@@ -134,14 +134,39 @@ function normalizzaRifugio(r) {
   };
 }
 
-// scaricoAcqueNere/scaricoAcqueGrigie contano anche per il vecchio tag
-// combinato "scaricoPozzetto" (prima che i due filtri fossero separati,
-// vedi AMENITY_META e il commento su matchFiltri in src/App.jsx sul
-// sito), o se lo conferma la colonna dedicata della struttura
-// (camper_service_non_ospiti_scarico_nere/_grigie).
+// scaricoAcqueNere/scaricoAcqueGrigie/caricoAcqua contano anche per il
+// vecchio tag combinato "scaricoPozzetto" (prima che i due filtri fossero
+// separati, vedi AMENITY_META e il commento su matchFiltri/
+// corrispondeFiltroServizioCamper in src/App.jsx sul sito), o se lo
+// conferma una delle colonne dedicate: scarico_acque_nere/grigie e
+// carico_acqua_potabile sulle schede "camper service" indipendenti
+// (colonnine pubbliche, senza amenities), camper_service_non_ospiti_* sulle
+// strutture che dichiarano un camper service per i non ospiti. Mancavano
+// le prime (solo amenities + camper_service_non_ospiti_*): le colonnine
+// indipendenti venivano escluse da questi filtri anche quando il dato
+// c'era, perché quella colonna bastava da sola (verificato confrontando
+// col sito). "camperService" (filtro generico) conta anche se la scheda è
+// una colonnina indipendente di per sé (carico_acqua_potabile non nullo),
+// stesso principio di corrispondeFiltroServizioCamper sul sito.
 const FALLBACK_SERVIZIO = {
-  scaricoAcqueNere: ["amenities.cs.{scaricoAcqueNere}", "amenities.cs.{scaricoPozzetto}", "camper_service_non_ospiti_scarico_nere.eq.true"],
-  scaricoAcqueGrigie: ["amenities.cs.{scaricoAcqueGrigie}", "amenities.cs.{scaricoPozzetto}", "camper_service_non_ospiti_scarico_grigie.eq.true"],
+  scaricoAcqueNere: [
+    "amenities.cs.{scaricoAcqueNere}",
+    "amenities.cs.{scaricoPozzetto}",
+    "scarico_acque_nere.eq.true",
+    "camper_service_non_ospiti_scarico_nere.eq.true",
+  ],
+  scaricoAcqueGrigie: [
+    "amenities.cs.{scaricoAcqueGrigie}",
+    "amenities.cs.{scaricoPozzetto}",
+    "scarico_acque_grigie.eq.true",
+    "camper_service_non_ospiti_scarico_grigie.eq.true",
+  ],
+  caricoAcqua: [
+    "amenities.cs.{caricoAcqua}",
+    "carico_acqua_potabile.eq.true",
+    "camper_service_non_ospiti_carico_acqua.eq.true",
+  ],
+  camperService: ["amenities.cs.{camperService}", "carico_acqua_potabile.not.is.null"],
 };
 
 // I rifugi non hanno la colonna amenities (niente servizi da campeggio):

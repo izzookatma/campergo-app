@@ -217,6 +217,13 @@ export default function EsploraScreen({ navigation, route }) {
     if (risultato.filtriServizi.length > 0) setFiltriServizi(risultato.filtriServizi);
   };
 
+  const onRicercaIARichiedeAccesso = () => {
+    Alert.alert("Accedi", "La ricerca con l'IA è gratuita per chi si registra. Accedi o registrati per usarla.", [
+      { text: "Annulla", style: "cancel" },
+      { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+    ]);
+  };
+
   const toggleServizio = (chiave) => {
     setFiltriServizi((prev) => (prev.includes(chiave) ? prev.filter((c) => c !== chiave) : [...prev, chiave]));
   };
@@ -369,7 +376,7 @@ export default function EsploraScreen({ navigation, route }) {
           </View>
         )}
 
-        {session && <RicercaIA onRisultato={onRicercaIA} />}
+        <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />
 
         <View style={styles.rigaFiltri}>
           <ScrollView
