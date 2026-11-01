@@ -17,9 +17,8 @@ export async function interpretaRicercaIA(testo) {
 
 // tipo_struttura (DB) -> chip di EsploraLista (vedi FILTRI in
 // EsploraScreen.js e TIPO_STRUTTURA_CAMPEGGIO in lib/strutture.js).
-// "camper_service" (colonnine pubbliche, tabella a parte) e "alloggio"
-// (mietunterkunft) non hanno ancora una chip in questa app: restano
-// scartati, contano comunque testo e servizi.
+// "alloggio" (mietunterkunft) non ha ancora una chip in questa app: resta
+// scartato, contano comunque testo e servizi.
 const TIPO_IA_A_CHIP = {
   campeggio: "Campeggi",
   agriturismo: "Agriturismi",
@@ -28,6 +27,18 @@ const TIPO_IA_A_CHIP = {
   // "parcheggio" è già la chip "Camper service" in questa app (vedi
   // TIPO_STRUTTURA_CAMPEGGIO): la ricerca IA atterra sullo stesso valore.
   parcheggio: "Camper service",
+};
+
+// "camper_service" (valore di "tipo", diverso da "parcheggio": è il filtro
+// del sito per le strutture che dichiarano un servizio camper per i NON
+// ospiti, tipoStrutturaFiltro in src/App.jsx) non ha una chip propria in
+// questa app - prima finiva scartato in silenzio (chip undefined → nessun
+// filtro, mostrava "Tutti"). Non esiste un filtro identico lato app, ma
+// "camperService" (il servizio Servizi camper del pannello Filtri, già
+// presente in CATEGORIE_FILTRI_SERVIZI) è l'equivalente più vicino
+// disponibile: meglio di ignorare del tutto il segnale.
+const TIPO_IA_SENZA_CHIP_A_SERVIZIO = {
+  camper_service: "camperService",
 };
 
 // "entrambi" in modalita significa "a piedi o in bici, indifferente": per
@@ -87,10 +98,14 @@ export function mappaFiltriIA(filtri) {
     };
   }
   const chip = filtri.tipo ? TIPO_IA_A_CHIP[filtri.tipo] : null;
+  const servizioEquivalente = !chip && filtri.tipo ? TIPO_IA_SENZA_CHIP_A_SERVIZIO[filtri.tipo] : null;
+  const filtriServizi = filtri.filtri || [];
   return {
     categoria: "struttura",
     filtriTipo: chip ? [chip] : [],
     ricerca: luogo || filtri.ambiente?.[0] || "",
-    filtriServizi: filtri.filtri || [],
+    filtriServizi: servizioEquivalente && !filtriServizi.includes(servizioEquivalente)
+      ? [...filtriServizi, servizioEquivalente]
+      : filtriServizi,
   };
 }

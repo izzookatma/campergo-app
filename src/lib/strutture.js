@@ -320,10 +320,26 @@ const PAROLE_AMBIENTE = {
 // senza `tipi` guardava solo i primi ~25 rifugi trovati (100/4, qualunque
 // tipo), che potevano non includere i bivacchi anche se la ricerca ne
 // avrebbe trovati altrove nello stesso risultato.
+// Una ricerca come "Il Tiglio Sirmione" (nome scheda + città, caso tipico di
+// un nome proprio estratto dalla Ricerca IA - vedi ricercaIA.js) andava a
+// vuoto: `pattern` era l'intera frase come un unico blocco di testo, nessuna
+// scheda contiene "Il Tiglio Sirmione" per intero in una singola colonna
+// (il nome ha solo "Il Tiglio", la località solo "Sirmione"). Il sito
+// (tokenizzaRicerca/parolaCorrisponde in src/App.jsx) spezza la frase in
+// parole e richiede che OGNUNA trovi corrispondenza da qualche parte (anche
+// in colonne diverse), non l'intera frase insieme: `.or()` chiamato più
+// volte di seguito su una stessa query si combina con AND in PostgREST,
+// quindi una `.or()` per parola (ciascuna con le alternative tra colonne)
+// riproduce lo stesso "ogni parola trovata, anche sparsa su più colonne".
+function paroleRicercaStruttura(pulito) {
+  const parole = pulito.split(/\s+/).filter((p) => p.length >= 2);
+  return parole.length > 0 ? parole : [pulito];
+}
+
 export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi = [] } = {}) {
   const pulito = termine.trim().replace(/[,(){}%]/g, " ").trim();
   if (!pulito) return [];
-  const pattern = `%${pulito}%`;
+  const parole = paroleRicercaStruttura(pulito);
   const ambiente = PAROLE_AMBIENTE[pulito.toLowerCase()];
   const conServiziAttivi = servizi.length > 0;
 
@@ -340,33 +356,42 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   // potrebbero comunque mai comparire, a prescindere dal tipo scelto.
   const saltaRifugiDelTutto = saltaRifugi || conServiziAttivi;
 
-  let condizioniCampeggi = `nome.ilike.${pattern},localita.ilike.${pattern},zona_turistica.ilike.${pattern},cap.ilike.${pattern}`;
-  if (ambiente) condizioniCampeggi += `,ambiente_calcolato.cs.{${ambiente}}`;
-
   // Stesso ordinamento di caricaStrutture sopra (vedi il commento lì),
   // stessa fonte: le colonne calcolate punteggio_ordinamento/ha_servizi/
   // ha_promo_attiva della vista campeggi_pubblici.
   let queryCampeggi = supabase
     .from("campeggi_pubblici")
     .select(COLONNE_CAMPEGGIO)
-    .or(condizioniCampeggi)
     .order("ha_promo_attiva", { ascending: false })
     .order("punteggio_ordinamento", { ascending: false })
     .order("recensioni", { ascending: false })
     .order("ha_servizi", { ascending: false })
     .order("id", { ascending: true });
+  parole.forEach((parola) => {
+    const p = `%${parola}%`;
+    let cond = `nome.ilike.${p},localita.ilike.${p},zona_turistica.ilike.${p},cap.ilike.${p}`;
+    // L'alternativa sull'ambiente resta dentro il gruppo della singola
+    // parola (non una condizione a parte, che richiederebbe AND anche
+    // quando non c'entra): `ambiente` scatta solo quando tutta la frase è
+    // esattamente una parola di ambiente riconosciuta, quindi c'è un solo
+    // elemento in `parole` quando è valorizzato.
+    if (ambiente) cond += `,ambiente_calcolato.cs.{${ambiente}}`;
+    queryCampeggi = queryCampeggi.or(cond);
+  });
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).limit(limite);
 
   // Stesso ordine alfabetico di /rifugi sul sito (vedi il commento in
   // caricaStrutture sopra): qui non c'era nessun `.order()`, l'ordine era
   // quello implicito del database (non garantito, in pratica l'id).
-  let queryRifugi = supabase
-    .from("rifugi")
-    .select(COLONNE_RIFUGIO)
-    .eq("stato", "approvato")
-    .or(`nome.ilike.${pattern},comune.ilike.${pattern},provincia.ilike.${pattern}`)
-    .order("nome", { ascending: true });
+  let queryRifugi = supabase.from("rifugi").select(COLONNE_RIFUGIO).eq("stato", "approvato").order("nome", { ascending: true });
+  // Stesso principio dei campeggi sopra: una parola per `.or()`, così
+  // "rifugio Garibaldi Trento" trova nome e provincia anche se non stanno
+  // insieme nella stessa colonna.
+  parole.forEach((parola) => {
+    const p = `%${parola}%`;
+    queryRifugi = queryRifugi.or(`nome.ilike.${p},comune.ilike.${p},provincia.ilike.${p}`);
+  });
   if (tipiRifugioScelti.length > 0) queryRifugi = queryRifugi.in("tipo", tipiRifugioScelti);
   queryRifugi = queryRifugi.limit(limiteRifugi);
 
