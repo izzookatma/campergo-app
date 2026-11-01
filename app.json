@@ -3,6 +3,12 @@
     "name": "campergo-app",
     "slug": "campergo-app",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a00761bf-354c-44cc-853b-5a06a22ffed4"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -51,7 +57,8 @@
           "backgroundColor": "#0e3a53"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ],
     "extra": {
       "eas": {
