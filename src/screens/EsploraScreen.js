@@ -25,6 +25,7 @@ import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } f
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
+import BollinoPromo from "../components/BollinoPromo";
 import { useAuth } from "../context/AuthContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
 import { distanzaKm } from "../lib/geo";
@@ -479,6 +480,7 @@ export default function EsploraScreen({ navigation, route }) {
                 ) : (
                   <Ionicons name="image-outline" size={22} color={colori.blu} />
                 )}
+                {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTipo}>{item.tipo}</Text>
@@ -771,8 +773,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    position: "relative",
   },
   cardImmagine: { width: "100%", height: "100%" },
+  cardBollinoPromo: { position: "absolute", top: 3, left: 3 },
   cardInfo: { flex: 1, gap: 2 },
   cardTipo: { fontSize: 10, fontWeight: "700", color: colori.blu },
   cardNome: { fontSize: 13, fontWeight: "700", color: colori.testo },

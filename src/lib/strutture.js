@@ -9,7 +9,7 @@ const ETICHETTE_TIPO = {
 };
 
 export const COLONNE_CAMPEGGIO =
-  "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione";
+  "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione, ha_promo_attiva";
 
 export const COLONNE_RIFUGIO = "id, nome, comune, provincia, gruppo_montuoso, lat, lng, foto_url, tipo";
 
@@ -108,6 +108,7 @@ export function normalizzaCampeggio(c) {
     recensioni: c.recensioni,
     telefono: c.telefono,
     descrizione: c.descrizione,
+    haPromoAttiva: c.ha_promo_attiva === true,
   };
 }
 
@@ -247,9 +248,14 @@ export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], t
   // punteggio, range() senza un ordine del tutto stabile può restituire
   // la stessa riga due volte tra una pagina e l'altra (chiave React
   // duplicata in Esplora quando si scorre "carica altre").
+  // Chi ha un'offerta promo attiva (ha_promo_attiva, migrazione
+  // 328_campeggi_pubblici_ha_promo_attiva) sale prima di tutti, prima
+  // ancora del punteggio - stesso criterio del sito (confrontaOrdinamento
+  // in src/App.jsx).
   let queryCampeggi = supabase
     .from("campeggi_pubblici")
     .select(COLONNE_CAMPEGGIO)
+    .order("ha_promo_attiva", { ascending: false })
     .order("punteggio_ordinamento", { ascending: false })
     .order("recensioni", { ascending: false })
     .order("ha_servizi", { ascending: false })
@@ -338,12 +344,13 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   if (ambiente) condizioniCampeggi += `,ambiente_calcolato.cs.{${ambiente}}`;
 
   // Stesso ordinamento di caricaStrutture sopra (vedi il commento lì),
-  // stessa fonte: le colonne calcolate punteggio_ordinamento/ha_servizi
-  // della vista campeggi_pubblici.
+  // stessa fonte: le colonne calcolate punteggio_ordinamento/ha_servizi/
+  // ha_promo_attiva della vista campeggi_pubblici.
   let queryCampeggi = supabase
     .from("campeggi_pubblici")
     .select(COLONNE_CAMPEGGIO)
     .or(condizioniCampeggi)
+    .order("ha_promo_attiva", { ascending: false })
     .order("punteggio_ordinamento", { ascending: false })
     .order("recensioni", { ascending: false })
     .order("ha_servizi", { ascending: false })
