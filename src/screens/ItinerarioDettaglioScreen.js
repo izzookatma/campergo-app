@@ -10,6 +10,7 @@ import { caricaRecensioniItinerario, inviaRecensioneItinerario } from "../lib/re
 import { urlMappa } from "../lib/mappa";
 import MappaItinerario from "../components/MappaItinerario";
 import ModuloRecensione from "../components/ModuloRecensione";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function RigaStelle({ punteggio, size = 12 }) {
   return (
@@ -74,11 +75,14 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
     <View style={styles.schermo}>
       <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
         <SafeAreaView edges={["top"]} style={styles.hero}>
-          {itinerario.fotoUrl ? (
-            <Image source={{ uri: itinerario.fotoUrl }} style={styles.heroImmagine} />
-          ) : (
-            <Ionicons name={itinerario.categoria === "sentiero" ? "trail-sign-outline" : "car-sport-outline"} size={46} color="#60a5fa" />
-          )}
+          <ImmagineConRiserva
+            uri={itinerario.fotoUrl}
+            larghezza={780}
+            style={styles.heroImmagine}
+            icona={itinerario.categoria === "sentiero" ? "trail-sign-outline" : "car-sport-outline"}
+            iconaDimensione={46}
+            iconaColore="#60a5fa"
+          />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={colori.testo} />
           </Pressable>
@@ -152,6 +156,13 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
                     </Text>
                     {t.localitaStruttura ? <Text style={styles.tappaDescrizione}>{t.localitaStruttura}</Text> : null}
                     {t.descrizione ? <Text style={styles.tappaDescrizione}>{t.descrizione}</Text> : null}
+                    {t.foto?.length > 0 && (
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tappaFotoRiga}>
+                        {t.foto.map((url) => (
+                          <Image key={url} source={{ uri: url }} style={styles.tappaFoto} />
+                        ))}
+                      </ScrollView>
+                    )}
                     {t.lat != null && t.lng != null && (
                       <Pressable
                         style={styles.tappaMappaLink}
@@ -265,6 +276,8 @@ const styles = StyleSheet.create({
   tappaNumeroTesto: { fontSize: 11, fontWeight: "800", color: colori.blu },
   tappaNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
   tappaDescrizione: { fontSize: 11.5, color: colori.testoSecondario, marginTop: 2, lineHeight: 16 },
+  tappaFotoRiga: { marginTop: 6 },
+  tappaFoto: { width: 72, height: 72, borderRadius: 10, marginRight: 6, backgroundColor: colori.grigioSfondo },
   tappaMappaLink: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   tappaMappaLinkTesto: { fontSize: 11, fontWeight: "700" },
   sezioneRecensioni: { marginTop: 18, gap: 10 },
