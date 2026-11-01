@@ -10,7 +10,6 @@ import { caricaRecensioniItinerario, inviaRecensioneItinerario } from "../lib/re
 import { urlMappa } from "../lib/mappa";
 import MappaItinerario from "../components/MappaItinerario";
 import ModuloRecensione from "../components/ModuloRecensione";
-import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function RigaStelle({ punteggio, size = 12 }) {
   return (
@@ -75,14 +74,11 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
     <View style={styles.schermo}>
       <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
         <SafeAreaView edges={["top"]} style={styles.hero}>
-          <ImmagineConRiserva
-            uri={itinerario.fotoUrl}
-            larghezza={780}
-            style={styles.heroImmagine}
-            icona={itinerario.categoria === "sentiero" ? "trail-sign-outline" : "car-sport-outline"}
-            iconaDimensione={46}
-            iconaColore="#60a5fa"
-          />
+          {itinerario.fotoUrl ? (
+            <Image source={{ uri: itinerario.fotoUrl }} style={styles.heroImmagine} />
+          ) : (
+            <Ionicons name={itinerario.categoria === "sentiero" ? "trail-sign-outline" : "car-sport-outline"} size={46} color="#60a5fa" />
+          )}
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={colori.testo} />
           </Pressable>
