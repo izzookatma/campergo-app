@@ -39,16 +39,44 @@ function normalizzaSchedaCulturale(e) {
   };
 }
 
+// Stessa scala di rilevanza della ricerca testuale sul sito (risultatiCulturali
+// in src/App.jsx, senza il livello "sottotipo/parole di categoria": qui la
+// ricerca è già dentro una categoria scelta dall'hub, non serve): titolo
+// identico, poi titolo che la contiene, poi città/regione, poi il resto.
+function punteggioRicerca(scheda, termine) {
+  const q = termine.trim().toLowerCase();
+  const titolo = (scheda.titolo || "").toLowerCase();
+  if (titolo === q) return 0;
+  if (titolo.includes(q)) return 1;
+  if ((scheda.citta || "").toLowerCase().includes(q) || (scheda.regione || "").toLowerCase().includes(q)) return 2;
+  return 3;
+}
+
 // Limite di sicurezza: "attivita" da sola supera le 1000 righe (il massimo
 // che Supabase restituisce in una pagina): senza una ricerca che restringa,
 // mostriamo le prime 200 per città, come per le altre liste dell'app.
+// Con una ricerca attiva, ordinare per città prima di tagliare a 200
+// avrebbe potuto escludere del tutto una scheda con titolo identico al
+// termine cercato, se c'erano più di 200 risultati e la sua città veniva
+// alfabeticamente dopo: si prendono invece fino a 500 righe filtrate (ben
+// sotto il limite di Supabase, margine ampio anche per un termine molto
+// generico dentro una categoria), si ordinano per rilevanza come
+// risultatiCulturali sul sito, poi si tagliano le prime 200 per mostrarne.
 export async function caricaSchedeCulturali({ categoria, termine } = {}) {
   let query = supabase.from("eventi_campeggio").select(COLONNE_CULTURA).eq("stato", "approvato");
   if (categoria) query = query.eq("categoria", categoria);
-  if (termine) query = query.or(`titolo.ilike.%${termine}%,citta.ilike.%${termine}%,regione.ilike.%${termine}%`);
-  const { data, error } = await query.order("citta", { ascending: true }).limit(200);
+  if (termine) {
+    query = query.or(`titolo.ilike.%${termine}%,citta.ilike.%${termine}%,regione.ilike.%${termine}%`).limit(500);
+  } else {
+    query = query.order("citta", { ascending: true }).limit(200);
+  }
+  const { data, error } = await query;
   if (error) throw error;
-  return (data || []).map(normalizzaSchedaCulturale);
+  const schede = (data || []).map(normalizzaSchedaCulturale);
+  if (!termine) return schede;
+  return schede
+    .sort((a, b) => punteggioRicerca(a, termine) - punteggioRicerca(b, termine) || (a.citta || "").localeCompare(b.citta || ""))
+    .slice(0, 200);
 }
 
 export async function caricaSchedaCulturale(id) {
