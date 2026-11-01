@@ -58,8 +58,21 @@ export function mappaFiltriIA(filtri) {
   if (filtri.categoria === "percorso_4x4") {
     return { categoria: "percorso_4x4", regione: filtri.regione || "", difficolta: filtri.difficolta || null };
   }
-  const chip = filtri.tipo ? TIPO_IA_A_CHIP[filtri.tipo] : null;
   const luogo = filtri.testo_libero || filtri.regione || "";
+  // Rifugi e bivacchi, a differenza di sentieri/percorsi 4x4, non hanno una
+  // schermata a parte in questa app: sono già due chip dentro EsploraLista
+  // (vedi TIPO_RIFUGIO in lib/strutture.js). "rifugio" ci atterra con
+  // entrambe le chip attive insieme — mai una sola, vedi il prompt della
+  // funzione Edge sul perché (il sito li mostra sempre uniti).
+  if (filtri.categoria === "rifugio") {
+    return {
+      categoria: "rifugio",
+      filtriTipo: ["Rifugi", "Bivacchi"],
+      ricerca: luogo,
+      filtriServizi: [],
+    };
+  }
+  const chip = filtri.tipo ? TIPO_IA_A_CHIP[filtri.tipo] : null;
   return {
     categoria: "struttura",
     filtriTipo: chip ? [chip] : [],
