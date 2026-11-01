@@ -232,12 +232,28 @@ export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], t
   const limiteRifugi = soloRifugi ? limite : Math.round(limite / 4);
   const daRifugi = pagina * limiteRifugi;
 
-  // L'ordine per rating da solo non è deterministico tra le pagine: con
-  // più schede a pari voto, range() su una sola colonna può restituire la
-  // stessa riga due volte tra una pagina e l'altra (chiave React duplicata
-  // in Esplora quando si scorre "carica altre"). L'id come secondo
-  // ordinamento rende l'ordine stabile.
-  let queryCampeggi = supabase.from("campeggi_pubblici").select(COLONNE_CAMPEGGIO).order("rating", { ascending: false }).order("id", { ascending: true });
+  // Stesso ordinamento del sito (confrontaOrdinamento in src/App.jsx):
+  // voto (o base neutra 2.5 senza recensioni, quasi sempre il caso oggi -
+  // verificato dal vivo, le 4403 schede hanno tutte rating/recensioni a
+  // zero) → numero recensioni → chi ha almeno un servizio dichiarato →
+  // id. Prima qui si ordinava solo per rating/id: con rating sempre 0 per
+  // tutti equivaleva a mostrare per prime le schede importate prima (id
+  // più basso), ignorando chi ha servizi dichiarati - lo stesso bug che
+  // il sito ha corretto il 30/10. `punteggio_ordinamento`/`ha_servizi`
+  // sono due colonne calcolate aggiunte alla vista apposta (migrazione
+  // 327_campeggi_pubblici_colonne_ordinamento), perché PostgREST non può
+  // ordinare per un'espressione come "amenities non vuoto" senza una
+  // colonna vera. L'id resta come ultimo spareggio: con più schede a pari
+  // punteggio, range() senza un ordine del tutto stabile può restituire
+  // la stessa riga due volte tra una pagina e l'altra (chiave React
+  // duplicata in Esplora quando si scorre "carica altre").
+  let queryCampeggi = supabase
+    .from("campeggi_pubblici")
+    .select(COLONNE_CAMPEGGIO)
+    .order("punteggio_ordinamento", { ascending: false })
+    .order("recensioni", { ascending: false })
+    .order("ha_servizi", { ascending: false })
+    .order("id", { ascending: true });
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).range(daCampeggi, daCampeggi + limite - 1);
 
@@ -310,7 +326,17 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   let condizioniCampeggi = `nome.ilike.${pattern},localita.ilike.${pattern},zona_turistica.ilike.${pattern},cap.ilike.${pattern}`;
   if (ambiente) condizioniCampeggi += `,ambiente_calcolato.cs.{${ambiente}}`;
 
-  let queryCampeggi = supabase.from("campeggi_pubblici").select(COLONNE_CAMPEGGIO).or(condizioniCampeggi).order("rating", { ascending: false });
+  // Stesso ordinamento di caricaStrutture sopra (vedi il commento lì),
+  // stessa fonte: le colonne calcolate punteggio_ordinamento/ha_servizi
+  // della vista campeggi_pubblici.
+  let queryCampeggi = supabase
+    .from("campeggi_pubblici")
+    .select(COLONNE_CAMPEGGIO)
+    .or(condizioniCampeggi)
+    .order("punteggio_ordinamento", { ascending: false })
+    .order("recensioni", { ascending: false })
+    .order("ha_servizi", { ascending: false })
+    .order("id", { ascending: true });
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).limit(limite);
 
