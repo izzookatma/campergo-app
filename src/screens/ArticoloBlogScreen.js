@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, Pressable, ScrollView, StyleSheet, ActivityIndicator, Linking } from "react-native";
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Linking, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +13,7 @@ import {
   urlCtaArticolo,
   testoCtaArticolo,
 } from "../lib/blog";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function dataLunga(iso) {
   if (!iso) return null;
@@ -59,7 +60,7 @@ function BloccoArticolo({ paragrafo }) {
     const [, credito, url] = immagine;
     return (
       <View style={styles.figura}>
-        <Image source={{ uri: url }} style={styles.figuraImmagine} />
+        <ImmagineConRiserva uri={url} larghezza={780} style={styles.figuraImmagine} icona={null} />
         {credito ? <Text style={styles.figuraCredito}>Foto: {credito}</Text> : null}
       </View>
     );
@@ -91,6 +92,15 @@ export default function ArticoloBlogScreen({ route, navigation }) {
       attivo = false;
     };
   }, [slug]);
+
+  const condividi = async () => {
+    const url = `https://www.naturago.it/blog/${slug}`;
+    try {
+      await Share.share({ message: `${articolo.titolo}\n${url}`, url, title: articolo.titolo });
+    } catch (e) {
+      console.error("Errore nella condivisione:", e);
+    }
+  };
 
   const metti = async () => {
     if (giaMesso) return;
@@ -138,7 +148,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
         {articolo.foto_copertina ? (
           <View style={styles.hero}>
-            <Image source={{ uri: articolo.foto_copertina }} style={styles.heroImmagine} />
+            <ImmagineConRiserva uri={articolo.foto_copertina} larghezza={900} style={styles.heroImmagine} icona={null} />
             <SafeAreaView edges={["top"]}>
               <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
                 <Ionicons name="chevron-back" size={18} color={colori.testo} />
@@ -168,16 +178,23 @@ export default function ArticoloBlogScreen({ route, navigation }) {
             ))}
           </View>
 
-          <Pressable
-            style={[styles.miPiace, giaMesso && styles.miPiaceAttivo]}
-            onPress={metti}
-            disabled={giaMesso}
-          >
-            <Ionicons name={giaMesso ? "heart" : "heart-outline"} size={16} color={giaMesso ? colori.arancio : colori.testo} />
-            <Text style={[styles.miPiaceTesto, giaMesso && { color: colori.arancio }]}>
-              Mi piace{conteggio > 0 ? ` (${conteggio})` : ""}
-            </Text>
-          </Pressable>
+          <View style={styles.azioni}>
+            <Pressable
+              style={[styles.miPiace, giaMesso && styles.miPiaceAttivo]}
+              onPress={metti}
+              disabled={giaMesso}
+            >
+              <Ionicons name={giaMesso ? "heart" : "heart-outline"} size={16} color={giaMesso ? colori.arancio : colori.testo} />
+              <Text style={[styles.miPiaceTesto, giaMesso && { color: colori.arancio }]}>
+                Mi piace{conteggio > 0 ? ` (${conteggio})` : ""}
+              </Text>
+            </Pressable>
+
+            <Pressable style={styles.miPiace} onPress={condividi}>
+              <Ionicons name="share-social-outline" size={16} color={colori.testo} />
+              <Text style={styles.miPiaceTesto}>Condividi</Text>
+            </Pressable>
+          </View>
 
           {urlCta && testoCta && (
             <Pressable style={styles.cta} onPress={() => Linking.openURL(urlCta)}>
@@ -196,11 +213,12 @@ export default function ArticoloBlogScreen({ route, navigation }) {
                     style={styles.correlatoCard}
                     onPress={() => navigation.push("ArticoloBlog", { slug: c.slug })}
                   >
-                    {c.foto_copertina ? (
-                      <Image source={{ uri: c.foto_copertina }} style={styles.correlatoFoto} />
-                    ) : (
-                      <View style={[styles.correlatoFoto, { backgroundColor: colori.grigioSfondo }]} />
-                    )}
+                    <ImmagineConRiserva
+                      uri={c.foto_copertina}
+                      larghezza={300}
+                      style={[styles.correlatoFoto, { backgroundColor: colori.grigioSfondo }]}
+                      icona={null}
+                    />
                     <View style={styles.correlatoOmbra} />
                     <Text style={styles.correlatoTitolo} numberOfLines={3}>
                       {c.titolo}
@@ -254,12 +272,12 @@ const styles = StyleSheet.create({
   figura: { gap: 4 },
   figuraImmagine: { width: "100%", height: 190, borderRadius: 14 },
   figuraCredito: { fontSize: 10, color: colori.testoSecondario },
+  azioni: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 18 },
   miPiace: {
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
     alignSelf: "flex-start",
-    marginTop: 18,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
