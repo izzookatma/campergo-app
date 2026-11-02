@@ -24,3 +24,20 @@ export async function geocodificaOCoordinate(testo) {
     return null;
   }
 }
+
+// Il contrario di sopra: da coordinate al nome del paese/città più vicino,
+// per dare un nome leggibile a una tappa calcolata lungo un percorso (mai
+// nominata da chi visita) — stessa logica del sito (src/geocoding.js).
+// Nessun nome trovato → null, chi chiama decide il ripiego.
+export async function geocodificaInversa(lat, lng) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&accept-language=it`
+    );
+    const data = await res.json();
+    const a = data?.address;
+    return a?.city || a?.town || a?.village || a?.municipality || a?.county || null;
+  } catch {
+    return null;
+  }
+}

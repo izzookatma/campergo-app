@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
+import { percorsoStradale } from "../lib/percorsoStradale";
 
 // react-native-maps richiede moduli nativi non presenti in Expo Go (stesso
 // limite di MappaScreen.js): in attesa della build di sviluppo EAS si mostra
@@ -11,6 +12,9 @@ const DENTRO_EXPO_GO = Constants.appOwnership === "expo" || Constants.executionE
 
 // Traccia il percorso vero (strada per strada) fra le tappe in ordine,
 // stesso servizio gratuito usato dal sito (OSRM) — nessuna chiave richiesta.
+// Il fetch vero e proprio è in src/lib/percorsoStradale.js, condiviso con
+// "Creami un percorso" in MappaScreen.js; qui solo la conversione al
+// formato {latitude,longitude} che react-native-maps si aspetta.
 function useTracciatoStradale(tappe) {
   const [percorso, setPercorso] = useState(null);
 
@@ -19,13 +23,9 @@ function useTracciatoStradale(tappe) {
       return;
     }
     let attivo = true;
-    const coordinate = tappe.map((t) => `${t.lng},${t.lat}`).join(";");
-    fetch(`https://router.project-osrm.org/route/v1/driving/${coordinate}?overview=full&geometries=geojson`)
-      .then((r) => r.json())
-      .then((dati) => {
-        if (!attivo) return;
-        const geometria = dati?.routes?.[0]?.geometry?.coordinates;
-        setPercorso(geometria ? geometria.map(([lng, lat]) => ({ latitude: lat, longitude: lng })) : null);
+    percorsoStradale(tappe)
+      .then((punti) => {
+        if (attivo) setPercorso(punti ? punti.map((p) => ({ latitude: p.lat, longitude: p.lng })) : null);
       })
       .catch(() => {
         if (attivo) setPercorso(null);
