@@ -31,6 +31,8 @@ import SchermataAvvio from "./src/screens/SchermataAvvio";
 import AccediScreen from "./src/screens/AccediScreen";
 import BlogScreen from "./src/screens/BlogScreen";
 import ArticoloBlogScreen from "./src/screens/ArticoloBlogScreen";
+import PianificaViaggioScreen from "./src/screens/PianificaViaggioScreen";
+import PianiSalvatiScreen from "./src/screens/PianiSalvatiScreen";
 import FaqScreen from "./src/screens/FaqScreen";
 import NuovaDomandaScreen from "./src/screens/NuovaDomandaScreen";
 import { colori } from "./src/theme/colors";
@@ -55,6 +57,7 @@ function EsploraStackNavigator() {
       <EsploraStack.Screen name="EsploraHub" component={EsploraHubScreen} />
       <EsploraStack.Screen name="EsploraLista" component={EsploraScreen} />
       <EsploraStack.Screen name="Scheda" component={SchedaScreen} />
+      <EsploraStack.Screen name="Accedi" component={AccediScreen} />
       <EsploraStack.Screen name="Sentieri" component={SentieriScreen} />
       <EsploraStack.Screen name="Percorsi4x4" component={Percorsi4x4Screen} />
       <EsploraStack.Screen name="ItinerarioDettaglio" component={ItinerarioDettaglioScreen} />
@@ -63,6 +66,7 @@ function EsploraStackNavigator() {
       <EsploraStack.Screen name="NuovoItinerario" component={NuovoItinerarioScreen} />
       <EsploraStack.Screen name="Blog" component={BlogScreen} />
       <EsploraStack.Screen name="ArticoloBlog" component={ArticoloBlogScreen} />
+      <EsploraStack.Screen name="PianificaViaggio" component={PianificaViaggioScreen} />
       <EsploraStack.Screen name="Faq" component={FaqScreen} />
       <EsploraStack.Screen name="NuovaDomanda" component={NuovaDomandaScreen} />
     </EsploraStack.Navigator>
@@ -75,6 +79,7 @@ function PreferitiStackNavigator() {
       <PreferitiStack.Screen name="PreferitiLista" component={PreferitiScreen} />
       <PreferitiStack.Screen name="Scheda" component={SchedaScreen} />
       <PreferitiStack.Screen name="SchedaCulturale" component={SchedaCulturaleScreen} />
+      <PreferitiStack.Screen name="Accedi" component={AccediScreen} />
     </PreferitiStack.Navigator>
   );
 }
@@ -85,6 +90,8 @@ function MappaStackNavigator() {
       <MappaStack.Screen name="MappaVista" component={MappaScreen} />
       <MappaStack.Screen name="Scheda" component={SchedaScreen} />
       <MappaStack.Screen name="SchedaCulturale" component={SchedaCulturaleScreen} />
+      <MappaStack.Screen name="ItinerarioDettaglio" component={ItinerarioDettaglioScreen} />
+      <MappaStack.Screen name="Accedi" component={AccediScreen} />
     </MappaStack.Navigator>
   );
 }
@@ -96,9 +103,13 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="Prenotazioni" component={PrenotazioniScreen} />
       <ProfiloStack.Screen name="Scheda" component={SchedaScreen} />
       <ProfiloStack.Screen name="SchedaCulturale" component={SchedaCulturaleScreen} />
+      <ProfiloStack.Screen name="ItinerarioDettaglio" component={ItinerarioDettaglioScreen} />
+      <ProfiloStack.Screen name="PianiSalvati" component={PianiSalvatiScreen} />
+      <ProfiloStack.Screen name="PianificaViaggio" component={PianificaViaggioScreen} />
       <ProfiloStack.Screen name="MieSegnalazioni" component={MieSegnalazioniScreen} />
       <ProfiloStack.Screen name="NuovaSegnalazione" component={NuovaSegnalazioneScreen} />
       <ProfiloStack.Screen name="EliminaAccount" component={EliminaAccountScreen} />
+      <ProfiloStack.Screen name="Accedi" component={AccediScreen} />
     </ProfiloStack.Navigator>
   );
 }

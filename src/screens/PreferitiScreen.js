@@ -1,17 +1,20 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, Pressable, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaStrutturePreferite } from "../lib/preferiti";
+import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 export default function PreferitiScreen({ navigation }) {
   const { session } = useAuth();
   const [preferiti, setPreferiti] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
+  const [senzaConnessione, setSenzaConnessione] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -21,9 +24,24 @@ export default function PreferitiScreen({ navigation }) {
           setCaricamento(false);
           return;
         }
+        // Cache per utente (non da condividere tra account diversi sullo
+        // stesso telefono): resta consultabile anche senza connessione,
+        // come già per la lista base di Esplora e la Mappa.
+        const chiaveCache = `preferiti_${session.user.id}`;
         setCaricamento(true);
         caricaStrutturePreferite(session.user.id)
-          .then(setPreferiti)
+          .then((dati) => {
+            setPreferiti(dati);
+            setSenzaConnessione(false);
+            salvaInCache(chiaveCache, dati);
+          })
+          .catch(async () => {
+            const cache = await leggiDaCache(chiaveCache);
+            if (cache) {
+              setPreferiti(cache.dati);
+              setSenzaConnessione(true);
+            }
+          })
           .finally(() => setCaricamento(false));
       });
     }, [session])
@@ -37,12 +55,22 @@ export default function PreferitiScreen({ navigation }) {
         <Text style={styles.sottotitolo}>{preferiti.length} strutture salvate</Text>
       </View>
 
+      {senzaConnessione && (
+        <View style={styles.bannerOffline}>
+          <Ionicons name="cloud-offline-outline" size={16} color={colori.testoSecondario} />
+          <Text style={styles.bannerOfflineTesto}>Senza connessione: stai vedendo gli ultimi preferiti salvati.</Text>
+        </View>
+      )}
+
       {caricamento ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
       ) : !session ? (
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={colori.testoSecondario} />
           <Text style={styles.vuotoTesto}>Accedi al tuo account per salvare le strutture che ti interessano.</Text>
+          <Pressable style={styles.pulsanteAccedi} onPress={() => navigation.navigate("Accedi")}>
+            <Text style={styles.pulsanteAccediTesto}>Accedi</Text>
+          </Pressable>
         </View>
       ) : preferiti.length === 0 ? (
         <View style={styles.vuoto}>
@@ -62,7 +90,12 @@ export default function PreferitiScreen({ navigation }) {
               onPress={() => navigation.navigate("Scheda", { struttura: item })}
             >
               <View style={styles.cardFoto}>
-                {item.fotoUrl ? <Image source={{ uri: item.fotoUrl }} style={styles.cardImmagine} /> : null}
+                <ImmagineConRiserva
+                  uri={item.fotoUrl}
+                  larghezza={160}
+                  style={styles.cardImmagine}
+                  iconaColore={colori.blu}
+                />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardNome}>{item.nome}</Text>
@@ -83,13 +116,40 @@ const styles = StyleSheet.create({
   sottotitolo: { fontSize: 11, color: colori.testoSecondario },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
   vuotoTesto: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario },
+  pulsanteAccedi: {
+    backgroundColor: colori.blu,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  pulsanteAccediTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13 },
+  bannerOffline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#f1f5f9",
+  },
+  bannerOfflineTesto: { flex: 1, fontSize: 11.5, color: colori.testoSecondario, fontWeight: "600" },
   card: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: raggioCard,
     backgroundColor: colori.bianco,
+    ...ombraCard,
+  },
+  cardFoto: {
+    height: 84,
+    borderTopLeftRadius: raggioCard,
+    borderTopRightRadius: raggioCard,
+    backgroundColor: colori.bluChiaro,
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "hidden",
   },
-  cardFoto: { height: 84, backgroundColor: colori.bluChiaro },
   cardImmagine: { width: "100%", height: "100%" },
   cardInfo: { padding: 8, gap: 2 },
   cardNome: { fontWeight: "700", fontSize: 11, color: colori.testo },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
@@ -12,6 +12,7 @@ import { caricaDettaglioStruttura } from "../lib/strutture";
 import { ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
 import { caricaCulturaVicina, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import ModuloRecensione from "../components/ModuloRecensione";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 const MESI = [
   "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -113,7 +114,10 @@ export default function SchedaScreen({ route, navigation }) {
 
   const onPreferito = async () => {
     if (!session?.user?.id) {
-      Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.");
+      Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.", [
+        { text: "Annulla", style: "cancel" },
+        { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+      ]);
       return;
     }
     const nuovoStato = !preferito;
@@ -152,11 +156,13 @@ export default function SchedaScreen({ route, navigation }) {
     <View style={styles.schermo}>
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
         <SafeAreaView edges={["top"]} style={styles.hero}>
-          {struttura.fotoUrl ? (
-            <Image source={{ uri: struttura.fotoUrl }} style={styles.heroImmagine} />
-          ) : (
-            <Ionicons name="image-outline" size={46} color="#60a5fa" />
-          )}
+          <ImmagineConRiserva
+            uri={struttura.fotoUrl}
+            larghezza={780}
+            style={styles.heroImmagine}
+            iconaDimensione={46}
+            iconaColore="#60a5fa"
+          />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={colori.testo} />
           </Pressable>
@@ -437,7 +443,7 @@ export default function SchedaScreen({ route, navigation }) {
                   {r.fotoUrls.length > 0 && (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
                       {r.fotoUrls.map((url) => (
-                        <Image key={url} source={{ uri: url }} style={styles.recensioneFoto} />
+                        <ImmagineConRiserva key={url} uri={url} larghezza={300} style={styles.recensioneFoto} />
                       ))}
                     </ScrollView>
                   )}

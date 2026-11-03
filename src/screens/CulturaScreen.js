@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { caricaSchedeCulturali, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 const CATEGORIE = Object.keys(CATEGORIA_CULTURALE_META);
 
@@ -80,11 +81,13 @@ export default function CulturaScreen({ route, navigation }) {
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => navigation.navigate("SchedaCulturale", { id: item.id })}>
               <View style={[styles.cardFoto, { backgroundColor: meta.colore + "18" }]}>
-                {item.fotoUrl ? (
-                  <Image source={{ uri: item.fotoUrl }} style={styles.cardImmagine} />
-                ) : (
-                  <Ionicons name={meta.icona} size={22} color={meta.colore} />
-                )}
+                <ImmagineConRiserva
+                  uri={item.fotoUrl}
+                  larghezza={160}
+                  style={styles.cardImmagine}
+                  icona={meta.icona}
+                  iconaColore={meta.colore}
+                />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitolo} numberOfLines={1}>
@@ -138,8 +141,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colori.bianco,
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: raggioCard,
+    padding: 12,
+    ...ombraCard,
   },
   cardFoto: {
     width: 64,

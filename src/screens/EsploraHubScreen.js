@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ImageBackground } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
 import { cercaStrutture } from "../lib/strutture";
@@ -272,6 +272,17 @@ export default function EsploraHubScreen({ navigation }) {
           <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />
         </View>
 
+        <Pressable style={styles.bannerPianifica} onPress={() => navigation.push("PianificaViaggio")}>
+          <View style={styles.bannerPianificaIcona}>
+            <Ionicons name="sparkles-outline" size={22} color={colori.bianco} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerPianificaTitolo}>Pianifica il tuo viaggio con l&apos;IA</Text>
+            <Text style={styles.bannerPianificaSottotitolo}>Dì dove vuoi andare: l&apos;IA ti propone un piano</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colori.bianco} />
+        </Pressable>
+
         <Text style={styles.sottotitolo}>Oppure scegli cosa stai cercando</Text>
 
         {SEZIONI.map((sezione) => (
@@ -306,11 +317,18 @@ export default function EsploraHubScreen({ navigation }) {
           <Ionicons name="arrow-forward" size={15} color={colori.blu} />
         </Pressable>
 
+        <Pressable style={styles.bannerBlog} onPress={() => navigation.push("Blog")}>
+          <View style={styles.bannerBlogIcona}>
+            <Ionicons name="book-outline" size={22} color={colori.bianco} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerBlogTitolo}>Blog NaturaGo Explorer</Text>
+            <Text style={styles.bannerBlogSottotitolo}>Idee, itinerari e consigli per chi viaggia lento</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colori.bianco} />
+        </Pressable>
+
         <View style={styles.rigaInfo}>
-          <Pressable style={styles.pillInfo} onPress={() => navigation.push("Blog")}>
-            <Ionicons name="book-outline" size={14} color={colori.testo} />
-            <Text style={styles.pillInfoTesto}>Blog</Text>
-          </Pressable>
           <Pressable style={styles.pillInfo} onPress={() => navigation.push("Faq")}>
             <Ionicons name="help-circle-outline" size={14} color={colori.testo} />
             <Text style={styles.pillInfoTesto}>Domande frequenti</Text>
@@ -449,6 +467,45 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   pulsanteTutteTesto: { fontSize: 12, fontWeight: "700", color: colori.blu },
+  bannerBlog: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colori.blu,
+    borderRadius: raggioCard,
+    padding: 14,
+    ...ombraCard,
+  },
+  bannerBlogIcona: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bannerBlogTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.bianco },
+  bannerBlogSottotitolo: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  bannerPianifica: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#7c3aed",
+    borderRadius: raggioCard,
+    padding: 14,
+    marginTop: 14,
+    ...ombraCard,
+  },
+  bannerPianificaIcona: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bannerPianificaTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.bianco },
+  bannerPianificaSottotitolo: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   rigaInfo: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 2 },
   pillInfo: {
     flexDirection: "row",

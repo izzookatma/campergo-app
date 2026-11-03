@@ -30,9 +30,15 @@ export async function toggleFavorito(utenteId, idOriginale, presente) {
 
 export async function caricaStrutturePreferite(utenteId) {
   if (!utenteId) return [];
-  const { data: righe } = await supabase.from("preferiti").select("campeggio_id").eq("utente_id", utenteId).eq("tipo", "campeggio");
+  const { data: righe, error: erroreRighe } = await supabase
+    .from("preferiti")
+    .select("campeggio_id")
+    .eq("utente_id", utenteId)
+    .eq("tipo", "campeggio");
+  if (erroreRighe) throw erroreRighe;
   const ids = (righe ?? []).map((r) => r.campeggio_id);
   if (ids.length === 0) return [];
-  const { data } = await supabase.from("campeggi_pubblici").select(COLONNE_CAMPEGGIO).in("id", ids);
+  const { data, error } = await supabase.from("campeggi_pubblici").select(COLONNE_CAMPEGGIO).in("id", ids);
+  if (error) throw error;
   return (data ?? []).map(normalizzaCampeggio);
 }

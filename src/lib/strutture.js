@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-const ETICHETTE_TIPO = {
+export const ETICHETTE_TIPO = {
   campeggio: "Campeggio",
   agriturismo: "Agriturismo",
   agricampeggio: "Agricampeggio",
@@ -114,7 +114,7 @@ export function normalizzaCampeggio(c) {
 
 // "capanna" (solo 4 schede) confluisce in "Rifugio": non ha una propria
 // tessera nell'hub, non ha senso inventargliene una per così poche schede.
-const ETICHETTA_RIFUGIO = { rifugio: "Rifugio", bivacco: "Bivacco", capanna: "Rifugio" };
+export const ETICHETTA_RIFUGIO = { rifugio: "Rifugio", bivacco: "Bivacco", capanna: "Rifugio" };
 
 function normalizzaRifugio(r) {
   return {
@@ -470,6 +470,70 @@ export async function caricaStruttureVicine({ lat, lng, raggioKm = 80, limite = 
   const rifugi = (rifugiRes.data || []).map(normalizzaRifugio);
 
   return [...campeggi, ...rifugi];
+}
+
+// Colonne ridotte (niente descrizione/amenities/prezzo) per la Mappa, che
+// carica potenzialmente migliaia di righe: solo quel che serve per
+// disegnare i segnaposto e per la breve anteprima mentre la Scheda carica
+// il dettaglio completo (caricaDettaglioStruttura).
+const COLONNE_CAMPEGGIO_MAPPA = "id, nome, localita, lat, lng, tipo_struttura, foto_url";
+const COLONNE_RIFUGIO_MAPPA = "id, nome, comune, provincia, lat, lng, tipo, foto_url";
+
+// PostgREST (Supabase) limita ogni risposta a 1000 righe anche senza
+// .limit(): con migliaia di campeggi una sola richiesta ne tronca la
+// maggior parte in silenzio (stesso problema di caricaTuttoPaginando sul
+// sito, src/App.jsx). Qui si scarica tutto a pagine da 1000.
+async function paginaTutto(costruisciQuery, dimensionePagina = 1000) {
+  let tutte = [];
+  let da = 0;
+  for (;;) {
+    const { data, error } = await costruisciQuery().range(da, da + dimensionePagina - 1);
+    if (error) throw error;
+    tutte = tutte.concat(data ?? []);
+    if (!data || data.length < dimensionePagina) break;
+    da += dimensionePagina;
+  }
+  return tutte;
+}
+
+// Tutte le schede con coordinate, per la mappa: a differenza di
+// caricaStrutture (le "migliori" N per punteggio/recensioni, pensato per un
+// elenco) qui serve copertura geografica completa, altrimenti zone intere
+// (es. Lago di Garda, riviera adriatica) restavano vuote pur avendo schede
+// nel database, solo perché non tra le prime per punteggio. I puntini si
+// raggruppano poi in cluster sulla mappa (MappaScreen) quando sono tanti e
+// vicini, altrimenti migliaia di segnaposto sovrapposti sarebbero illeggibili.
+export async function caricaTutteLePosizioni({ tipi = [], servizi = [] } = {}) {
+  const tipiCampeggioScelti = tipi.map((t) => TIPO_STRUTTURA_CAMPEGGIO[t]).filter(Boolean);
+  const tipiRifugioScelti = tipi.flatMap((t) => TIPO_RIFUGIO[t] || []);
+  const saltaCampeggi = tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length > 0;
+  const saltaRifugi = tipiRifugioScelti.length === 0 && tipiCampeggioScelti.length > 0;
+  // I rifugi non hanno mai `amenities`: con un filtro servizi attivo non
+  // potrebbero comunque mai comparire.
+  const saltaRifugiDelTutto = saltaRifugi || servizi.length > 0;
+
+  const costruisciQueryCampeggi = () => {
+    let q = supabase.from("campeggi_pubblici").select(COLONNE_CAMPEGGIO_MAPPA).not("lat", "is", null).not("lng", "is", null);
+    if (tipiCampeggioScelti.length > 0) q = q.in("tipo_struttura", tipiCampeggioScelti);
+    return conServizi(q, servizi);
+  };
+  const costruisciQueryRifugi = () => {
+    let q = supabase
+      .from("rifugi")
+      .select(COLONNE_RIFUGIO_MAPPA)
+      .eq("stato", "approvato")
+      .not("lat", "is", null)
+      .not("lng", "is", null);
+    if (tipiRifugioScelti.length > 0) q = q.in("tipo", tipiRifugioScelti);
+    return q;
+  };
+
+  const [campeggiDati, rifugiDati] = await Promise.all([
+    saltaCampeggi ? Promise.resolve([]) : paginaTutto(costruisciQueryCampeggi),
+    saltaRifugiDelTutto ? Promise.resolve([]) : paginaTutto(costruisciQueryRifugi),
+  ]);
+
+  return [...campeggiDati.map(normalizzaCampeggio), ...rifugiDati.map(normalizzaRifugio)];
 }
 
 function formattaOrario(t) {

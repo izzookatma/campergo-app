@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Linking, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as FileSystem from "expo-file-system/legacy";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
@@ -93,10 +94,25 @@ export default function ArticoloBlogScreen({ route, navigation }) {
     };
   }, [slug]);
 
+  // Instagram non accetta un link come post del feed (lo apre solo nelle
+  // Storie o lo rifiuta): condividendo invece l'immagine di copertina come
+  // file, il foglio di condivisione la passa a Instagram come foto pronta
+  // da postare, con il testo come didascalia proposta — non un link altrui.
   const condividi = async () => {
     const url = `https://www.naturago.it/blog/${slug}`;
+    const messaggio = `${articolo.titolo}\n${url}`;
+    if (articolo.foto_copertina) {
+      try {
+        const destinazione = `${FileSystem.cacheDirectory}condividi-blog-${slug}.jpg`;
+        const { uri } = await FileSystem.downloadAsync(articolo.foto_copertina, destinazione);
+        await Share.share({ message: messaggio, url: uri, title: articolo.titolo });
+        return;
+      } catch (e) {
+        console.error("Errore nel preparare l'immagine da condividere:", e);
+      }
+    }
     try {
-      await Share.share({ message: `${articolo.titolo}\n${url}`, url, title: articolo.titolo });
+      await Share.share({ message: messaggio, url, title: articolo.titolo });
     } catch (e) {
       console.error("Errore nella condivisione:", e);
     }
@@ -149,16 +165,22 @@ export default function ArticoloBlogScreen({ route, navigation }) {
         {articolo.foto_copertina ? (
           <View style={styles.hero}>
             <ImmagineConRiserva uri={articolo.foto_copertina} larghezza={900} style={styles.heroImmagine} icona={null} />
-            <SafeAreaView edges={["top"]}>
+            <SafeAreaView edges={["top"]} style={styles.rigaIntestazione}>
               <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
                 <Ionicons name="chevron-back" size={18} color={colori.testo} />
+              </Pressable>
+              <Pressable style={styles.tornaIndietro} onPress={condividi}>
+                <Ionicons name="share-social-outline" size={17} color={colori.testo} />
               </Pressable>
             </SafeAreaView>
           </View>
         ) : (
-          <SafeAreaView edges={["top"]} style={styles.intestazioneSemplice}>
+          <SafeAreaView edges={["top"]} style={[styles.intestazioneSemplice, styles.rigaIntestazione]}>
             <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
               <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            </Pressable>
+            <Pressable style={styles.tornaIndietro} onPress={condividi}>
+              <Ionicons name="share-social-outline" size={17} color={colori.testo} />
             </Pressable>
           </SafeAreaView>
         )}
@@ -188,11 +210,6 @@ export default function ArticoloBlogScreen({ route, navigation }) {
               <Text style={[styles.miPiaceTesto, giaMesso && { color: colori.arancio }]}>
                 Mi piace{conteggio > 0 ? ` (${conteggio})` : ""}
               </Text>
-            </Pressable>
-
-            <Pressable style={styles.miPiace} onPress={condividi}>
-              <Ionicons name="share-social-outline" size={16} color={colori.testo} />
-              <Text style={styles.miPiaceTesto}>Condividi</Text>
             </Pressable>
           </View>
 
@@ -239,9 +256,11 @@ const styles = StyleSheet.create({
   hero: { height: 220 },
   heroImmagine: { width: "100%", height: "100%", position: "absolute" },
   intestazioneSemplice: { paddingTop: 4 },
+  rigaIntestazione: { flexDirection: "row", justifyContent: "space-between" },
   tornaIndietro: {
     marginTop: 8,
     marginLeft: 16,
+    marginRight: 16,
     width: 34,
     height: 34,
     borderRadius: 17,

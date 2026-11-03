@@ -5,7 +5,6 @@ import {
   TextInput,
   FlatList,
   Pressable,
-  Image,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
@@ -17,7 +16,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import { caricaStrutture, caricaStruttureVicine, cercaStrutture } from "../lib/strutture";
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
@@ -45,13 +45,20 @@ export default function EsploraScreen({ navigation, route }) {
   // "Rifugi"): il filtro parte già impostato, modificabile come sempre
   // una volta sulla pagina.
   const [filtriTipo, setFiltriTipo] = useState(() => route.params?.filtriIniziali || []); // vuoto = "Tutti"
-  const [ricerca, setRicerca] = useState("");
+  // Arrivando dall'hub con un termine già digitato o con "Vicino a te ora"
+  // già scelto: parte già impostato, senza dover rifare il tap qui.
+  const [ricerca, setRicerca] = useState(() => route.params?.ricercaIniziale || "");
+  const vicinoAMeIniziale = useRef(!!route.params?.vicinoAMeIniziale);
   const [posizione, setPosizione] = useState(null);
   const [cercandoPosizione, setCercandoPosizione] = useState(false);
   const [pagina, setPagina] = useState(0);
   const [caricandoAltre, setCaricandoAltre] = useState(false);
   const [fineLista, setFineLista] = useState(false);
-  const primoRendering = useRef(true);
+  // Arrivando dall'hub con un termine già scritto, la ricerca vera (su
+  // tutto il database) deve scattare subito, non essere saltata come il
+  // primo rendering normale: altrimenti resta il filtro lato client sulle
+  // sole strutture già caricate per voto, che in molte regioni sono pochissime.
+  const primoRendering = useRef(!route.params?.ricercaIniziale);
   const ricercaAttiva = ricerca.trim().length >= 2;
   const [inputAFocus, setInputAFocus] = useState(false);
   // Arrivando dall'hub con servizi già riconosciuti dalla ricerca IA
@@ -122,6 +129,11 @@ export default function EsploraScreen({ navigation, route }) {
         let dati;
         if (posizione) {
           dati = await caricaStruttureVicine({ lat: posizione.lat, lng: posizione.lng, servizi: filtriServizi, tipi: filtriTipo });
+          // Stesso schema della lista base: solo la versione senza filtri
+          // va in cache, così c'è sempre qualcosa di ovvio da mostrare
+          // offline (non il risultato di una combinazione di filtri).
+          if (filtriServizi.length === 0 && filtriTipo.length === 0) salvaInCache("vicino_a_me", dati);
+          setSenzaConnessione(false);
         } else if (termine.length >= 2) {
           dati = await cercaStrutture({ termine, servizi: filtriServizi, tipi: filtriTipo });
           salvaRicercaRecente(termine).then(setRicercheRecenti);
@@ -140,6 +152,13 @@ export default function EsploraScreen({ navigation, route }) {
         if (!annullato) setStrutture(dati);
       } catch (e) {
         console.error("Errore nel ricaricare le strutture:", e);
+        if (posizione && filtriServizi.length === 0 && filtriTipo.length === 0) {
+          const cache = await leggiDaCache("vicino_a_me");
+          if (cache && !annullato) {
+            setStrutture(cache.dati);
+            setSenzaConnessione(true);
+          }
+        }
       }
     }, 300);
 
@@ -197,6 +216,15 @@ export default function EsploraScreen({ navigation, route }) {
     }
   };
 
+  // Arrivati qui con "Vicino a te ora" già scelto dall'hub: lo avvia una
+  // sola volta all'apertura, non ad ogni rendering (il ref si azzera subito).
+  useEffect(() => {
+    if (vicinoAMeIniziale.current) {
+      vicinoAMeIniziale.current = false;
+      Promise.resolve().then(() => vicinoAMe());
+    }
+  }, []);
+
   // Sentieri e percorsi 4x4 non sono strutture: questa schermata non li
   // mostra mai, serve passare a quella giusta (stesso principio del sito,
   // dove Home manda a /sentieri o /percorsi-4x4 invece di filtrare).
@@ -235,7 +263,10 @@ export default function EsploraScreen({ navigation, route }) {
 
   const onToggleFavorito = async (struttura) => {
     if (!session?.user?.id) {
-      Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.");
+      Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.", [
+        { text: "Annulla", style: "cancel" },
+        { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+      ]);
       return;
     }
     const presente = !preferitiIds.has(struttura.idOriginale);
@@ -369,9 +400,16 @@ export default function EsploraScreen({ navigation, route }) {
                 }}
               >
                 <Ionicons name="business-outline" size={15} color={colori.testoSecondario} />
-                <Text style={styles.rigaTendinaTesto} numberOfLines={1}>
-                  {s.nome}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rigaTendinaTesto} numberOfLines={1}>
+                    {s.nome}
+                  </Text>
+                  {s.localita ? (
+                    <Text style={styles.rigaTendinaSottotitolo} numberOfLines={1}>
+                      {s.localita}
+                    </Text>
+                  ) : null}
+                </View>
               </Pressable>
             ))}
           </View>
@@ -475,11 +513,12 @@ export default function EsploraScreen({ navigation, route }) {
               onPress={() => navigation.navigate("Scheda", { struttura: item })}
             >
               <View style={styles.cardFoto}>
-                {item.fotoUrl ? (
-                  <Image source={{ uri: item.fotoUrl }} style={styles.cardImmagine} />
-                ) : (
-                  <Ionicons name="image-outline" size={22} color={colori.blu} />
-                )}
+                <ImmagineConRiserva
+                  uri={item.fotoUrl}
+                  larghezza={160}
+                  style={styles.cardImmagine}
+                  iconaColore={colori.blu}
+                />
                 {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
               </View>
               <View style={styles.cardInfo}>
@@ -489,6 +528,15 @@ export default function EsploraScreen({ navigation, route }) {
                   {item.localita}
                   {item.distanzaKm != null ? ` · ${item.distanzaKm.toFixed(1)} km` : ""}
                 </Text>
+                {item.rating ? (
+                  <View style={styles.cardRatingRiga}>
+                    <Ionicons name="star" size={11} color="#f59e0b" />
+                    <Text style={styles.cardRatingTesto}>
+                      {item.rating}
+                      {item.recensioni ? ` (${item.recensioni})` : ""}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <View style={{ alignItems: "flex-end", gap: 6 }}>
                 {item.prezzo ? <Text style={styles.cardPrezzo}>{item.prezzo}€</Text> : null}
@@ -621,6 +669,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f1f5f9",
   },
   rigaTendinaTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
+  rigaTendinaSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
   rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
   tendinaIntestazione: {
     flexDirection: "row",
@@ -677,7 +726,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colori.bordo,
   },
   modaleTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  sezioneFiltro: { backgroundColor: colori.bianco, borderRadius: 14, marginBottom: 10, overflow: "hidden" },
+  sezioneFiltro: {
+    backgroundColor: colori.bianco,
+    borderRadius: raggioCard,
+    marginBottom: 10,
+    ...ombraCard,
+  },
   sezioneIntestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -762,13 +816,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colori.bianco,
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: raggioCard,
+    padding: 12,
+    ...ombraCard,
   },
   cardFoto: {
-    width: 56,
-    height: 56,
-    borderRadius: 10,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
     backgroundColor: colori.bluChiaro,
     alignItems: "center",
     justifyContent: "center",
@@ -781,6 +836,8 @@ const styles = StyleSheet.create({
   cardTipo: { fontSize: 10, fontWeight: "700", color: colori.blu },
   cardNome: { fontSize: 13, fontWeight: "700", color: colori.testo },
   cardLocalita: { fontSize: 11, color: colori.testoSecondario },
+  cardRatingRiga: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 1 },
+  cardRatingTesto: { fontSize: 10.5, fontWeight: "700", color: colori.testo },
   cardPrezzo: { fontSize: 13, fontWeight: "800", color: colori.testo },
   messaggioErrore: { textAlign: "center", marginTop: 40, color: colori.testoSecondario, paddingHorizontal: 30 },
   bannerOffline: {

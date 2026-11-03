@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 
 // Domande frequenti (src/FaqPage.jsx sul sito): contenuto statico, non da
@@ -259,17 +259,17 @@ export default function FaqScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { padding: 20, paddingBottom: 40, gap: 4 },
+  contenuto: { padding: 20, paddingBottom: 40, gap: 8 },
   titolo: { fontSize: 20, fontWeight: "800", color: colori.testo, textAlign: "center", marginTop: 6 },
   sottotitolo: { fontSize: 12, color: colori.testoSecondario, textAlign: "center", marginTop: 4, marginBottom: 4 },
   gruppoTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  domanda: { backgroundColor: colori.bianco, borderRadius: 12, borderWidth: 1, borderColor: colori.bordo, overflow: "hidden" },
+  domanda: { backgroundColor: colori.bianco, borderRadius: raggioCard, ...ombraCard },
   domandaIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 13 },
   domandaTesto: { flex: 1, fontSize: 12.5, fontWeight: "700", color: colori.testo },
   rispostaBox: { paddingHorizontal: 13, paddingBottom: 13, gap: 8 },
   risposta: { fontSize: 12, lineHeight: 18, color: "#4b5563" },
   link: { color: colori.blu, fontWeight: "700", textDecorationLine: "underline" },
-  cassettaAiuto: { marginTop: 22, backgroundColor: colori.bianco, borderRadius: 16, padding: 18, alignItems: "center", gap: 6 },
+  cassettaAiuto: { marginTop: 22, backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 18, alignItems: "center", gap: 6, ...ombraCard },
   cassettaTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo, textAlign: "center" },
   cassettaTesto: { fontSize: 12, color: colori.testoSecondario, textAlign: "center" },
   cassettaPulsante: { marginTop: 8, backgroundColor: colori.arancio, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 11 },

@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaMieSegnalazioni, TIPO_STRUTTURA_SEGNALABILE_META, STATO_SEGNALAZIONE_META } from "../lib/segnalazioni";
 
@@ -70,7 +70,7 @@ export default function MieSegnalazioniScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
   nuovaTesto: { fontSize: 13, fontWeight: "700", color: colori.blu },
   vuoto: { fontSize: 12.5, color: colori.testoSecondario, textAlign: "center", marginTop: 20 },
   card: {
-    borderWidth: 1,
-    borderColor: colori.bordo,
-    borderRadius: 14,
+    backgroundColor: colori.bianco,
+    borderRadius: raggioCard,
     padding: 13,
     gap: 4,
+    ...ombraCard,
   },
   cardIntestazione: { flexDirection: "row", alignItems: "center", gap: 7 },
   cardNome: { fontSize: 13.5, fontWeight: "700", color: colori.testo },

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { View, Text, Image, StyleSheet, Pressable, ScrollView, TextInput, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { CATEGORIE_MERCATINO, STATO_PRODOTTO_META, inviaMessaggio } from "../lib/mercatino";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -47,7 +48,14 @@ export default function AnnuncioScreen({ route, navigation }) {
           {annuncio.foto_urls?.length > 0 ? (
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width: "100%", height: "100%" }}>
               {annuncio.foto_urls.map((url) => (
-                <Image key={url} source={{ uri: url }} style={styles.heroImmagine} />
+                <ImmagineConRiserva
+                  key={url}
+                  uri={url}
+                  larghezza={780}
+                  style={styles.heroImmagine}
+                  iconaDimensione={46}
+                  iconaColore="#60a5fa"
+                />
               ))}
             </ScrollView>
           ) : (

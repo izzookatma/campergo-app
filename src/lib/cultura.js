@@ -122,3 +122,34 @@ export async function caricaCulturaVicina({ lat, lng, escludiCampeggioId, limite
     .sort((a, b) => a.distanzaKm - b.distanzaKm)
     .slice(0, limite);
 }
+
+async function paginaTutto(costruisciQuery, dimensionePagina = 1000) {
+  let tutte = [];
+  let da = 0;
+  for (;;) {
+    const { data, error } = await costruisciQuery().range(da, da + dimensionePagina - 1);
+    if (error) throw error;
+    tutte = tutte.concat(data ?? []);
+    if (!data || data.length < dimensionePagina) break;
+    da += dimensionePagina;
+  }
+  return tutte;
+}
+
+// Musei, borghi e attività sulla mappa (MappaScreen): tutte le schede con
+// coordinate, non una selezione, stessa logica di caricaTutteLePosizioni in
+// strutture.js. "Eventi" resta fuori: sono legati a una data, non un posto
+// fisso da segnare in pianta stabilmente (stessa scelta dell'hub, vedi sopra).
+export async function caricaTutteLePosizioniCulturali({ categorie = [] } = {}) {
+  const categorieVolute = categorie.length > 0 ? categorie : ["musei", "borghi", "attivita"];
+  const costruisciQuery = () =>
+    supabase
+      .from("eventi_campeggio")
+      .select(COLONNE_CULTURA)
+      .eq("stato", "approvato")
+      .in("categoria", categorieVolute)
+      .not("lat", "is", null)
+      .not("lng", "is", null);
+  const dati = await paginaTutto(costruisciQuery);
+  return dati.map(normalizzaSchedaCulturale);
+}

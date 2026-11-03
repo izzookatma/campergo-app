@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaSchedaCulturale, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { caricaRecensioniEvento, inviaRecensioneEvento } from "../lib/recensioni";
 import { caricaStruttureVicine } from "../lib/strutture";
 import { distanzaKm } from "../lib/geo";
 import ModuloRecensione from "../components/ModuloRecensione";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function formattaDataEvento(iso) {
   const d = new Date(iso);
@@ -104,11 +105,14 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
     <View style={styles.schermo}>
       <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
         <SafeAreaView edges={["top"]} style={[styles.hero, { backgroundColor: meta.colore + "18" }]}>
-          {scheda.fotoUrl ? (
-            <Image source={{ uri: scheda.fotoUrl }} style={styles.heroImmagine} />
-          ) : (
-            <Ionicons name={meta.icona} size={46} color={meta.colore} />
-          )}
+          <ImmagineConRiserva
+            uri={scheda.fotoUrl}
+            larghezza={780}
+            style={styles.heroImmagine}
+            icona={meta.icona}
+            iconaDimensione={46}
+            iconaColore={meta.colore}
+          />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={colori.testo} />
           </Pressable>
@@ -164,11 +168,13 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
                     onPress={() => navigation.navigate("Scheda", { struttura: s })}
                   >
                     <View style={styles.cardStrutturaFoto}>
-                      {s.fotoUrl ? (
-                        <Image source={{ uri: s.fotoUrl }} style={{ width: "100%", height: "100%" }} />
-                      ) : (
-                        <Ionicons name="image-outline" size={20} color={colori.testoSecondario} />
-                      )}
+                      <ImmagineConRiserva
+                        uri={s.fotoUrl}
+                        larghezza={160}
+                        style={{ width: "100%", height: "100%" }}
+                        iconaDimensione={20}
+                        iconaColore={colori.testoSecondario}
+                      />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.cardStrutturaNome} numberOfLines={1}>
@@ -289,10 +295,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     backgroundColor: colori.bianco,
-    borderWidth: 1,
-    borderColor: colori.bordo,
-    borderRadius: 12,
-    padding: 8,
+    borderRadius: raggioCard,
+    padding: 10,
+    ...ombraCard,
   },
   cardStrutturaFoto: {
     width: 52,

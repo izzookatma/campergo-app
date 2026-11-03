@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaPercorsi4x4, DIFFICOLTA_META, TIPO_VEICOLO_META } from "../lib/itinerari";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -130,11 +131,13 @@ export default function Percorsi4x4Screen({ navigation, route }) {
             return (
               <Pressable style={styles.card} onPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: item.id })}>
                 <View style={styles.cardFoto}>
-                  {item.fotoUrl ? (
-                    <Image source={{ uri: item.fotoUrl }} style={styles.cardImmagine} />
-                  ) : (
-                    <Ionicons name="car-sport-outline" size={22} color={colori.blu} />
-                  )}
+                  <ImmagineConRiserva
+                    uri={item.fotoUrl}
+                    larghezza={160}
+                    style={styles.cardImmagine}
+                    icona="car-sport-outline"
+                    iconaColore={colori.blu}
+                  />
                 </View>
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardTitolo} numberOfLines={1}>
@@ -211,8 +214,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colori.bianco,
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: raggioCard,
+    padding: 12,
+    ...ombraCard,
   },
   cardFoto: {
     width: 64,

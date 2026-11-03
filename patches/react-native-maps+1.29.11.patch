@@ -1,0 +1,26 @@
+diff --git a/node_modules/react-native-maps/ios/AirMaps/FabricPlaceholders/PlaceHolderGoogleMapView.mm b/node_modules/react-native-maps/ios/AirMaps/FabricPlaceholders/PlaceHolderGoogleMapView.mm
+index 481cbfa..0201b39 100644
+--- a/node_modules/react-native-maps/ios/AirMaps/FabricPlaceholders/PlaceHolderGoogleMapView.mm
++++ b/node_modules/react-native-maps/ios/AirMaps/FabricPlaceholders/PlaceHolderGoogleMapView.mm
+@@ -31,6 +31,14 @@
+ 
+ @implementation RNMapsGoogleMapView
+ 
++- (instancetype)initWithFrame:(CGRect)frame
++{
++  if (self = [super initWithFrame:frame]) {
++    static const auto defaultProps = std::make_shared<const RNMapsGoogleMapViewProps>();
++    _props = defaultProps;
++  }
++  return self;
++}
+ 
+ #pragma mark - JS Commands
+ - (void)animateToRegion:(NSString *)regionJSON duration:(NSInteger)duration{
+diff --git a/node_modules/react-native-maps/ios/AirMaps/RNMapsDefines.h b/node_modules/react-native-maps/ios/AirMaps/RNMapsDefines.h
+index e4fc048..91b6de5 100644
+--- a/node_modules/react-native-maps/ios/AirMaps/RNMapsDefines.h
++++ b/node_modules/react-native-maps/ios/AirMaps/RNMapsDefines.h
+@@ -1 +1 @@
+-#define HAVE_GOOGLE_MAPS 1
++#define HAVE_GOOGLE_MAPS 0

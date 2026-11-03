@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet, Alert, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import AccediScreen from "./AccediScreen";
@@ -15,6 +15,7 @@ const MOTORI_MAPPA = [
 
 const VOCI_MENU = [
   { icona: "calendar-outline", testo: "Le mie prenotazioni", azione: "naviga", schermo: "Prenotazioni" },
+  { icona: "map-outline", testo: "I miei piani di viaggio", azione: "naviga", schermo: "PianiSalvati" },
   { icona: "flag-outline", testo: "Segnala una struttura mancante", azione: "naviga", schermo: "MieSegnalazioni" },
   {
     icona: "notifications-outline",
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
   },
   nome: { fontWeight: "800", fontSize: 15, color: colori.testo },
   email: { fontSize: 11.5, color: colori.testoSecondario },
-  menu: { backgroundColor: colori.bianco, borderRadius: 14, overflow: "hidden" },
+  menu: { backgroundColor: colori.bianco, borderRadius: raggioCard, ...ombraCard },
   vocemenu: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13 },
   vocemenuBordo: { borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
   vocemenuTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: colori.testoSecondario,
   },
-  impostazioneBox: { backgroundColor: colori.bianco, borderRadius: 14, padding: 13, gap: 10 },
+  impostazioneBox: { backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 13, gap: 10, ...ombraCard },
   impostazioneEtichetta: { fontSize: 12.5, fontWeight: "600", color: colori.testo },
   segmentato: { flexDirection: "row", backgroundColor: "#f1f5f9", borderRadius: 10, padding: 3 },
   segmento: { flex: 1, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },

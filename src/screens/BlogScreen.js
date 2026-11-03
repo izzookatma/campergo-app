@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, Image, Pressable, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { caricaArticoli, etichettaRubrica } from "../lib/blog";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function dataBreve(iso) {
   if (!iso) return null;
@@ -56,9 +57,12 @@ export default function BlogScreen({ navigation }) {
                   style={styles.cardEvidenza}
                   onPress={() => navigation.navigate("ArticoloBlog", { slug: inEvidenza.slug })}
                 >
-                  {inEvidenza.foto_copertina && (
-                    <Image source={{ uri: inEvidenza.foto_copertina }} style={styles.cardEvidenzaFoto} />
-                  )}
+                  <ImmagineConRiserva
+                    uri={inEvidenza.foto_copertina}
+                    larghezza={900}
+                    style={styles.cardEvidenzaFoto}
+                    icona={null}
+                  />
                   <View style={styles.cardEvidenzaOmbra} />
                   <View style={styles.cardEvidenzaTesto}>
                     {inEvidenza.rubrica && (
@@ -99,11 +103,15 @@ export default function BlogScreen({ navigation }) {
               style={styles.card}
               onPress={() => navigation.navigate("ArticoloBlog", { slug: item.slug })}
             >
-              {item.foto_copertina ? (
-                <Image source={{ uri: item.foto_copertina }} style={styles.cardFoto} />
-              ) : (
-                <View style={[styles.cardFoto, styles.cardFotoSegnaposto]} />
-              )}
+              <View style={[styles.cardFoto, styles.cardFotoSegnaposto]}>
+                <ImmagineConRiserva
+                  uri={item.foto_copertina}
+                  larghezza={200}
+                  style={{ width: "100%", height: "100%" }}
+                  iconaDimensione={20}
+                  iconaColore={colori.testoSecondario}
+                />
+              </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitolo} numberOfLines={2}>
                   {item.titolo}
@@ -157,9 +165,16 @@ const styles = StyleSheet.create({
   chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
   chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
   chipTestoAttivo: { color: colori.bianco },
-  card: { flexDirection: "row", gap: 12, backgroundColor: colori.bianco, borderRadius: 14, padding: 10 },
-  cardFoto: { width: 76, height: 76, borderRadius: 10 },
-  cardFotoSegnaposto: { backgroundColor: colori.grigioSfondo },
+  card: {
+    flexDirection: "row",
+    gap: 12,
+    backgroundColor: colori.bianco,
+    borderRadius: raggioCard,
+    padding: 12,
+    ...ombraCard,
+  },
+  cardFoto: { width: 76, height: 76, borderRadius: 10, overflow: "hidden" },
+  cardFotoSegnaposto: { backgroundColor: colori.grigioSfondo, alignItems: "center", justifyContent: "center" },
   cardInfo: { flex: 1, justifyContent: "center", gap: 4 },
   cardTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo, lineHeight: 17 },
   cardSottotitolo: { fontSize: 11, color: colori.testoSecondario },

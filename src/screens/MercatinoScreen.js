@@ -1,12 +1,13 @@
 import { useCallback, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaAnnunciApprovati, caricaMieiAnnunci, CATEGORIE_MERCATINO } from "../lib/mercatino";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 const FILTRI_CATEGORIA = [{ chiave: "", etichetta: "Tutte" }, ...Object.entries(CATEGORIE_MERCATINO).map(([chiave, etichetta]) => ({ chiave, etichetta }))];
 
@@ -133,11 +134,12 @@ export default function MercatinoScreen({ navigation }) {
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => navigation.navigate("Annuncio", { annuncio: item })}>
               <View style={styles.cardFoto}>
-                {item.foto_urls?.[0] ? (
-                  <Image source={{ uri: item.foto_urls[0] }} style={styles.cardImmagine} />
-                ) : (
-                  <Ionicons name="image-outline" size={22} color={colori.blu} />
-                )}
+                <ImmagineConRiserva
+                  uri={item.foto_urls?.[0]}
+                  larghezza={160}
+                  style={styles.cardImmagine}
+                  iconaColore={colori.blu}
+                />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardCategoria}>{CATEGORIE_MERCATINO[item.categoria]}</Text>
@@ -218,8 +220,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colori.bianco,
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: raggioCard,
+    padding: 12,
+    ...ombraCard,
   },
   cardFoto: {
     width: 64,

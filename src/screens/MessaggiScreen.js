@@ -1,11 +1,12 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, Pressable, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaConversazioni } from "../lib/mercatino";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 function formattaData(iso) {
   const data = new Date(iso);
@@ -63,11 +64,14 @@ export default function MessaggiScreen({ navigation }) {
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => navigation.navigate("Conversazione", { conversazione: item })}>
               <View style={styles.cardFoto}>
-                {item.annuncioFoto ? (
-                  <Image source={{ uri: item.annuncioFoto }} style={styles.cardImmagine} />
-                ) : (
-                  <Ionicons name="pricetag-outline" size={18} color={colori.blu} />
-                )}
+                <ImmagineConRiserva
+                  uri={item.annuncioFoto}
+                  larghezza={120}
+                  style={styles.cardImmagine}
+                  icona="pricetag-outline"
+                  iconaDimensione={18}
+                  iconaColore={colori.blu}
+                />
               </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitolo} numberOfLines={1}>
@@ -104,8 +108,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colori.bianco,
-    borderRadius: 14,
+    borderRadius: raggioCard,
     padding: 12,
+    ...ombraCard,
   },
   cardFoto: {
     width: 48,

@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 
-export default function AccediScreen({ onSaltaAccesso }) {
+// `navigation` esiste solo quando questa schermata è aperta da dentro
+// l'app (es. toccando il cuoricino senza account) — all'avvio, prima del
+// Tab.Navigator, la schermata non ha un `navigation` vero.
+export default function AccediScreen({ onSaltaAccesso, navigation }) {
   const { accedi, registrati, recuperaPassword } = useAuth();
   const [modalita, setModalita] = useState("accedi");
   const [nome, setNome] = useState("");
@@ -28,10 +32,12 @@ export default function AccediScreen({ onSaltaAccesso }) {
     } else if (modalita === "accedi") {
       const { error } = await accedi(email.trim(), password);
       if (error) setErrore(messaggioErroreComprensibile(error));
+      else navigation?.goBack();
     } else {
       const { data, error } = await registrati(email.trim(), password, nome.trim());
       if (error) setErrore(messaggioErroreComprensibile(error));
       else if (!data.session) setMessaggio("Controlla la tua email per confermare l'account, poi accedi qui.");
+      else navigation?.goBack();
     }
     setInviando(false);
   };
@@ -40,7 +46,14 @@ export default function AccediScreen({ onSaltaAccesso }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <SafeAreaView style={styles.schermo} edges={["top"]}>
         <View style={styles.contenuto}>
-          <MarchioNaturaGo style={{ marginBottom: 14 }} />
+          <View style={styles.rigaMarchio}>
+            <MarchioNaturaGo style={{ marginBottom: 14 }} />
+            {navigation && (
+              <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.chiudi}>
+                <Ionicons name="close" size={20} color={colori.testoSecondario} />
+              </Pressable>
+            )}
+          </View>
           <Text style={styles.titolo}>
             {modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Crea account" : "Recupera password"}
           </Text>
@@ -132,6 +145,8 @@ export default function AccediScreen({ onSaltaAccesso }) {
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
   contenuto: { flex: 1, padding: 24, justifyContent: "center", gap: 12 },
+  rigaMarchio: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  chiudi: { padding: 4 },
   titolo: { fontSize: 22, fontWeight: "800", color: colori.testo },
   sottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginBottom: 10 },
   campo: {

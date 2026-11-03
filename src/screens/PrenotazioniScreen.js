@@ -1,13 +1,14 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, Image, StyleSheet, ScrollView, Linking } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import { urlMappa } from "../lib/mappa";
 import AccediScreen from "./AccediScreen";
+import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 // Non esiste ancora una prenotazione vera da nessuna parte (il pulsante
 // "Prenota subito" nella Scheda non è collegato a nulla, per scelta:
@@ -38,11 +39,12 @@ function CardPrenotazione({ prenotazione, navigation, motoreMappa }) {
   return (
     <Pressable style={styles.card} onPress={() => navigation.navigate("Scheda", { struttura })}>
       <View style={styles.cardFoto}>
-        {struttura.fotoUrl ? (
-          <Image source={{ uri: struttura.fotoUrl }} style={styles.cardImmagine} />
-        ) : (
-          <Ionicons name="image-outline" size={22} color={colori.blu} />
-        )}
+        <ImmagineConRiserva
+          uri={struttura.fotoUrl}
+          larghezza={160}
+          style={styles.cardImmagine}
+          iconaColore={colori.blu}
+        />
       </View>
       <View style={styles.cardInfo}>
         <Text style={styles.cardTipo}>{struttura.tipo}</Text>
@@ -155,8 +157,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colori.bianco,
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: raggioCard,
+    padding: 12,
+    ...ombraCard,
   },
   cardFoto: {
     width: 56,

@@ -117,6 +117,61 @@ export async function caricaPercorsi4x4({ difficolta, tipoVeicolo } = {}) {
   return arricchisciConTappe((data || []).map(normalizzaItinerario));
 }
 
+// Icona/colore per la mappa (MappaScreen): un segnaposto per categoria, non
+// per difficoltà/veicolo/modalità come sopra, stesso principio di
+// CATEGORIA_CULTURALE_META in cultura.js.
+export const CATEGORIA_ITINERARIO_META = {
+  sentiero: { etichetta: "Sentieri", icona: "trail-sign-outline", colore: "#0d9488" },
+  percorso_4x4: { etichetta: "Percorsi 4x4", icona: "car-sport-outline", colore: "#4338ca" },
+};
+
+async function paginaTutto(costruisciQuery, dimensionePagina = 1000) {
+  let tutte = [];
+  let da = 0;
+  for (;;) {
+    const { data, error } = await costruisciQuery().range(da, da + dimensionePagina - 1);
+    if (error) throw error;
+    tutte = tutte.concat(data ?? []);
+    if (!data || data.length < dimensionePagina) break;
+    da += dimensionePagina;
+  }
+  return tutte;
+}
+
+// Mappa: un segnaposto per itinerario (prima tappa con posizione, stessa
+// logica di arricchisciConTappe sopra). A differenza di caricaSentieri/
+// caricaPercorsi4x4 qui le tappe vanno paginate: da sole superano già le
+// 1000 righe che Supabase restituisce in una sola richiesta (1.260 solo
+// per i sentieri, verificato dal vivo), quindi senza paginare qualche
+// sentiero perderebbe la posizione in modo silenzioso.
+export async function caricaTutteLePosizioniItinerari() {
+  const itinerari = await paginaTutto(() =>
+    supabase
+      .from("itinerari")
+      .select(COLONNE_ITINERARIO)
+      .eq("stato", "approvato")
+      .in("categoria", ["sentiero", "percorso_4x4"])
+  );
+  if (itinerari.length === 0) return [];
+  const ids = itinerari.map((it) => it.id);
+  const tappe = await paginaTutto(() =>
+    supabase
+      .from("itinerario_tappe")
+      .select("itinerario_id, ordine, tipo, lat, lng, campeggi(lat, lng)")
+      .in("itinerario_id", ids)
+      .order("itinerario_id", { ascending: true })
+      .order("ordine", { ascending: true })
+  );
+  const posizioni = {};
+  for (const t of tappe) {
+    const pos = posizioneTappa(t);
+    if (!(t.itinerario_id in posizioni) && pos) posizioni[t.itinerario_id] = pos;
+  }
+  return itinerari
+    .map((it) => ({ ...normalizzaItinerario(it), lat: posizioni[it.id]?.lat ?? null, lng: posizioni[it.id]?.lng ?? null }))
+    .filter((it) => it.lat != null && it.lng != null);
+}
+
 export async function caricaItinerarioDettaglio(id) {
   const [itinerarioRes, tappeRes] = await Promise.all([
     supabase.from("itinerari").select(COLONNE_ITINERARIO).eq("id", id).single(),
