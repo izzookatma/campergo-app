@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import * as Location from "expo-location";
@@ -16,6 +16,7 @@ import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } f
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
 import CreaPercorso from "../components/CreaPercorso";
+import { CardGiorno } from "../components/PianoGiorno";
 import { distanzaKmPunti } from "../lib/percorsoStradale";
 
 // react-native-maps richiede moduli nativi non presenti in Expo Go: in attesa
@@ -125,6 +126,12 @@ function MappaVera({ navigation }) {
   // filtrata - stessa idea del sito (src/App.jsx, CreaPercorsoMappa).
   const [routeTappe, setRouteTappe] = useState(null);
   const [routePercorso, setRoutePercorso] = useState(null);
+  // Giorno per giorno (dove dormire + cosa visitare/sentieri nei
+  // dintorni), mostrato in un modale appena pronto - stessa idea del sito,
+  // dove "Creami un percorso" prima disegnava solo la strada senza
+  // proporre nulla per le notti di un viaggio di più giorni.
+  const [piano, setPiano] = useState(null);
+  const [modalPianoAperto, setModalPianoAperto] = useState(false);
 
   useEffect(() => {
     if (!routePercorso) return;
@@ -628,16 +635,27 @@ function MappaVera({ navigation }) {
         <CreaPercorso
           loggato={!!session}
           attivo={!!routePercorso}
-          onPercorso={({ tappe, percorso }) => {
+          onPercorso={({ tappe, percorso, piano: pianoGenerato }) => {
             setRouteTappe(tappe);
             setRoutePercorso(percorso);
+            setPiano(pianoGenerato);
+            setModalPianoAperto(!!pianoGenerato?.giorni?.length);
           }}
           onReset={() => {
             setRouteTappe(null);
             setRoutePercorso(null);
+            setPiano(null);
+            setModalPianoAperto(false);
           }}
           onRichiedeAccesso={onRicercaIARichiedeAccesso}
         />
+
+        {!!piano?.giorni?.length && !modalPianoAperto && (
+          <Pressable style={styles.pillPiano} onPress={() => setModalPianoAperto(true)}>
+            <Ionicons name="calendar-outline" size={14} color={colori.blu} />
+            <Text style={styles.pillPianoTesto}>Vedi il piano</Text>
+          </Pressable>
+        )}
 
         <View style={styles.rigaFiltri}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtri}>
@@ -730,6 +748,29 @@ function MappaVera({ navigation }) {
           )}
         </SafeAreaView>
       )}
+
+      <Modal
+        visible={modalPianoAperto}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setModalPianoAperto(false)}
+      >
+        <SafeAreaView style={styles.modalePianoSchermo} edges={["top", "bottom"]}>
+          <View style={styles.modaleIntestazione}>
+            <Text style={styles.modaleTitolo}>
+              {piano ? `${piano.giorniRichiesti} giorni · ${piano.tappe.join(" → ")}` : "Il tuo piano"}
+            </Text>
+            <Pressable onPress={() => setModalPianoAperto(false)} hitSlop={10}>
+              <Ionicons name="close" size={22} color={colori.testo} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalePianoContenuto}>
+            {piano?.giorni?.map((g) => (
+              <CardGiorno key={g.numero} giorno={g} navigation={navigation} />
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -890,6 +931,34 @@ const styles = StyleSheet.create({
   pinTappaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 11 },
   strisciaPercorso: { position: "absolute", left: 0, right: 0, bottom: 0 },
   strisciaPercorsoContenuto: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
+  pillPiano: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    backgroundColor: colori.bianco,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colori.bordo,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 8,
+    ...ombraCard,
+  },
+  pillPianoTesto: { color: colori.blu, fontSize: 12, fontWeight: "600" },
+  modalePianoSchermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+  modalePianoContenuto: { padding: 20, gap: 12, paddingBottom: 40 },
+  modaleIntestazione: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: colori.bianco,
+    borderBottomWidth: 1,
+    borderBottomColor: colori.bordo,
+  },
+  modaleTitolo: { flex: 1, fontSize: 14, fontWeight: "800", color: colori.testo, marginRight: 10 },
   cardStrutturaPercorso: {
     backgroundColor: colori.bianco,
     borderRadius: 14,

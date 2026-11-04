@@ -6,99 +6,15 @@ import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { generaItinerarioIA } from "../lib/pianificatore";
 import { salvaPianoViaggio } from "../lib/pianiSalvati";
-import { ETICHETTE_TIPO, ETICHETTA_RIFUGIO } from "../lib/strutture";
-import { CATEGORIA_CULTURALE_META } from "../lib/cultura";
-import { CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import { CardGiorno } from "../components/PianoGiorno";
 
 const ESEMPI = [
   "Ho 3 giorni nel weekend, voglio visitare Mantova e la sua periferia, cosa mi consigli?",
   "Un weekend sul Lago di Garda, mi piace la natura e la buona cucina",
   "Una settimana in Toscana, musei e borghi, viaggio con la famiglia",
 ];
-
-// Stessa forma di normalizzaCampeggio/normalizzaRifugio in lib/strutture.js:
-// la funzione Edge manda solo i campi grezzi (id/nome/località/tipo/foto/
-// lat/lng + "origine" = la tabella vera), qui si costruisce l'oggetto che
-// SchedaScreen si aspetta (id con prefisso, etichetta del tipo leggibile).
-function struttureNavigazione(s) {
-  if (!s) return null;
-  const rifugio = s.origine === "rifugi";
-  return {
-    id: `${rifugio ? "rifugio" : "campeggio"}-${s.id}`,
-    idOriginale: s.id,
-    origine: s.origine,
-    tipo: rifugio ? ETICHETTA_RIFUGIO[s.tipoStruttura] || "Rifugio" : ETICHETTE_TIPO[s.tipoStruttura] || "Struttura",
-    nome: s.nome,
-    localita: s.localita,
-    prezzo: null,
-    fotoUrl: s.fotoUrl,
-    lat: s.lat,
-    lng: s.lng,
-    rating: null,
-    recensioni: null,
-    telefono: null,
-    descrizione: "",
-  };
-}
-
-function CardStruttura({ struttura, navigation }) {
-  if (!struttura) return null;
-  return (
-    <Pressable style={styles.cardBase} onPress={() => navigation.navigate("Scheda", { struttura: struttureNavigazione(struttura) })}>
-      <Ionicons name="bed-outline" size={16} color={colori.blu} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.cardBaseEtichetta}>Dove pernottare</Text>
-        <Text style={styles.cardBaseTitolo}>{struttura.nome}</Text>
-        {struttura.localita ? <Text style={styles.cardBaseSottotitolo}>{struttura.localita}</Text> : null}
-      </View>
-      <Ionicons name="chevron-forward" size={16} color={colori.testoSecondario} />
-    </Pressable>
-  );
-}
-
-function CardVoce({ voce, navigation }) {
-  const meta =
-    voce.tipo === "cultura" ? CATEGORIA_CULTURALE_META[voce.categoria] : CATEGORIA_ITINERARIO_META[voce.categoria];
-  const titolo = voce.titolo;
-  const sottotitolo = voce.tipo === "cultura" ? voce.citta : voce.regione;
-  const onPress = () =>
-    voce.tipo === "cultura"
-      ? navigation.navigate("SchedaCulturale", { id: voce.id })
-      : navigation.navigate("ItinerarioDettaglio", { itinerarioId: voce.id });
-  return (
-    <Pressable style={styles.voce} onPress={onPress}>
-      <View style={[styles.voceIcona, { backgroundColor: meta?.colore || colori.testoSecondario }]}>
-        <Ionicons name={meta?.icona || "location-outline"} size={14} color={colori.bianco} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.voceTitolo} numberOfLines={1}>
-          {titolo}
-        </Text>
-        {sottotitolo ? <Text style={styles.voceSottotitolo}>{sottotitolo}</Text> : null}
-      </View>
-      <Ionicons name="chevron-forward" size={14} color={colori.testoSecondario} />
-    </Pressable>
-  );
-}
-
-function CardGiorno({ giorno, navigation }) {
-  return (
-    <View style={styles.cardGiorno}>
-      <Text style={styles.numeroGiorno}>
-        Giorno {giorno.numero}
-        {giorno.tappa ? ` · ${giorno.tappa}` : ""}
-      </Text>
-      <Text style={styles.titoloGiorno}>{giorno.titolo}</Text>
-      {giorno.nota ? <Text style={styles.notaGiorno}>{giorno.nota}</Text> : null}
-      <CardStruttura struttura={giorno.struttura} navigation={navigation} />
-      {giorno.voci.map((v) => (
-        <CardVoce key={`${v.tipo}-${v.id}`} voce={v} navigation={navigation} />
-      ))}
-    </View>
-  );
-}
 
 export default function PianificaViaggioScreen({ navigation, route }) {
   const { session } = useAuth();
@@ -294,29 +210,4 @@ const styles = StyleSheet.create({
     backgroundColor: colori.bianco,
     ...ombraCard,
   },
-  cardGiorno: {
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
-    padding: 16,
-    gap: 8,
-    ...ombraCard,
-  },
-  numeroGiorno: { fontSize: 10.5, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
-  titoloGiorno: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  notaGiorno: { fontSize: 12, color: colori.testoSecondario, lineHeight: 17, marginBottom: 4 },
-  cardBase: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: 12,
-    padding: 10,
-  },
-  cardBaseEtichetta: { fontSize: 9.5, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
-  cardBaseTitolo: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  cardBaseSottotitolo: { fontSize: 11, color: colori.testoSecondario },
-  voce: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
-  voceIcona: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  voceTitolo: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
-  voceSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
 });

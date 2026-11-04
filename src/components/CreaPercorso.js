@@ -7,10 +7,11 @@ import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 
 // "Creami un percorso": stessa idea della Ricerca IA (RicercaIA.js) e di
 // "Pianifica il tuo viaggio" (PianificaViaggioScreen.js) - stesso stile,
-// bordo e icona rossi - ma qui il risultato non è un piano giorno per
-// giorno: è solo il percorso stradale vero (src/lib/percorsoStradale.js,
-// via creaPercorso in pianificatore.js) da disegnare sopra la mappa già
-// filtrata (vedi MappaScreen.js).
+// bordo e icona rossi. Il risultato principale resta il percorso stradale
+// vero (src/lib/percorsoStradale.js, via creaPercorso in pianificatore.js)
+// da disegnare sopra la mappa già filtrata (vedi MappaScreen.js); in più,
+// creaPercorso ora restituisce anche "piano" (giorno per giorno, dove
+// dormire e cosa visitare), che MappaScreen.js mostra in un modale.
 export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onRichiedeAccesso }) {
   const [aperto, setAperto] = useState(false);
   const [testo, setTesto] = useState("");

@@ -29,9 +29,9 @@ async function chiamaFunzione(nome, corpo) {
 // interessi; 2) geocodifichiamo ogni tappa qui; 3) genera-itinerario-ia
 // distribuisce i giorni lungo le tappe e costruisce il piano.
 // Interpreta una frase libera in tappe già geocodificate più giorni/
-// interessi: primo passo condiviso da generaItinerarioIA qui sotto (un
-// piano giorno per giorno) e da creaPercorso (solo il percorso stradale,
-// per "Creami un percorso" nella schermata Mappa).
+// interessi: primo passo condiviso da generaItinerarioIA qui sotto e da
+// creaPercorso ("Creami un percorso" nella schermata Mappa, che genera sia
+// il percorso stradale sia lo stesso tipo di piano).
 async function interpretaTappe(testo) {
   const { estrazione } = await chiamaFunzione("interpreta-richiesta-viaggio", { testo });
 
@@ -58,16 +58,28 @@ export async function generaItinerarioIA(testo) {
   return piano;
 }
 
-// "Creami un percorso" (MappaScreen.js): solo il percorso stradale vero
-// (tappe nominate + tappe intermedie reali, vedi percorsoStradale.js) da
-// disegnare sopra la mappa già filtrata — non un piano giorno per giorno
-// come generaItinerarioIA sopra.
+// "Creami un percorso" (MappaScreen.js): il percorso stradale vero (tappe
+// nominate + tappe intermedie reali, vedi percorsoStradale.js) da disegnare
+// sopra la mappa già filtrata, più il piano giorno per giorno (dove dormire
+// e cosa visitare/i sentieri nei dintorni) — prima disegnava solo la
+// strada, ignorando i giorni come pianificazione, segnalato dall'utente.
+// Una sola interpreta-richiesta-viaggio (quota giornaliera, vedi sopra),
+// non due: il piano riusa le stesse tappe già geocodificate per il
+// percorso. Se il piano fallisce (o non ci sono schede vicine), il
+// percorso resta comunque creato: non blocca "Crea" come sul sito.
 export async function creaPercorso(testo) {
-  const { tappe: tappeNominate, giorni } = await interpretaTappe(testo);
+  const { tappe: tappeNominate, giorni, interessi } = await interpretaTappe(testo);
   const tappe = await aggiungiTappeIntermedie(tappeNominate, giorni);
   const percorso = tappe.length >= 2 ? await percorsoStradale(tappe) : null;
   if (!percorso) {
     throw new Error("Non sono riuscito a disegnare un percorso stradale tra queste tappe: provare con tappe più vicine o più precise.");
   }
-  return { tappe, percorso };
+  let piano = null;
+  try {
+    const risultatoPiano = await chiamaFunzione("genera-itinerario-ia", { testo, tappe, giorni, interessi });
+    piano = risultatoPiano.piano;
+  } catch {
+    piano = null;
+  }
+  return { tappe, percorso, piano };
 }
