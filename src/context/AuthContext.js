@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext(null);
@@ -25,6 +27,36 @@ export function AuthProvider({ children }) {
 
   const esci = () => supabase.auth.signOut();
 
+  // Login Google/Facebook: apre il browser di sistema sulla pagina del
+  // provider (stesso giro OAuth del sito), poi il provider rimanda a un
+  // indirizzo "naturago://auth-callback" che riapre l'app con i token
+  // nel frammento dell'URL (#access_token=...&refresh_token=...) invece
+  // che nella querystring — da qui li leggiamo a mano e creiamo la
+  // sessione con setSession, perché detectSessionInUrl è disattivato
+  // (non ha senso su un URL che non passa mai dal browser dell'app).
+  const accediConProvider = async (provider) => {
+    const redirectTo = Linking.createURL("auth-callback");
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error) return { error };
+
+    const risultato = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (risultato.type !== "success" || !risultato.url) return { error: null };
+
+    const indiceFrammento = risultato.url.indexOf("#");
+    const parametri = new URLSearchParams(indiceFrammento === -1 ? "" : risultato.url.slice(indiceFrammento + 1));
+    const access_token = parametri.get("access_token");
+    const refresh_token = parametri.get("refresh_token");
+    if (!access_token || !refresh_token) return { error: { message: "Accesso non riuscito, riprova." } };
+
+    return supabase.auth.setSession({ access_token, refresh_token });
+  };
+
+  const accediConGoogle = () => accediConProvider("google");
+  const accediConFacebook = () => accediConProvider("facebook");
+
   // Stessa logica del sito (AccountArea.jsx): il link porta alla pagina
   // di reimpostazione del sito, non serve costruire un deep link dentro
   // l'app — dopo aver cambiato la password lì, si torna ad accedere qui.
@@ -42,7 +74,9 @@ export function AuthProvider({ children }) {
   const eliminaAccount = (testoConferma) => supabase.rpc("elimina_mio_account", { p_conferma: testoConferma });
 
   return (
-    <AuthContext.Provider value={{ session, caricamento, accedi, registrati, esci, recuperaPassword, eliminaAccount }}>
+    <AuthContext.Provider
+      value={{ session, caricamento, accedi, registrati, esci, recuperaPassword, eliminaAccount, accediConGoogle, accediConFacebook }}
+    >
       {children}
     </AuthContext.Provider>
   );

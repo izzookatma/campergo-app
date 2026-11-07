@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "campergo-app",
+    "name": "NaturaGo",
     "slug": "campergo-app",
+    "scheme": "naturago",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -14,6 +15,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "bundleIdentifier": "it.naturago.app",
+      "appleTeamId": "S534G29VQB",
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usiamo la tua posizione per mostrarti le strutture più vicine a te.",
@@ -58,7 +60,15 @@
         }
       ],
       "expo-font",
-      "expo-updates"
+      "expo-updates",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "NaturaGo usa il microfono per dettare a voce la ricerca o il percorso da creare, invece di scriverlo.",
+          "speechRecognitionPermission": "NaturaGo trascrive quello che dici per capire cosa stai cercando o che percorso vuoi creare."
+        }
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

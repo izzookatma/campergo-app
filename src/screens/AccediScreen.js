@@ -11,14 +11,25 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 // l'app (es. toccando il cuoricino senza account) — all'avvio, prima del
 // Tab.Navigator, la schermata non ha un `navigation` vero.
 export default function AccediScreen({ onSaltaAccesso, navigation }) {
-  const { accedi, registrati, recuperaPassword } = useAuth();
+  const { accedi, registrati, recuperaPassword, accediConGoogle, accediConFacebook } = useAuth();
   const [modalita, setModalita] = useState("accedi");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviando, setInviando] = useState(false);
+  const [inviandoProvider, setInviandoProvider] = useState(null);
   const [errore, setErrore] = useState(null);
   const [messaggio, setMessaggio] = useState(null);
+
+  const accediEsterno = async (provider, funzione) => {
+    setErrore(null);
+    setMessaggio(null);
+    setInviandoProvider(provider);
+    const { error } = await funzione();
+    if (error) setErrore(messaggioErroreComprensibile(error));
+    else navigation?.goBack();
+    setInviandoProvider(null);
+  };
 
   const invia = async () => {
     setErrore(null);
@@ -64,6 +75,34 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
                 ? "Bastano email e password."
                 : "Ti mandiamo un link per impostarne una nuova."}
           </Text>
+
+          {modalita !== "recupera" && (
+            <View style={{ gap: 10, marginBottom: 4 }}>
+              <Pressable
+                style={[styles.pulsanteEsterno, { backgroundColor: colori.bianco, borderWidth: 1, borderColor: colori.bordo }]}
+                onPress={() => accediEsterno("google", accediConGoogle)}
+                disabled={!!inviandoProvider}
+              >
+                {inviandoProvider === "google" ? (
+                  <ActivityIndicator color={colori.testo} />
+                ) : (
+                  <Text style={[styles.pulsanteEsternoTesto, { color: colori.testo }]}>Continua con Google</Text>
+                )}
+              </Pressable>
+              <Pressable
+                style={[styles.pulsanteEsterno, { backgroundColor: "#1877F2" }]}
+                onPress={() => accediEsterno("facebook", accediConFacebook)}
+                disabled={!!inviandoProvider}
+              >
+                {inviandoProvider === "facebook" ? (
+                  <ActivityIndicator color={colori.bianco} />
+                ) : (
+                  <Text style={[styles.pulsanteEsternoTesto, { color: colori.bianco }]}>Continua con Facebook</Text>
+                )}
+              </Pressable>
+              <Text style={styles.linkSecondario}>oppure</Text>
+            </View>
+          )}
 
           {modalita === "registrati" && (
             <TextInput style={styles.campo} placeholder="Nome" placeholderTextColor={colori.testoSecondario} value={nome} onChangeText={setNome} />
@@ -170,6 +209,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   pulsanteTesto: { color: colori.bianco, fontWeight: "800", fontSize: 14 },
+  pulsanteEsterno: { height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  pulsanteEsternoTesto: { fontWeight: "700", fontSize: 13.5 },
   cambiaModalita: { textAlign: "center", color: colori.blu, fontSize: 12, fontWeight: "600", marginTop: 6 },
   linkSecondario: { textAlign: "center", color: colori.testoSecondario, fontSize: 11.5, fontWeight: "600", marginTop: 4 },
   saltaAccesso: { textAlign: "center", color: colori.testoSecondario, fontSize: 12, fontWeight: "600" },
