@@ -40,6 +40,7 @@ import TrisScreen from "./src/screens/TrisScreen";
 import MemoryScreen from "./src/screens/MemoryScreen";
 import CruciverbaScreen from "./src/screens/CruciverbaScreen";
 import ImpiccatoScreen from "./src/screens/ImpiccatoScreen";
+import OcaScreen from "./src/screens/OcaScreen";
 import { colori } from "./src/theme/colors";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { PreferenzeProvider } from "./src/context/PreferenzeContext";
@@ -140,6 +141,7 @@ function GiochiStackNavigator() {
       <GiochiStack.Screen name="Memory" component={MemoryScreen} />
       <GiochiStack.Screen name="Cruciverba" component={CruciverbaScreen} />
       <GiochiStack.Screen name="Impiccato" component={ImpiccatoScreen} />
+      <GiochiStack.Screen name="Oca" component={OcaScreen} />
       <GiochiStack.Screen name="Accedi" component={AccediScreen} />
     </GiochiStack.Navigator>
   );

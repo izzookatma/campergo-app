@@ -47,6 +47,15 @@ const GIOCHI = [
     tinta: temaGiochi.gialloChiaro,
     schermo: "Impiccato",
   },
+  {
+    chiave: "oca",
+    etichetta: "Sentiero del campeggio",
+    descrizione: "Tabellone con dado e domande, contro il computer o in due",
+    icona: "dice-outline",
+    colore: temaGiochi.azzurro,
+    tinta: temaGiochi.azzurroChiaro,
+    schermo: "Oca",
+  },
 ];
 
 export default function GiochiHubScreen({ navigation }) {

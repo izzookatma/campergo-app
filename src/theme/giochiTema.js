@@ -10,4 +10,6 @@ export const temaGiochi = {
   verdeChiaro: "#dcfce7",
   giallo: "#f59e0b",
   gialloChiaro: "#fef3c7",
+  azzurro: "#0ea5e9",
+  azzurroChiaro: "#e0f2fe",
 };
