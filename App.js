@@ -39,6 +39,7 @@ import GiochiHubScreen from "./src/screens/GiochiHubScreen";
 import TrisScreen from "./src/screens/TrisScreen";
 import MemoryScreen from "./src/screens/MemoryScreen";
 import CruciverbaScreen from "./src/screens/CruciverbaScreen";
+import ImpiccatoScreen from "./src/screens/ImpiccatoScreen";
 import { colori } from "./src/theme/colors";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { PreferenzeProvider } from "./src/context/PreferenzeContext";
@@ -138,6 +139,7 @@ function GiochiStackNavigator() {
       <GiochiStack.Screen name="Tris" component={TrisScreen} />
       <GiochiStack.Screen name="Memory" component={MemoryScreen} />
       <GiochiStack.Screen name="Cruciverba" component={CruciverbaScreen} />
+      <GiochiStack.Screen name="Impiccato" component={ImpiccatoScreen} />
       <GiochiStack.Screen name="Accedi" component={AccediScreen} />
     </GiochiStack.Navigator>
   );

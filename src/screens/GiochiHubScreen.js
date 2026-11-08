@@ -5,6 +5,7 @@ import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { temaGiochi } from "../theme/giochiTema";
 import { useAuth } from "../context/AuthContext";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import DisegnoImpiccato from "../components/DisegnoImpiccato";
 
 // Gratuiti per chi ha un account NaturaGo (come la ricerca con l'IA in
 // EsploraHubScreen): senza login si vede la stessa schermata ma con
@@ -36,6 +37,15 @@ const GIOCHI = [
     colore: temaGiochi.verde,
     tinta: temaGiochi.verdeChiaro,
     schermo: "Cruciverba",
+  },
+  {
+    chiave: "impiccato",
+    etichetta: "Impiccato",
+    descrizione: "Indovina la parola lettera per lettera",
+    icona: "impiccato",
+    colore: temaGiochi.giallo,
+    tinta: temaGiochi.gialloChiaro,
+    schermo: "Impiccato",
   },
 ];
 
@@ -74,7 +84,11 @@ export default function GiochiHubScreen({ navigation }) {
               onPress={() => vaiA(gioco)}
             >
               <View style={[styles.cardIcona, { backgroundColor: gioco.colore }]}>
-                <Ionicons name={gioco.icona} size={26} color={colori.bianco} />
+                {gioco.icona === "impiccato" ? (
+                  <DisegnoImpiccato size={26} fase={6} colorePatibolo={colori.bianco} coloreOmino={colori.bianco} />
+                ) : (
+                  <Ionicons name={gioco.icona} size={26} color={colori.bianco} />
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitolo}>{gioco.etichetta}</Text>
