@@ -1,6 +1,18 @@
 // Stessa logica del sito (src/geocoding.js): accetta coordinate dirette
 // ("45.44, 12.33") o un indirizzo/nome di luogo libero da passare al
 // geocoding gratuito di Nominatim (OpenStreetMap), vedi anche CLAUDE.md.
+
+// La policy d'uso di Nominatim (gratuito) richiede di identificare
+// l'applicazione con un User-Agent/Referer validi, altrimenti rifiuta la
+// richiesta in silenzio — provato dal vivo sull'app nativa (niente
+// suggerimenti, nessun errore: il fetch andava a buon fine ma Nominatim
+// restituiva un risultato vuoto/bloccato). Il browser manda già da solo un
+// User-Agent/Referer accettabili (il sito funzionava senza), l'app nativa no.
+const INTESTAZIONI_NOMINATIM = {
+  "User-Agent": "NaturaGo-App/1.0 (https://naturago.it; info@naturago.it)",
+  Referer: "https://naturago.it",
+};
+
 function analizzaCoordinate(testo) {
   const m = testo.trim().match(/^(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)$/);
   if (!m) return null;
@@ -15,7 +27,8 @@ export async function geocodificaOCoordinate(testo) {
   if (coordinate) return coordinate;
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(testo)}&format=json&limit=1&countrycodes=it`
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(testo)}&format=json&limit=1&countrycodes=it`,
+      { headers: INTESTAZIONI_NOMINATIM }
     );
     const data = await res.json();
     if (!data || data.length === 0) return null;
@@ -35,7 +48,8 @@ export async function suggerimentiLuogo(testo) {
   if (t.length < 3) return [];
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(t)}&format=json&limit=5&countrycodes=it&addressdetails=1`
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(t)}&format=json&limit=5&countrycodes=it&addressdetails=1`,
+      { headers: INTESTAZIONI_NOMINATIM }
     );
     const data = await res.json();
     if (!Array.isArray(data)) return [];
@@ -67,7 +81,8 @@ export async function suggerimentiLuogo(testo) {
 export async function geocodificaInversa(lat, lng) {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&accept-language=it`
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&accept-language=it`,
+      { headers: INTESTAZIONI_NOMINATIM }
     );
     const data = await res.json();
     const a = data?.address;
