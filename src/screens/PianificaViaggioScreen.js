@@ -1,5 +1,17 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, ActivityIndicator, Switch, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Switch,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
@@ -302,75 +314,81 @@ export default function PianificaViaggioScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
-        <MarchioNaturaGo />
-        <Text style={styles.titolo}>Pianifica il tuo viaggio</Text>
-        <Text style={styles.sottotitolo}>
-          Scegli partenza, arrivo e per quanti giorni: l&apos;IA costruisce un piano giorno per giorno con le schede
-          vere di NaturaGo.
-        </Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
+            <MarchioNaturaGo />
+            <Text style={styles.titolo}>Pianifica il tuo viaggio</Text>
+            <Text style={styles.sottotitolo}>
+              Scegli partenza, arrivo e per quanti giorni: l&apos;IA costruisce un piano giorno per giorno con le
+              schede vere di NaturaGo.
+            </Text>
 
-        <View style={styles.card}>
-          <CampoLuogo
-            etichetta="Partenza"
-            placeholder="Es. Mantova"
-            testo={testoPartenza}
-            setTesto={setTestoPartenza}
-            setLuogo={setLuogoPartenza}
-          />
-          <CampoLuogo
-            etichetta="Arrivo"
-            placeholder="Es. Lago di Garda"
-            testo={testoArrivo}
-            setTesto={setTestoArrivo}
-            setLuogo={setLuogoArrivo}
-          />
-          <SelettoreGiorni valore={giorni} onCambia={setGiorni} />
-          <SelettoreDormire valore={dormirePref} onCambia={setDormirePref} />
-          <ToggleLuoghiInteresse attivo={luoghiInteresse} onCambia={setLuoghiInteresse} />
+            <View style={styles.card}>
+              <CampoLuogo
+                etichetta="Partenza"
+                placeholder="Es. Mantova"
+                testo={testoPartenza}
+                setTesto={setTestoPartenza}
+                setLuogo={setLuogoPartenza}
+              />
+              <CampoLuogo
+                etichetta="Arrivo"
+                placeholder="Es. Lago di Garda"
+                testo={testoArrivo}
+                setTesto={setTestoArrivo}
+                setLuogo={setLuogoArrivo}
+              />
+              <SelettoreGiorni valore={giorni} onCambia={setGiorni} />
+              <SelettoreDormire valore={dormirePref} onCambia={setDormirePref} />
+              <ToggleLuoghiInteresse attivo={luoghiInteresse} onCambia={setLuoghiInteresse} />
 
-          <Pressable style={[styles.bottone, !puoGenerare && styles.bottoneDisattivo]} onPress={genera} disabled={!puoGenerare}>
-            {caricando ? (
-              <ActivityIndicator color={colori.bianco} size="small" />
-            ) : (
-              <>
-                <Ionicons name="sparkles-outline" size={16} color={colori.bianco} />
-                <Text style={styles.bottoneTesto}>Genera il piano</Text>
-              </>
-            )}
-          </Pressable>
-        </View>
-
-        {errore ? <Text style={styles.errore}>{errore}</Text> : null}
-
-        {piano && (
-          <View style={styles.risultato}>
-            <View style={styles.rigaRisultato}>
-              <Text style={styles.risultatoTitolo}>
-                {piano.giorniRichiesti} giorni · {piano.tappe.join(" → ")}
-              </Text>
-              <Pressable style={styles.pulsanteSalva} onPress={salva} disabled={salvando || salvato}>
-                {salvando ? (
-                  <ActivityIndicator color={colori.blu} size="small" />
+              <Pressable style={[styles.bottone, !puoGenerare && styles.bottoneDisattivo]} onPress={genera} disabled={!puoGenerare}>
+                {caricando ? (
+                  <ActivityIndicator color={colori.bianco} size="small" />
                 ) : (
-                  <Ionicons name={salvato ? "bookmark" : "bookmark-outline"} size={18} color={colori.blu} />
+                  <>
+                    <Ionicons name="sparkles-outline" size={16} color={colori.bianco} />
+                    <Text style={styles.bottoneTesto}>Genera il piano</Text>
+                  </>
                 )}
               </Pressable>
             </View>
-            <MappaPianoViaggio piano={piano} />
-            {piano.giorni.map((g) => (
-              <CardGiorno
-                key={g.numero}
-                giorno={g}
-                navigation={navigation}
-                candidati={piano.tappeCandidati?.[g.tappaIndice]}
-                onCambiaDormire={(categoria, scelta) => aggiornaDormireGiorno(g.numero, categoria, scelta)}
-                onCambiaVoce={(indice, scelta) => aggiornaVoceGiorno(g.numero, indice, scelta)}
-              />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+
+            {errore ? <Text style={styles.errore}>{errore}</Text> : null}
+
+            {piano && (
+              <View style={styles.risultato}>
+                <View style={styles.rigaRisultato}>
+                  <Text style={styles.risultatoTitolo}>
+                    {piano.giorniRichiesti} giorni · {piano.tappe.join(" → ")}
+                  </Text>
+                  <Pressable style={styles.pulsanteSalva} onPress={salva} disabled={salvando || salvato}>
+                    {salvando ? (
+                      <ActivityIndicator color={colori.blu} size="small" />
+                    ) : (
+                      <Ionicons name={salvato ? "bookmark" : "bookmark-outline"} size={18} color={colori.blu} />
+                    )}
+                  </Pressable>
+                </View>
+                <MappaPianoViaggio piano={piano} />
+                {piano.giorni.map((g) => (
+                  <CardGiorno
+                    key={g.numero}
+                    giorno={g}
+                    navigation={navigation}
+                    candidati={piano.tappeCandidati?.[g.tappaIndice]}
+                    onCambiaDormire={(categoria, scelta) => aggiornaDormireGiorno(g.numero, categoria, scelta)}
+                    onCambiaVoce={(indice, scelta) => aggiornaVoceGiorno(g.numero, indice, scelta)}
+                  />
+                ))}
+              </View>
+            )}
+          </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
