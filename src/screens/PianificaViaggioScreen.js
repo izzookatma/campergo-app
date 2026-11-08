@@ -96,7 +96,11 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
   const [aperto, setAperto] = useState(false);
   const { risultati, errore } = useSuggerimentiLuogo(testo, aperto);
   return (
-    <View style={[styles.campoContenitore, aperto && risultati.length > 0 && { zIndex: 20 }]}>
+    // zIndex fisso, non più acceso/spento insieme alla comparsa della
+    // tendina: cambiarli nello stesso istante (nuovo figlio assoluto +
+    // nuovo livello sul contenitore) faceva sfarfallare la tendina e la
+    // richiudeva subito — segnalato dal vivo sull'iPhone.
+    <View style={styles.campoContenitore}>
       <Text style={styles.etichettaCampo}>{etichetta}</Text>
       <View style={styles.campoLuogo}>
         <Ionicons name="location-outline" size={16} color={colori.blu} />
@@ -329,11 +333,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
             <MarchioNaturaGo />
             <Text style={styles.titolo}>Pianifica il tuo viaggio</Text>
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     gap: 14,
     ...ombraCard,
   },
-  campoContenitore: { gap: 5 },
+  campoContenitore: { gap: 5, zIndex: 10 },
   etichettaCampo: { fontSize: 10.5, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase" },
   campoLuogo: {
     flexDirection: "row",
