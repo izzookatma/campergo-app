@@ -96,10 +96,6 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
   const [aperto, setAperto] = useState(false);
   const { risultati, errore } = useSuggerimentiLuogo(testo, aperto);
   return (
-    // zIndex fisso, non più acceso/spento insieme alla comparsa della
-    // tendina: cambiarli nello stesso istante (nuovo figlio assoluto +
-    // nuovo livello sul contenitore) faceva sfarfallare la tendina e la
-    // richiudeva subito — segnalato dal vivo sull'iPhone.
     <View style={styles.campoContenitore}>
       <Text style={styles.etichettaCampo}>{etichetta}</Text>
       <View style={styles.campoLuogo}>
@@ -420,7 +416,7 @@ const styles = StyleSheet.create({
     gap: 14,
     ...ombraCard,
   },
-  campoContenitore: { gap: 5, zIndex: 10 },
+  campoContenitore: { gap: 5 },
   etichettaCampo: { fontSize: 10.5, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase" },
   campoLuogo: {
     flexDirection: "row",
@@ -432,11 +428,11 @@ const styles = StyleSheet.create({
     height: 42,
   },
   campoLuogoInput: { flex: 1, fontSize: 13.5, color: colori.testo },
+  // Non più in overlay assoluto sopra i campi sotto (zIndex/posizione
+  // assoluta: più tentativi, sempre sfarfallii o sovrapposizioni viste dal
+  // vivo sull'iPhone) — nel flusso normale, spinge giù il resto del form
+  // finché non si sceglie un suggerimento: niente più da sovrapporre.
   dropdown: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
     marginTop: 4,
     backgroundColor: colori.bianco,
     borderRadius: 12,
@@ -444,11 +440,6 @@ const styles = StyleSheet.create({
     borderColor: colori.bordo,
     maxHeight: 180,
     overflow: "hidden",
-    elevation: 6,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
   },
   dropdownVoce: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colori.bluChiaro },
   dropdownTesto: { fontSize: 12.5, color: colori.testo },
