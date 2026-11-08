@@ -62,10 +62,15 @@ function useSuggerimentiLuogo(testo, attivo) {
 // luogo e sceglie uno dei suggerimenti già geocodificati (lat/lng pronte),
 // invece di scrivere una frase libera che poi va interpretata dall'IA.
 function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
+  // Niente setState in onFocus: cambiare stato proprio nell'istante in cui
+  // la tastiera sta per aprirsi (build native, non Expo Go) ha fatto
+  // restare la tastiera a metà corsa — segnalato dal vivo. I suggerimenti
+  // si aprono solo mentre si scrive (onChangeText, a tastiera già aperta) e
+  // si chiudono alla selezione o quando il campo perde il focus.
   const [aperto, setAperto] = useState(false);
   const risultati = useSuggerimentiLuogo(testo, aperto);
   return (
-    <View style={[styles.campoContenitore, aperto && { zIndex: 20 }]}>
+    <View style={[styles.campoContenitore, aperto && risultati.length > 0 && { zIndex: 20 }]}>
       <Text style={styles.etichettaCampo}>{etichetta}</Text>
       <View style={styles.campoLuogo}>
         <Ionicons name="location-outline" size={16} color={colori.blu} />
@@ -79,7 +84,6 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
             setLuogo(null);
             setAperto(true);
           }}
-          onFocus={() => setAperto(true)}
           onBlur={() => setTimeout(() => setAperto(false), 150)}
           returnKeyType="next"
         />
