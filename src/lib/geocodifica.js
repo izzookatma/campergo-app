@@ -43,35 +43,37 @@ export async function geocodificaOCoordinate(testo) {
 // nome breve e leggibile (città/paese + regione, non l'indirizzo completo
 // di Nominatim) insieme alle coordinate già pronte, così scegliendo un
 // suggerimento non serve geocodificare di nuovo.
+// A differenza delle altre funzioni di questo file, qui l'errore non si
+// inghiotte in un ripiego silenzioso (null/[]): i suggerimenti sono l'unico
+// modo per scegliere partenza/arrivo nel form, quindi se falliscono deve
+// vedersi perché, non sparire senza spiegazione — chi chiama (il campo nello
+// schermo) mostra il messaggio dell'errore.
 export async function suggerimentiLuogo(testo) {
   const t = testo.trim();
   if (t.length < 3) return [];
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(t)}&format=json&limit=5&countrycodes=it&addressdetails=1`,
-      { headers: INTESTAZIONI_NOMINATIM }
-    );
-    const data = await res.json();
-    if (!Array.isArray(data)) return [];
-    const viste = new Set();
-    return data
-      .map((r) => {
-        const a = r.address || {};
-        const principale = a.city || a.town || a.village || a.municipality || a.county || r.display_name.split(",")[0];
-        const nome = a.state && a.state !== principale ? `${principale}, ${a.state}` : principale;
-        return { nome, lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
-      })
-      // Nominatim a volte restituisce più righe con lo stesso nome breve
-      // (un centro abitato e un confine amministrativo, es.): nella lista
-      // dei suggerimenti non si distinguerebbero, si tiene solo la prima.
-      .filter((s) => {
-        if (!s.nome || !Number.isFinite(s.lat) || !Number.isFinite(s.lng) || viste.has(s.nome)) return false;
-        viste.add(s.nome);
-        return true;
-      });
-  } catch {
-    return [];
-  }
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(t)}&format=json&limit=5&countrycodes=it&addressdetails=1`,
+    { headers: INTESTAZIONI_NOMINATIM }
+  );
+  if (!res.ok) throw new Error(`Nominatim ha risposto ${res.status}`);
+  const data = await res.json();
+  if (!Array.isArray(data)) throw new Error("Risposta di Nominatim non valida");
+  const viste = new Set();
+  return data
+    .map((r) => {
+      const a = r.address || {};
+      const principale = a.city || a.town || a.village || a.municipality || a.county || r.display_name.split(",")[0];
+      const nome = a.state && a.state !== principale ? `${principale}, ${a.state}` : principale;
+      return { nome, lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
+    })
+    // Nominatim a volte restituisce più righe con lo stesso nome breve
+    // (un centro abitato e un confine amministrativo, es.): nella lista
+    // dei suggerimenti non si distinguerebbero, si tiene solo la prima.
+    .filter((s) => {
+      if (!s.nome || !Number.isFinite(s.lat) || !Number.isFinite(s.lng) || viste.has(s.nome)) return false;
+      viste.add(s.nome);
+      return true;
+    });
 }
 
 // Il contrario di sopra: da coordinate al nome del paese/città più vicino,

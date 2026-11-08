@@ -47,18 +47,32 @@ const OPZIONI_DORMIRE = [
 // nell'app per le ricerche live.
 function useSuggerimentiLuogo(testo, attivo) {
   const [risultati, setRisultati] = useState([]);
+  const [errore, setErrore] = useState("");
   useEffect(() => {
     let corrente = true;
     const vuoto = !attivo || testo.trim().length < 3;
     const timer = setTimeout(
       () => {
         if (vuoto) {
-          if (corrente) setRisultati([]);
+          if (corrente) {
+            setRisultati([]);
+            setErrore("");
+          }
           return;
         }
-        suggerimentiLuogo(testo).then((r) => {
-          if (corrente) setRisultati(r);
-        });
+        suggerimentiLuogo(testo)
+          .then((r) => {
+            if (corrente) {
+              setRisultati(r);
+              setErrore("");
+            }
+          })
+          .catch((e) => {
+            if (corrente) {
+              setRisultati([]);
+              setErrore(messaggioErroreComprensibile(e, "Suggerimenti non disponibili:"));
+            }
+          });
       },
       vuoto ? 0 : 400
     );
@@ -67,7 +81,7 @@ function useSuggerimentiLuogo(testo, attivo) {
       clearTimeout(timer);
     };
   }, [testo, attivo]);
-  return risultati;
+  return { risultati, errore };
 }
 
 // Campo partenza/arrivo con precompilazione: chi visita scrive un nome di
@@ -80,7 +94,7 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
   // si aprono solo mentre si scrive (onChangeText, a tastiera già aperta) e
   // si chiudono alla selezione o quando il campo perde il focus.
   const [aperto, setAperto] = useState(false);
-  const risultati = useSuggerimentiLuogo(testo, aperto);
+  const { risultati, errore } = useSuggerimentiLuogo(testo, aperto);
   return (
     <View style={[styles.campoContenitore, aperto && risultati.length > 0 && { zIndex: 20 }]}>
       <Text style={styles.etichettaCampo}>{etichetta}</Text>
@@ -100,6 +114,7 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
           returnKeyType="next"
         />
       </View>
+      {aperto && errore ? <Text style={styles.erroreCampo}>{errore}</Text> : null}
       {aperto && risultati.length > 0 && (
         <View style={styles.dropdown}>
           {risultati.map((r, i) => (
@@ -437,6 +452,7 @@ const styles = StyleSheet.create({
   },
   dropdownVoce: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colori.bluChiaro },
   dropdownTesto: { fontSize: 12.5, color: colori.testo },
+  erroreCampo: { fontSize: 10.5, color: colori.rosso, marginTop: 3 },
   stepper: {
     flexDirection: "row",
     alignItems: "center",
