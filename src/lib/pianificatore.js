@@ -29,9 +29,11 @@ async function chiamaFunzione(nome, corpo) {
 // interessi; 2) geocodifichiamo ogni tappa qui; 3) genera-itinerario-ia
 // distribuisce i giorni lungo le tappe e costruisce il piano.
 // Interpreta una frase libera in tappe già geocodificate più giorni/
-// interessi: primo passo condiviso da generaItinerarioIA qui sotto e da
-// creaPercorso ("Creami un percorso" nella schermata Mappa, che genera sia
-// il percorso stradale sia lo stesso tipo di piano).
+// interessi: usata solo da creaPercorso qui sotto ("Creami un percorso"
+// nella schermata Mappa, che genera sia il percorso stradale sia lo stesso
+// tipo di piano da una frase libera). "Pianifica il tuo viaggio" non la usa
+// più: parte da partenza/arrivo già scelti nel form, vedi
+// generaPianoStrutturato sotto.
 async function interpretaTappe(testo) {
   const { estrazione } = await chiamaFunzione("interpreta-richiesta-viaggio", { testo });
 
@@ -52,10 +54,29 @@ async function interpretaTappe(testo) {
   return { tappe, giorni: estrazione.giorni, interessi: estrazione.interessi };
 }
 
-export async function generaItinerarioIA(testo) {
-  const { tappe, giorni, interessi } = await interpretaTappe(testo);
-  const { piano } = await chiamaFunzione("genera-itinerario-ia", { testo, tappe, giorni, interessi });
-  return piano;
+// Form a campi di "Pianifica il tuo viaggio" (partenza/arrivo già scelti
+// dai suggerimenti, con lat/lng pronte): salta interpreta-richiesta-viaggio
+// (serve solo a capire una frase libera, qui non c'è) e chiama direttamente
+// genera-itinerario-ia, passando "verificaQuota" perché il controllo del
+// limite giornaliero (altrimenti fatto da interpreta-richiesta-viaggio) non
+// è stato ancora fatto per questa richiesta.
+export async function generaPianoStrutturato({ partenza, arrivo, giorni, preferenzaDormire, mostraLuoghiInteresse }) {
+  const richiesta = `Da ${partenza.nome} a ${arrivo.nome} in ${giorni} giorn${giorni === 1 ? "o" : "i"}`;
+  const tappeNominate = [
+    { nome: partenza.nome, lat: partenza.lat, lng: partenza.lng },
+    { nome: arrivo.nome, lat: arrivo.lat, lng: arrivo.lng },
+  ];
+  const tappe = await aggiungiTappeIntermedie(tappeNominate, giorni);
+  const { piano } = await chiamaFunzione("genera-itinerario-ia", {
+    testo: richiesta,
+    tappe,
+    giorni,
+    interessi: [],
+    preferenzaDormire,
+    mostraLuoghiInteresse,
+    verificaQuota: true,
+  });
+  return { piano, richiesta };
 }
 
 // "Creami un percorso" (MappaScreen.js): il percorso stradale vero (tappe
