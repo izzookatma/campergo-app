@@ -51,10 +51,23 @@ export async function geocodificaOCoordinate(testo) {
 export async function suggerimentiLuogo(testo) {
   const t = testo.trim();
   if (t.length < 3) return [];
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(t)}&format=json&limit=5&countrycodes=it&addressdetails=1`,
-    { headers: INTESTAZIONI_NOMINATIM }
-  );
+  // Un timeout esplicito: senza, una richiesta che resta "appesa" (mai
+  // risolta né rifiutata, visto dal vivo sull'app nativa) non mostrerebbe
+  // mai né i suggerimenti né l'errore — solo silenzio indefinito.
+  const controllo = new AbortController();
+  const scaduto = setTimeout(() => controllo.abort(), 8000);
+  let res;
+  try {
+    res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(t)}&format=json&limit=5&countrycodes=it&addressdetails=1`,
+      { headers: INTESTAZIONI_NOMINATIM, signal: controllo.signal }
+    );
+  } catch (errore) {
+    if (errore?.name === "AbortError") throw new Error("Nominatim non ha risposto entro 8 secondi");
+    throw errore;
+  } finally {
+    clearTimeout(scaduto);
+  }
   if (!res.ok) throw new Error(`Nominatim ha risposto ${res.status}`);
   const data = await res.json();
   if (!Array.isArray(data)) throw new Error("Risposta di Nominatim non valida");
