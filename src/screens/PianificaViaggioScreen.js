@@ -266,7 +266,16 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       setRichiesta(fraseRichiesta);
       setPiano(nuovoPiano);
     } catch (e) {
-      setErrore(messaggioErroreComprensibile(e, "Non sono riuscito a generare il piano di viaggio."));
+      // Il controllo sopra (!session) non basta da solo: una sessione
+      // presente lato app ma scaduta lato server arriva fin qui, e il
+      // server la rifiuta con lo stesso messaggio — stesso avviso con
+      // "Accedi" anche in questo caso, non solo un testo rosso senza
+      // via d'uscita — segnalato dal vivo.
+      if (/devi accedere|accedere con il tuo account/i.test(e?.message || "")) {
+        richiedeAccesso();
+      } else {
+        setErrore(messaggioErroreComprensibile(e, "Non sono riuscito a generare il piano di viaggio."));
+      }
     } finally {
       setCaricando(false);
     }
