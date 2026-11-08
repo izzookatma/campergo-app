@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard } from "../theme/colors";
-import { caricaTutteLePosizioni, cercaStrutture } from "../lib/strutture";
+import { caricaTutteLePosizioni, cercaStrutture, STILE_PER_TIPO, STILE_DEFAULT } from "../lib/strutture";
 import { caricaTutteLePosizioniCulturali, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { caricaTutteLePosizioniItinerari, CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
@@ -35,17 +35,6 @@ const REGIONE_ITALIA = {
 // più ogni tipo ha un'icona/colore per distinguere i segnaposto sulla mappa
 // (prima erano tutti puntini rossi uguali).
 const FILTRI = ["Tutti", "Campeggi", "Agriturismi", "Agricampeggi", "Aree sosta", "Camper service", "Rifugi", "Bivacchi"];
-
-const STILE_PER_TIPO = {
-  Campeggio: { icona: "bonfire", colore: "#16a34a" },
-  Agriturismo: { icona: "home", colore: colori.arancio },
-  Agricampeggio: { icona: "leaf", colore: "#65a30d" },
-  "Area sosta": { icona: "car", colore: colori.blu },
-  "Camper service": { icona: "water", colore: "#0891b2" },
-  Rifugio: { icona: "triangle", colore: "#92400e" },
-  Bivacco: { icona: "cube", colore: "#64748b" },
-};
-const STILE_DEFAULT = { icona: "location", colore: colori.rosso };
 
 // Musei/borghi/attività: stessi colori/icone di CulturaScreen (CATEGORIA_CULTURALE_META
 // in src/lib/cultura.js), "eventi" esclusi (legati a una data, non un posto fisso da

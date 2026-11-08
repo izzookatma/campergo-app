@@ -10,6 +10,7 @@ import { salvaPianoViaggio } from "../lib/pianiSalvati";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import { CardGiorno } from "../components/PianoGiorno";
+import MappaPianoViaggio from "../components/MappaPianoViaggio";
 
 // "Pianifica il tuo viaggio": form a campi (partenza, arrivo, giorni, dove
 // dormire, luoghi di interesse) invece di una frase libera — chi visita
@@ -258,6 +259,41 @@ export default function PianificaViaggioScreen({ navigation, route }) {
     }
   };
 
+  // "Cambia" su dove dormire/cosa visitare: sostituisce la scelta di un solo
+  // giorno con un'altra tra le alternative vere già arrivate con il piano
+  // (tappeCandidati), senza richiamare l'IA. Il piano cambia rispetto a
+  // quello eventualmente già salvato, quindi il pulsante Salva torna attivo.
+  const aggiornaDormireGiorno = (numeroGiorno, categoria, nuovoPosto) => {
+    setPiano((prev) =>
+      prev
+        ? {
+            ...prev,
+            giorni: prev.giorni.map((g) =>
+              g.numero === numeroGiorno ? { ...g, dormire: { ...g.dormire, [categoria]: nuovoPosto } } : g
+            ),
+          }
+        : prev
+    );
+    setSalvato(false);
+  };
+
+  const aggiornaVoceGiorno = (numeroGiorno, indiceVoce, nuovaVoce) => {
+    setPiano((prev) =>
+      prev
+        ? {
+            ...prev,
+            giorni: prev.giorni.map((g) => {
+              if (g.numero !== numeroGiorno) return g;
+              const voci = [...g.voci];
+              voci[indiceVoce] = nuovaVoce;
+              return { ...g, voci };
+            }),
+          }
+        : prev
+    );
+    setSalvato(false);
+  };
+
   const puoGenerare = luogoPartenza && luogoArrivo && !caricando;
 
   return (
@@ -317,8 +353,16 @@ export default function PianificaViaggioScreen({ navigation, route }) {
                 )}
               </Pressable>
             </View>
+            <MappaPianoViaggio piano={piano} />
             {piano.giorni.map((g) => (
-              <CardGiorno key={g.numero} giorno={g} navigation={navigation} />
+              <CardGiorno
+                key={g.numero}
+                giorno={g}
+                navigation={navigation}
+                candidati={piano.tappeCandidati?.[g.tappaIndice]}
+                onCambiaDormire={(categoria, scelta) => aggiornaDormireGiorno(g.numero, categoria, scelta)}
+                onCambiaVoce={(indice, scelta) => aggiornaVoceGiorno(g.numero, indice, scelta)}
+              />
             ))}
           </View>
         )}

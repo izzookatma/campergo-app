@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { colori } from "../theme/colors";
 
 export const ETICHETTE_TIPO = {
   campeggio: "Campeggio",
@@ -7,6 +8,20 @@ export const ETICHETTE_TIPO = {
   area_sosta: "Area sosta",
   parcheggio: "Camper service",
 };
+
+// Icona/colore del segnaposto per tipo (MappaScreen.js) e per le strutture
+// scelte come "dove dormire" nel piano di viaggio (MappaPianoViaggio.js):
+// stessa fonte per entrambe, non due copie che potrebbero disallinearsi.
+export const STILE_PER_TIPO = {
+  Campeggio: { icona: "bonfire", colore: "#16a34a" },
+  Agriturismo: { icona: "home", colore: colori.arancio },
+  Agricampeggio: { icona: "leaf", colore: "#65a30d" },
+  "Area sosta": { icona: "car", colore: colori.blu },
+  "Camper service": { icona: "water", colore: "#0891b2" },
+  Rifugio: { icona: "triangle", colore: "#92400e" },
+  Bivacco: { icona: "cube", colore: "#64748b" },
+};
+export const STILE_DEFAULT = { icona: "location", colore: colori.rosso };
 
 export const COLONNE_CAMPEGGIO =
   "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione, ha_promo_attiva";
