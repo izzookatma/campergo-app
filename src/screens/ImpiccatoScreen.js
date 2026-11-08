@@ -174,8 +174,8 @@ export default function ImpiccatoScreen() {
             {partita.parola.split("").map((lettera, indice) => {
               const mostrata = lettereUsate.includes(lettera) || perso;
               return (
-                <View key={indice} style={styles.casellaLettera}>
-                  <Text style={styles.casellaLetteraTesto}>{mostrata ? lettera : ""}</Text>
+                <View key={indice} style={[styles.casellaLettera, mostrata && styles.casellaLetteraRiempita]}>
+                  {mostrata && <Text style={styles.casellaLetteraTesto}>{lettera}</Text>}
                 </View>
               );
             })}
@@ -263,13 +263,16 @@ const styles = StyleSheet.create({
 
   rigaParola: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6 },
   casellaLettera: {
-    width: 30,
-    height: 38,
-    borderBottomWidth: 3,
-    borderBottomColor: colori.bordo,
+    width: 32,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colori.bordo,
+    backgroundColor: "transparent",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
   },
+  casellaLetteraRiempita: { backgroundColor: colori.bianco, borderColor: colori.testo, ...ombraCard },
   casellaLetteraTesto: { fontSize: 20, fontWeight: "800", color: colori.testo },
 
   tastiera: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, maxWidth: 360 },
