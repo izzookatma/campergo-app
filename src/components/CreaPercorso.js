@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { View, TextInput, Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { creaPercorso } from "../lib/pianificatore";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
+import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
 
 // "Creami un percorso": stessa idea della Ricerca IA (RicercaIA.js) e di
 // "Pianifica il tuo viaggio" (PianificaViaggioScreen.js) - stesso stile,
@@ -17,6 +18,30 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
   const [testo, setTesto] = useState("");
   const [caricando, setCaricando] = useState(false);
   const [errore, setErrore] = useState("");
+  const [ascoltando, setAscoltando] = useState(false);
+  const dettaturaRef = useRef(null);
+  const microfonoDisponibile = dettaturaDisponibile();
+
+  const toggleDettatura = async () => {
+    if (ascoltando) {
+      dettaturaRef.current?.ferma();
+      setAscoltando(false);
+      return;
+    }
+    setErrore("");
+    setAscoltando(true);
+    const controllo = await avviaDettatura({
+      lingua: "it-IT",
+      onRisultato: (trascrizione) => setTesto(trascrizione),
+      onErrore: () => {
+        setErrore("Non sono riuscito ad ascoltare: riprova, oppure scrivi la richiesta.");
+        setAscoltando(false);
+      },
+      onFine: () => setAscoltando(false),
+    });
+    dettaturaRef.current = controllo;
+    if (!controllo) setAscoltando(false);
+  };
 
   const crea = async () => {
     const frase = testo.trim();
@@ -39,6 +64,8 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
   };
 
   const chiudi = () => {
+    dettaturaRef.current?.ferma();
+    setAscoltando(false);
     setAperto(false);
     setTesto("");
     setErrore("");
@@ -76,6 +103,15 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
           returnKeyType="done"
           autoFocus
         />
+        {microfonoDisponibile && (
+          <Pressable
+            style={ascoltando && styles.microfonoAttivo}
+            onPress={toggleDettatura}
+            hitSlop={8}
+          >
+            <Ionicons name={ascoltando ? "mic" : "mic-outline"} size={18} color={ascoltando ? colori.rosso : colori.testoSecondario} />
+          </Pressable>
+        )}
         <Pressable onPress={() => setAperto(false)} hitSlop={8}>
           <Ionicons name="close-circle" size={18} color={colori.testoSecondario} />
         </Pressable>
@@ -131,6 +167,7 @@ const styles = StyleSheet.create({
     borderColor: colori.rosso,
   },
   input: { flex: 1, fontSize: 12.5, color: colori.testo },
+  microfonoAttivo: { backgroundColor: "#fef2f2", borderRadius: 999, padding: 2 },
   bottone: {
     backgroundColor: colori.rosso,
     borderRadius: 16,

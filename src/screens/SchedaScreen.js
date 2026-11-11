@@ -8,7 +8,7 @@ import { usePreferenze } from "../context/PreferenzeContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
 import { urlMappa } from "../lib/mappa";
 import { caricaRecensioni, inviaRecensioneStruttura } from "../lib/recensioni";
-import { caricaDettaglioStruttura } from "../lib/strutture";
+import { caricaDettaglioStruttura, caricaPiazzoleStruttura, ETICHETTA_TIPO_ALLOGGIO } from "../lib/strutture";
 import { ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
 import { caricaCulturaVicina, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import ModuloRecensione from "../components/ModuloRecensione";
@@ -70,6 +70,7 @@ export default function SchedaScreen({ route, navigation }) {
   const [mostraModuloRecensione, setMostraModuloRecensione] = useState(false);
   const [dettaglio, setDettaglio] = useState(null);
   const [culturaVicina, setCulturaVicina] = useState([]);
+  const [piazzole, setPiazzole] = useState([]);
 
   useEffect(() => {
     if (sipuoSalvare(struttura)) {
@@ -81,6 +82,16 @@ export default function SchedaScreen({ route, navigation }) {
     caricaDettaglioStruttura(struttura)
       .then(setDettaglio)
       .catch((e) => console.error("Errore nel caricare il dettaglio della struttura:", e));
+  }, [struttura.origine, struttura.idOriginale]);
+
+  // Piazzole e alloggi fissi: sempre visibili, con foto, senza bisogno di
+  // scegliere delle date (stessa regola del sito, vedi commento su
+  // caricaPiazzoleStruttura in src/lib/strutture.js).
+  useEffect(() => {
+    if (struttura.origine !== "campeggi_pubblici") return;
+    caricaPiazzoleStruttura(struttura.idOriginale)
+      .then(setPiazzole)
+      .catch((e) => console.error("Errore nel caricare piazzole e alloggi:", e));
   }, [struttura.origine, struttura.idOriginale]);
 
   const caricaRecensioniStruttura = () => {
@@ -140,9 +151,13 @@ export default function SchedaScreen({ route, navigation }) {
     if (dettaglio?.sitoWeb) Linking.openURL(dettaglio.sitoWeb.startsWith("http") ? dettaglio.sitoWeb : `https://${dettaglio.sitoWeb}`);
   };
 
+  const apriRivendica = () => {
+    Linking.openURL(`https://www.naturago.it/host?modo=registrati&nome=${encodeURIComponent(struttura.nome)}`);
+  };
+
   const periodoApertura = (() => {
     if (!dettaglio) return null;
-    if (struttura.origine === "rifugi") return dettaglio.periodoApertura || null;
+    if (struttura.origine === "rifugi" || struttura.origine === "camper_service") return dettaglio.periodoApertura || null;
     if (dettaglio.periodoAperturaTipo && dettaglio.periodoAperturaTipo !== "stagionale") return "Aperto tutto l'anno";
     if (dettaglio.aperturaMeseInizio && dettaglio.aperturaMeseFine) {
       return `Aperto da ${MESI[dettaglio.aperturaMeseInizio - 1]} a ${MESI[dettaglio.aperturaMeseFine - 1]}`;
@@ -223,6 +238,18 @@ export default function SchedaScreen({ route, navigation }) {
             <View style={styles.avvisoArancio}>
               <Ionicons name="information-circle-outline" size={16} color="#ea580c" />
               <Text style={styles.avvisoAranciotesto}>{dettaglio.notaVerifica || "Dati da verificare sul posto."}</Text>
+            </View>
+          )}
+          {dettaglio?.verificato === false && (
+            <View style={styles.avvisoRivendica}>
+              <Ionicons name="shield-outline" size={20} color={colori.testoSecondario} />
+              <Text style={styles.avvisoRivendicaTitolo}>Questa scheda non è ancora stata verificata</Text>
+              <Text style={styles.avvisoRivendicaTesto}>
+                Non è ancora possibile prenotare qui. Se gestisci tu questa struttura, rivendica gratis la scheda per completarla e iniziare a ricevere prenotazioni.
+              </Text>
+              <Pressable style={styles.bottoneRivendica} onPress={apriRivendica}>
+                <Text style={styles.bottoneRivendicaTesto}>Sei il gestore? Rivendica questa scheda gratis</Text>
+              </Pressable>
             </View>
           )}
 
@@ -355,6 +382,73 @@ export default function SchedaScreen({ route, navigation }) {
               <RigaDettaglio icona="flask-outline" testo={dettaglio.camperServiceCaricoAcqua ? "Carico acqua potabile" : null} />
               <RigaDettaglio icona="flash-outline" testo={dettaglio.camperServiceCorrente ? "Corrente elettrica" : null} />
               <RigaDettaglio icona="pricetag-outline" testo={dettaglio.camperServiceCosto || (dettaglio.camperServiceAltro ?? null)} />
+            </View>
+          )}
+
+          {struttura.origine === "camper_service" && dettaglio && (
+            <View style={styles.sezione}>
+              <Text style={styles.sezioneTitolo}>Servizi</Text>
+              <RigaDettaglio icona="key-outline" testo={dettaglio.accesso ? `Accesso ${dettaglio.accesso}` : null} />
+              <RigaDettaglio icona="pricetag-outline" testo={dettaglio.costoIndicativo || null} />
+              <RigaDettaglio icona="water-outline" testo={dettaglio.scaricoAcqueNere ? "Scarico acque nere" : null} />
+              <RigaDettaglio icona="water-outline" testo={dettaglio.scaricoAcqueGrigie ? "Scarico acque grigie" : null} />
+              <RigaDettaglio icona="flask-outline" testo={dettaglio.caricoAcquaPotabile ? "Carico acqua potabile" : null} />
+              <RigaDettaglio icona="flash-outline" testo={dettaglio.correnteElettrica ? "Corrente elettrica" : null} />
+              <RigaDettaglio icona="time-outline" testo={dettaglio.orari || null} />
+              <RigaDettaglio icona="ellipsis-horizontal-outline" testo={dettaglio.altriServizi || null} />
+            </View>
+          )}
+
+          {piazzole.length > 0 && (
+            <View style={styles.sezione}>
+              <Text style={styles.sezioneTitolo}>Piazzole e alloggi</Text>
+              <View style={styles.piazzoleGriglia}>
+                {piazzole.map((pz) => {
+                  const eAlloggio = pz.tipo === "alloggio";
+                  const titolo = eAlloggio
+                    ? `${ETICHETTA_TIPO_ALLOGGIO[pz.tipoAlloggio] || "Alloggio"}${pz.numero ? ` · ${pz.numero}` : ""}`
+                    : `Piazzola${pz.numero ? ` ${pz.numero}` : ""}`;
+                  const dettagli = eAlloggio
+                    ? [
+                        pz.postiLetto ? `${pz.postiLetto} posti letto` : null,
+                        pz.stanze ? `${pz.stanze} stanze` : null,
+                        pz.mq ? `${pz.mq} mq` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : pz.lunghezza && pz.larghezza
+                    ? `${pz.lunghezza} x ${pz.larghezza} m`
+                    : null;
+                  return (
+                    <View key={pz.id} style={styles.piazzolaCard}>
+                      <View style={styles.piazzolaFoto}>
+                        <ImmagineConRiserva
+                          uri={pz.fotoUrl}
+                          larghezza={300}
+                          style={styles.piazzolaFoto}
+                          icona="image-outline"
+                          iconaDimensione={20}
+                          iconaColore={colori.testoSecondario}
+                        />
+                      </View>
+                      <View style={styles.piazzolaInfo}>
+                        <View style={styles.piazzolaRigaTitolo}>
+                          <Text style={styles.piazzolaTitolo} numberOfLines={1}>
+                            {titolo}
+                          </Text>
+                          {pz.prezzo != null && <Text style={styles.piazzolaPrezzo}>{pz.prezzo}€/notte</Text>}
+                        </View>
+                        {dettagli && <Text style={styles.piazzolaDettagli}>{dettagli}</Text>}
+                        {pz.descrizione && (
+                          <Text style={styles.piazzolaDescrizione} numberOfLines={2}>
+                            {pz.descrizione}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           )}
 
@@ -562,6 +656,24 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   avvisoAranciotesto: { flex: 1, fontSize: 11.5, color: "#9a3412", fontWeight: "600" },
+  avvisoRivendica: {
+    alignItems: "center",
+    backgroundColor: "#fff7ed",
+    borderRadius: 14,
+    padding: 16,
+    gap: 6,
+  },
+  avvisoRivendicaTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo, textAlign: "center" },
+  avvisoRivendicaTesto: { fontSize: 11.5, color: colori.testoSecondario, textAlign: "center", lineHeight: 16 },
+  bottoneRivendica: {
+    marginTop: 6,
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#ea580c",
+    alignItems: "center",
+  },
+  bottoneRivendicaTesto: { fontSize: 12.5, fontWeight: "700", color: "#fff" },
   sezione: { gap: 8, marginTop: 6 },
   sezioneTitolo: { fontSize: 14, fontWeight: "800", color: colori.testo, marginBottom: 2 },
   rigaDettaglio: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -586,6 +698,26 @@ const styles = StyleSheet.create({
   rigaCulturaTitolo: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
   rigaCulturaTipo: { fontSize: 10.5, color: colori.testoSecondario },
   rigaCulturaDistanza: { fontSize: 11, fontWeight: "600", color: colori.testoSecondario },
+  piazzoleGriglia: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  piazzolaCard: {
+    width: "47%",
+    backgroundColor: colori.grigioSfondo,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  piazzolaFoto: {
+    width: "100%",
+    height: 90,
+    backgroundColor: colori.bluChiaro,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  piazzolaInfo: { padding: 8, gap: 2 },
+  piazzolaRigaTitolo: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 4 },
+  piazzolaTitolo: { flex: 1, fontSize: 11.5, fontWeight: "700", color: colori.testo },
+  piazzolaPrezzo: { fontSize: 11, fontWeight: "700", color: colori.testo },
+  piazzolaDettagli: { fontSize: 10, color: colori.testoSecondario },
+  piazzolaDescrizione: { fontSize: 10.5, color: "#4b5563", marginTop: 2 },
   sezioneRecensioni: { paddingHorizontal: 20, paddingTop: 4, gap: 10 },
   recensioniTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
   recensioniVuoto: { fontSize: 12, color: colori.testoSecondario },

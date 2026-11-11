@@ -68,7 +68,8 @@
           "speechRecognitionPermission": "NaturaGo trascrive quello che dici per capire cosa stai cercando o che percorso vuoi creare."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {
