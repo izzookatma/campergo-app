@@ -77,12 +77,18 @@ function posizioneTappa(t) {
 async function arricchisciConTappe(itinerari) {
   if (itinerari.length === 0) return itinerari;
   const ids = itinerari.map((it) => it.id);
-  const { data: tappe, error } = await supabase
-    .from("itinerario_tappe")
-    .select("itinerario_id, ordine, foto, tipo, lat, lng, campeggi(lat, lng)")
-    .in("itinerario_id", ids)
-    .order("ordine", { ascending: true });
-  if (error) throw error;
+  // Paginato come caricaTutteLePosizioniItinerari qui sotto: le tappe dei
+  // soli sentieri sono già oltre le 1000 righe che Supabase restituirebbe
+  // in una sola chiamata (1.323 il 14/11/2026), quindi senza paginare
+  // qualche sentiero perderebbe in silenzio la copertina o la posizione.
+  const tappe = await paginaTutto(() =>
+    supabase
+      .from("itinerario_tappe")
+      .select("itinerario_id, ordine, foto, tipo, lat, lng, campeggi(lat, lng)")
+      .in("itinerario_id", ids)
+      .order("ordine", { ascending: true })
+      .order("id", { ascending: true })
+  );
 
   const copertine = {};
   const posizioni = {};
