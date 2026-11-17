@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Constants from "expo-constants";
+import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { percorsoStradale } from "../lib/percorsoStradale";
@@ -8,7 +8,7 @@ import { percorsoStradale } from "../lib/percorsoStradale";
 // react-native-maps richiede moduli nativi non presenti in Expo Go (stesso
 // limite di MappaScreen.js): in attesa della build di sviluppo EAS si mostra
 // un segnaposto per non far crashare l'app in Expo Go.
-const DENTRO_EXPO_GO = Constants.appOwnership === "expo" || Constants.executionEnvironment === "storeClient";
+const DENTRO_EXPO_GO = MAPPA_VERA_NON_DISPONIBILE;
 
 // Traccia il percorso vero (strada per strada) fra le tappe in ordine,
 // stesso servizio gratuito usato dal sito (OSRM) — nessuna chiave richiesta.

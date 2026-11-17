@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Constants from "expo-constants";
+import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { percorsoStradale } from "../lib/percorsoStradale";
@@ -17,7 +17,7 @@ import { CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
 // CardVoce, PianoGiorno.js) — stessa idea del sito (PianificaViaggio.jsx,
 // MappaPiano, lì con Leaflet), qui con react-native-maps.
 
-const DENTRO_EXPO_GO = Constants.appOwnership === "expo" || Constants.executionEnvironment === "storeClient";
+const DENTRO_EXPO_GO = MAPPA_VERA_NON_DISPONIBILE;
 
 // La prima proposta disponibile tra campeggio/area sosta/libera per quel
 // giorno — stessa priorità di puntoDormireGiorno sul sito.

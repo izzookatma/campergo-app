@@ -19,12 +19,19 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usiamo la tua posizione per mostrarti le strutture più vicine a te.",
-        "NSPhotoLibraryUsageDescription": "Per aggiungere foto ai tuoi annunci del mercatino.",
+        "NSPhotoLibraryUsageDescription": "Per aggiungere foto ai tuoi annunci del mercatino e alla vetrina della tua struttura.",
+        "NSCameraUsageDescription": "Per scattare le foto della tua struttura e caricarle nella vetrina.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "it.naturago.app",
+      "versionCode": 3,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBSsjGE-cPNnsy1iGNqzk5RlQmXqMkMWcQ"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#0e3a53",
         "foregroundImage": "./assets/icon.png"
@@ -48,7 +55,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Per aggiungere foto ai tuoi annunci del mercatino."
+          "photosPermission": "Per aggiungere foto ai tuoi annunci del mercatino e alla vetrina della tua struttura.",
+          "cameraPermission": "Per scattare le foto della tua struttura e caricarle nella vetrina."
         }
       ],
       [
@@ -73,6 +81,7 @@
       "expo-status-bar"
     ],
     "extra": {
+      "mappaAndroidAttiva": true,
       "eas": {
         "projectId": "a00761bf-354c-44cc-853b-5a06a22ffed4"
       }

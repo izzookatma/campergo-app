@@ -22,6 +22,7 @@ import MieSegnalazioniScreen from "./src/screens/MieSegnalazioniScreen";
 import NuovaSegnalazioneScreen from "./src/screens/NuovaSegnalazioneScreen";
 import NuovoItinerarioScreen from "./src/screens/NuovoItinerarioScreen";
 import EliminaAccountScreen from "./src/screens/EliminaAccountScreen";
+import MiaStrutturaScreen from "./src/screens/MiaStrutturaScreen";
 import MercatinoScreen from "./src/screens/MercatinoScreen";
 import AnnuncioScreen from "./src/screens/AnnuncioScreen";
 import NuovoAnnuncioScreen from "./src/screens/NuovoAnnuncioScreen";
@@ -115,6 +116,7 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="PianificaViaggio" component={PianificaViaggioScreen} />
       <ProfiloStack.Screen name="MieSegnalazioni" component={MieSegnalazioniScreen} />
       <ProfiloStack.Screen name="NuovaSegnalazione" component={NuovaSegnalazioneScreen} />
+      <ProfiloStack.Screen name="MiaStruttura" component={MiaStrutturaScreen} />
       <ProfiloStack.Screen name="EliminaAccount" component={EliminaAccountScreen} />
       <ProfiloStack.Screen name="Accedi" component={AccediScreen} />
     </ProfiloStack.Navigator>

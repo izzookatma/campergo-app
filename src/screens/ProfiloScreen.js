@@ -1,4 +1,6 @@
+import { useCallback, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Alert, Linking } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
@@ -6,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import AccediScreen from "./AccediScreen";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import { caricaMiaStruttura } from "../lib/host";
 
 const MOTORI_MAPPA = [
   { chiave: "google", etichetta: "Google" },
@@ -31,6 +34,31 @@ export default function ProfiloScreen({ navigation }) {
   const { session, esci } = useAuth();
   const { motoreMappa, setMotoreMappa } = usePreferenze();
 
+  // La voce "La mia struttura" compare solo a chi gestisce davvero una
+  // scheda (stesso account del sito): per i clienti il Profilo resta
+  // identico a prima. Ricontrollato a ogni ritorno sulla pagina, così
+  // compare anche subito dopo un accesso. Se il controllo fallisce (rete)
+  // la voce semplicemente non c'è: nessun errore davanti a un cliente.
+  const utenteId = session?.user?.id;
+  const [struttura, setStruttura] = useState(null);
+  useFocusEffect(
+    useCallback(() => {
+      let attivo = true;
+      if (!utenteId) {
+        setStruttura(null);
+        return undefined;
+      }
+      caricaMiaStruttura(utenteId)
+        .then((s) => {
+          if (attivo) setStruttura(s);
+        })
+        .catch((e) => console.error("[NaturaGo app] caricaMiaStruttura", e));
+      return () => {
+        attivo = false;
+      };
+    }, [utenteId])
+  );
+
   if (!session) return <AccediScreen />;
 
   return (
@@ -47,6 +75,21 @@ export default function ProfiloScreen({ navigation }) {
             <Text style={styles.email}>{session.user.email}</Text>
           </View>
         </View>
+
+        {struttura && (
+          <Pressable style={styles.struttura} onPress={() => navigation.navigate("MiaStruttura")}>
+            <View style={styles.strutturaIcona}>
+              <Ionicons name="camera" size={18} color={colori.bianco} />
+            </View>
+            <View style={styles.strutturaTesti}>
+              <Text style={styles.strutturaTitolo}>La mia struttura</Text>
+              <Text style={styles.strutturaNome} numberOfLines={1}>
+                {struttura.nome} · foto e dati della vetrina
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colori.bianco} />
+          </Pressable>
+        )}
 
         <View style={styles.menu}>
           {VOCI_MENU.map((voce, i) => (
@@ -112,6 +155,26 @@ const styles = StyleSheet.create({
   },
   nome: { fontWeight: "800", fontSize: 15, color: colori.testo },
   email: { fontSize: 11.5, color: colori.testoSecondario },
+  struttura: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colori.blu,
+    borderRadius: raggioCard,
+    padding: 13,
+    ...ombraCard,
+  },
+  strutturaIcona: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  strutturaTesti: { flex: 1 },
+  strutturaTitolo: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
+  strutturaNome: { color: "rgba(255,255,255,.85)", fontSize: 11.5, marginTop: 1 },
   menu: { backgroundColor: colori.bianco, borderRadius: raggioCard, ...ombraCard },
   vocemenu: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13 },
   vocemenuBordo: { borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },

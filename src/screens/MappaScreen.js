@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Constants from "expo-constants";
+import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,7 +22,7 @@ import { distanzaKmPunti } from "../lib/percorsoStradale";
 // react-native-maps richiede moduli nativi non presenti in Expo Go: in attesa
 // della build di sviluppo EAS si mostra il segnaposto per non far crashare
 // l'app in Expo Go. Appena pronta la build, questo controllo diventa superfluo.
-const DENTRO_EXPO_GO = Constants.appOwnership === "expo" || Constants.executionEnvironment === "storeClient";
+const DENTRO_EXPO_GO = MAPPA_VERA_NON_DISPONIBILE;
 
 const REGIONE_ITALIA = {
   latitude: 42.5,
