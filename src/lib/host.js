@@ -114,3 +114,120 @@ export async function salvaDatiStruttura(struttura, { descrizione, telefono, sit
   if (error) throw error;
   return aggiornamento;
 }
+
+// ---- Piazzole e alloggi ----------------------------------------------------
+// Stessa tabella "piazzole" del sito (tipo = 'piazzola' | 'alloggio'), stessa
+// colonna "ordine" (migrazione 374 del sito) e stesse policy: l'app non
+// introduce nulla di nuovo sul database. Dal telefono si misura, si fotografa
+// e si riordina; creare o cancellare unità resta sul sito.
+
+const COLONNE_UNITA = "id, campeggio_id, numero, tipo, tipo_alloggio, lunghezza, larghezza, mq, posti_letto, stanze, foto_url, ordine, creato_il";
+
+export async function caricaUnita(strutturaId) {
+  const { data, error } = await supabase
+    .from("piazzole")
+    .select(COLONNE_UNITA)
+    .eq("campeggio_id", strutturaId)
+    .order("ordine", { ascending: true, nullsFirst: false })
+    .order("creato_il", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Misure in metri (mq per gli alloggi). Accetta la virgola; campo vuoto = null.
+function numeroODefault(testo) {
+  const pulito = String(testo ?? "").trim().replace(",", ".");
+  if (!pulito) return null;
+  const n = Number(pulito);
+  if (!Number.isFinite(n) || n <= 0) throw new Error("misura non valida");
+  return n;
+}
+
+export async function salvaMisureUnita(unita, { lunghezza, larghezza, mq }) {
+  const aggiornamento = {
+    lunghezza: numeroODefault(lunghezza),
+    larghezza: numeroODefault(larghezza),
+  };
+  if (unita.tipo === "alloggio") aggiornamento.mq = numeroODefault(mq);
+  const { error } = await supabase.from("piazzole").update(aggiornamento).eq("id", unita.id);
+  if (error) throw error;
+  return aggiornamento;
+}
+
+export async function sostituisciFotoUnita(struttura, unita, asset) {
+  const url = await caricaFotoNelBucket(struttura.owner_id, "piazzola", asset);
+  const { error } = await supabase.from("piazzole").update({ foto_url: url }).eq("id", unita.id);
+  if (error) throw error;
+  return url;
+}
+
+// Riscrive l'ordine per intero (0, 1, 2...), come fa il sito dopo un trascinamento.
+export async function salvaOrdineUnita(elenco) {
+  const esiti = await Promise.all(
+    elenco.map((u, indice) => supabase.from("piazzole").update({ ordine: indice }).eq("id", u.id)),
+  );
+  const fallito = esiti.find((r) => r.error);
+  if (fallito) throw fallito.error;
+}
+
+export const TIPI_ALLOGGIO = [
+  { valore: "bungalow", etichetta: "Bungalow" },
+  { valore: "appartamento", etichetta: "Appartamento" },
+  { valore: "tenda_fissa", etichetta: "Tenda fissa" },
+];
+
+// Nuova piazzola o alloggio dal telefono: solo i dati essenziali (numero,
+// misure, foto). Prezzi, supplementi e servizi si completano dal sito.
+// Va in fondo all'elenco; se la foto fallisce l'unità non viene creata.
+export async function creaUnita(struttura, { tipo, numero, tipoAlloggio, lunghezza, larghezza, mq, asset, posizione }) {
+  const numeroPulito = String(numero ?? "").trim();
+  if (!numeroPulito) throw new Error("numero mancante");
+  if (tipo === "alloggio" && !tipoAlloggio) throw new Error("tipo alloggio mancante");
+  const riga = {
+    campeggio_id: struttura.id,
+    tipo,
+    numero: numeroPulito,
+    lunghezza: numeroODefault(lunghezza),
+    larghezza: numeroODefault(larghezza),
+    tipo_alloggio: tipo === "alloggio" ? tipoAlloggio : null,
+    mq: tipo === "alloggio" ? numeroODefault(mq) : null,
+    ordine: posizione,
+    foto_url: asset ? await caricaFotoNelBucket(struttura.owner_id, "piazzola", asset) : null,
+  };
+  const { data, error } = await supabase.from("piazzole").insert(riga).select(COLONNE_UNITA).single();
+  if (error) throw error;
+  return data;
+}
+
+// ---- Avvisi (tabella avvisi_host, migrazione 391 del sito) -----------------
+// Si riempie da sola (nuove richieste di prenotazione, nuove recensioni,
+// messaggi dell'admin). Il gestore legge solo i propri e può solo segnarli
+// come letti.
+
+export async function caricaAvvisi(hostId) {
+  const { data, error } = await supabase
+    .from("avvisi_host")
+    .select("id, tipo, titolo, testo, letto, creato_il")
+    .eq("host_id", hostId)
+    .order("creato_il", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function contaAvvisiNonLetti(hostId) {
+  const { count, error } = await supabase
+    .from("avvisi_host")
+    .select("id", { count: "exact", head: true })
+    .eq("host_id", hostId)
+    .eq("letto", false);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function segnaAvvisiLetti(hostId, ids) {
+  let q = supabase.from("avvisi_host").update({ letto: true }).eq("host_id", hostId).eq("letto", false);
+  if (ids) q = q.in("id", ids);
+  const { error } = await q;
+  if (error) throw error;
+}

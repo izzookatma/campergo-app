@@ -23,6 +23,8 @@ import { REGIONI_ITALIANE } from "../lib/regioni";
 import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
+import ScheletroCard from "../components/ScheletroCard";
+import { vibraLeggera, vibraConferma } from "../lib/vibrazione";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
 import BollinoPromo from "../components/BollinoPromo";
@@ -32,6 +34,32 @@ import { distanzaKm } from "../lib/geo";
 
 const FILTRI = ["Tutti", "Campeggi", "Agriturismi", "Agricampeggi", "Aree sosta", "Camper service", "Rifugi", "Bivacchi"];
 const STRUTTURE_PER_PAGINA = 60;
+
+// Servizi che un camperista cerca per primi: mostrati come icone nella card
+// (max 5, nell'ordine di importanza) così non serve aprire la scheda.
+const SERVIZI_IN_CARD = [
+  ["elettricita", "flash", "Corrente"],
+  ["camperService", "color-fill", "Camper service"],
+  ["caricoAcqua", "water", "Carico acqua"],
+  ["docce", "rainy", "Docce"],
+  ["wifi", "wifi", "Wi-Fi"],
+  ["petFriendly", "paw", "Animali"],
+  ["animaliAmmessi", "paw", "Animali"],
+  ["piscina", "umbrella", "Piscina"],
+];
+
+function iconeServizi(servizi) {
+  if (!servizi || servizi.length === 0) return [];
+  const viste = new Set();
+  const out = [];
+  for (const [chiave, icona, etichetta] of SERVIZI_IN_CARD) {
+    if (servizi.includes(chiave) && !viste.has(icona)) {
+      viste.add(icona);
+      out.push({ chiave, icona, etichetta });
+    }
+  }
+  return out.slice(0, 5);
+}
 
 export default function EsploraScreen({ navigation, route }) {
   const { session } = useAuth();
@@ -61,6 +89,7 @@ export default function EsploraScreen({ navigation, route }) {
   const primoRendering = useRef(!route.params?.ricercaIniziale);
   const ricercaAttiva = ricerca.trim().length >= 2;
   const [inputAFocus, setInputAFocus] = useState(false);
+  const [iaAperta, setIaAperta] = useState(false);
   // Arrivando dall'hub con servizi già riconosciuti dalla ricerca IA
   // (es. "piscina"): parte già impostato, come filtriTipo/ricerca sopra.
   const [filtriServizi, setFiltriServizi] = useState(() => route.params?.serviziIniziali || []);
@@ -262,6 +291,7 @@ export default function EsploraScreen({ navigation, route }) {
   };
 
   const onToggleFavorito = async (struttura) => {
+    vibraConferma();
     if (!session?.user?.id) {
       Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.", [
         { text: "Annulla", style: "cancel" },
@@ -343,7 +373,23 @@ export default function EsploraScreen({ navigation, route }) {
             onChangeText={setRicerca}
             onFocus={() => setInputAFocus(true)}
             onBlur={() => setTimeout(() => setInputAFocus(false), 150)}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            accessibilityLabel="Cerca zona, regione o struttura"
           />
+          <Pressable
+            onPress={vicinoAMe}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Strutture vicino a me"
+            style={[styles.pillaVicino, posizione && styles.pillaVicinoAttivo]}
+          >
+            {cercandoPosizione ? (
+              <ActivityIndicator color={colori.blu} size="small" />
+            ) : (
+              <Ionicons name="navigate" size={16} color={posizione ? colori.bianco : colori.blu} />
+            )}
+          </Pressable>
         </View>
 
         {mostraTendina && (
@@ -415,7 +461,7 @@ export default function EsploraScreen({ navigation, route }) {
           </View>
         )}
 
-        <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />
+        {iaAperta && <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />}
 
         <View style={styles.rigaFiltri}>
           <ScrollView
@@ -429,11 +475,12 @@ export default function EsploraScreen({ navigation, route }) {
               return (
                 <Pressable
                   key={f}
-                  onPress={() =>
-                    f === "Tutti"
+                  onPress={() => {
+                    vibraLeggera();
+                    return f === "Tutti"
                       ? setFiltriTipo([])
-                      : setFiltriTipo((prev) => (prev.includes(f) ? prev.filter((t) => t !== f) : [...prev, f]))
-                  }
+                      : setFiltriTipo((prev) => (prev.includes(f) ? prev.filter((t) => t !== f) : [...prev, f]));
+                  }}
                   style={[styles.chip, attivo && styles.chipAttivo]}
                 >
                   <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{f}</Text>
@@ -443,6 +490,17 @@ export default function EsploraScreen({ navigation, route }) {
           </ScrollView>
 
           <Pressable
+            style={[styles.bottoneFiltriServizi, iaAperta && styles.bottoneFiltriServiziAttivo]}
+            onPress={() => setIaAperta((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel="Cerca con l'intelligenza artificiale"
+          >
+            <Ionicons name="sparkles" size={16} color={iaAperta ? colori.bianco : colori.rosso} />
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Filtri"
             style={[styles.bottoneFiltriServizi, filtriServizi.length > 0 && styles.bottoneFiltriServiziAttivo]}
             onPress={() => setModalFiltriAperto(true)}
           >
@@ -455,14 +513,6 @@ export default function EsploraScreen({ navigation, route }) {
           </Pressable>
         </View>
 
-        <Pressable style={styles.vicinoAMe} onPress={vicinoAMe}>
-          {cercandoPosizione ? (
-            <ActivityIndicator color={colori.bianco} size="small" />
-          ) : (
-            <Ionicons name="navigate" size={16} color={colori.bianco} />
-          )}
-          <Text style={styles.vicinoAMeTesto}>{posizione ? "Ordinato per distanza" : "Vicino a me ora"}</Text>
-        </Pressable>
       </View>
 
       {bannerHostVisibile && (
@@ -492,7 +542,7 @@ export default function EsploraScreen({ navigation, route }) {
       )}
 
       {caricamento ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+        <ScheletroCard />
       ) : errore ? (
         <Text style={styles.messaggioErrore}>{errore}</Text>
       ) : (
@@ -515,7 +565,7 @@ export default function EsploraScreen({ navigation, route }) {
               <View style={styles.cardFoto}>
                 <ImmagineConRiserva
                   uri={item.fotoUrl}
-                  larghezza={160}
+                  larghezza={240}
                   style={styles.cardImmagine}
                   iconaColore={colori.blu}
                 />
@@ -528,6 +578,15 @@ export default function EsploraScreen({ navigation, route }) {
                   {item.localita}
                   {item.distanzaKm != null ? ` · ${item.distanzaKm.toFixed(1)} km` : ""}
                 </Text>
+                {iconeServizi(item.servizi).length > 0 && (
+                  <View style={styles.cardServizi}>
+                    {iconeServizi(item.servizi).map((sv) => (
+                      <View key={sv.chiave} style={styles.cardServizioIcona} accessibilityLabel={sv.etichetta}>
+                        <Ionicons name={sv.icona} size={12} color={colori.blu} />
+                      </View>
+                    ))}
+                  </View>
+                )}
                 {item.rating ? (
                   <View style={styles.cardRatingRiga}>
                     <Ionicons name="star" size={11} color="#f59e0b" />
@@ -643,6 +702,10 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 16,
   },
+  cardServizi: { flexDirection: "row", gap: 5, marginTop: 4 },
+  cardServizioIcona: { width: 22, height: 22, borderRadius: 11, backgroundColor: colori.bluChiaro, alignItems: "center", justifyContent: "center" },
+  pillaVicino: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: colori.bluChiaro },
+  pillaVicinoAttivo: { backgroundColor: colori.blu },
   inputRicerca: { flex: 1, fontSize: 13, color: colori.testo },
   tendina: {
     position: "absolute",
@@ -821,8 +884,8 @@ const styles = StyleSheet.create({
     ...ombraCard,
   },
   cardFoto: {
-    width: 64,
-    height: 64,
+    width: 92,
+    height: 92,
     borderRadius: 12,
     backgroundColor: colori.bluChiaro,
     alignItems: "center",

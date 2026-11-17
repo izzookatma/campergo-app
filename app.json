@@ -26,7 +26,8 @@
     },
     "android": {
       "package": "it.naturago.app",
-      "versionCode": 4,
+      "versionCode": 7,
+      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBSsjGE-cPNnsy1iGNqzk5RlQmXqMkMWcQ"
@@ -69,6 +70,7 @@
         }
       ],
       "expo-font",
+      "expo-notifications",
       "expo-updates",
       [
         "expo-speech-recognition",

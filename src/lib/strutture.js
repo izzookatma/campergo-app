@@ -24,7 +24,7 @@ export const STILE_PER_TIPO = {
 export const STILE_DEFAULT = { icona: "location", colore: colori.rosso };
 
 export const COLONNE_CAMPEGGIO =
-  "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione, ha_promo_attiva";
+  "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione, ha_promo_attiva, amenities";
 
 export const COLONNE_RIFUGIO = "id, nome, comune, provincia, gruppo_montuoso, lat, lng, foto_url, tipo";
 
@@ -66,6 +66,7 @@ const COLONNE_DETTAGLIO_CAMPEGGIO = [
   "descrizione",
   "chi_siamo_testo",
   "amenities",
+  "chi_siamo_foto",
   "verificato",
   "chiusa_temporaneamente",
   "chiusa_temporaneamente_motivo",
@@ -131,6 +132,7 @@ export function normalizzaCampeggio(c) {
     telefono: c.telefono,
     descrizione: c.descrizione,
     haPromoAttiva: c.ha_promo_attiva === true,
+    servizi: Array.isArray(c.amenities) ? c.amenities : [],
   };
 }
 
@@ -722,6 +724,7 @@ export async function caricaDettaglioStruttura({ origine, idOriginale }) {
     sitoWeb: data.sito_web,
     descrizioneEstesa: data.chi_siamo_testo,
     amenities: data.amenities || [],
+    fotoExtra: Array.isArray(data.chi_siamo_foto) ? data.chi_siamo_foto.filter(Boolean) : [],
     verificato: data.verificato,
     chiusaTemporaneamente: data.chiusa_temporaneamente,
     chiusaTemporaneamenteMotivo: data.chiusa_temporaneamente_motivo,

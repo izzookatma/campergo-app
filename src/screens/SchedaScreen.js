@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
+import { vibraConferma } from "../lib/vibrazione";
 import { urlMappa } from "../lib/mappa";
 import { caricaRecensioni, inviaRecensioneStruttura } from "../lib/recensioni";
 import { caricaDettaglioStruttura, caricaPiazzoleStruttura, ETICHETTA_TIPO_ALLOGGIO } from "../lib/strutture";
@@ -56,6 +57,47 @@ function RigaDettaglio({ icona, testo }) {
     <View style={styles.rigaDettaglio}>
       <Ionicons name={icona} size={15} color={colori.testoSecondario} />
       <Text style={styles.rigaDettaglioTesto}>{testo}</Text>
+    </View>
+  );
+}
+
+// Mirror di PRENOTAZIONI_ATTIVE del sito (src/avvisiSito.jsx, oggi false):
+// finché le prenotazioni sono spente il pulsante non compare.
+const PRENOTAZIONI_ATTIVE = false;
+
+// Galleria a scorrimento orizzontale (stessa foto principale + foto del
+// gestore), con puntini; con una sola foto resta un'immagine fissa.
+function GalleriaHero({ foto }) {
+  const { width } = useWindowDimensions();
+  const [indice, setIndice] = useState(0);
+  if (foto.length <= 1) {
+    return (
+      <ImmagineConRiserva
+        uri={foto[0]}
+        larghezza={780}
+        style={styles.heroImmagine}
+        iconaDimensione={46}
+        iconaColore="#60a5fa"
+      />
+    );
+  }
+  return (
+    <View style={styles.heroImmagine}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => setIndice(Math.round(e.nativeEvent.contentOffset.x / width))}
+      >
+        {foto.map((uri) => (
+          <ImmagineConRiserva key={uri} uri={uri} larghezza={780} style={{ width, height: 230 }} iconaColore="#60a5fa" />
+        ))}
+      </ScrollView>
+      <View style={styles.heroPuntini} pointerEvents="none">
+        {foto.map((uri, i) => (
+          <View key={uri} style={[styles.heroPuntino, i === indice && styles.heroPuntinoAttivo]} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -131,6 +173,7 @@ export default function SchedaScreen({ route, navigation }) {
       ]);
       return;
     }
+    vibraConferma();
     const nuovoStato = !preferito;
     setPreferito(nuovoStato);
     const error = await toggleFavorito(session.user.id, struttura.idOriginale, nuovoStato);
@@ -171,13 +214,7 @@ export default function SchedaScreen({ route, navigation }) {
     <View style={styles.schermo}>
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
         <SafeAreaView edges={["top"]} style={styles.hero}>
-          <ImmagineConRiserva
-            uri={struttura.fotoUrl}
-            larghezza={780}
-            style={styles.heroImmagine}
-            iconaDimensione={46}
-            iconaColore="#60a5fa"
-          />
+          <GalleriaHero foto={[struttura.fotoUrl, ...(dettaglio?.fotoExtra || [])].filter(Boolean)} />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={colori.testo} />
           </Pressable>
@@ -560,9 +597,11 @@ export default function SchedaScreen({ route, navigation }) {
           <Pressable style={styles.pulsanteContorno} onPress={apriMappa}>
             <Ionicons name="navigate-outline" size={17} color={colori.testo} />
           </Pressable>
-          <Pressable style={styles.prenotaSubito}>
-            <Text style={styles.prenotaSubitoTesto}>Prenota subito</Text>
-          </Pressable>
+          {PRENOTAZIONI_ATTIVE && (
+            <Pressable style={styles.prenotaSubito}>
+              <Text style={styles.prenotaSubitoTesto}>Prenota subito</Text>
+            </Pressable>
+          )}
         </View>
       </SafeAreaView>
     </View>
@@ -577,6 +616,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  heroPuntini: { position: "absolute", bottom: 10, left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 6 },
+  heroPuntino: { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.55)" },
+  heroPuntinoAttivo: { backgroundColor: "#fff", width: 18 },
   heroImmagine: { width: "100%", height: "100%", position: "absolute" },
   tornaIndietro: {
     position: "absolute",

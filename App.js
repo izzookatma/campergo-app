@@ -5,6 +5,7 @@ import { NavigationContainer, createNavigationContainerRef } from "@react-naviga
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { vibraLeggera } from "./src/lib/vibrazione";
 
 import EsploraHubScreen from "./src/screens/EsploraHubScreen";
 import EsploraScreen from "./src/screens/EsploraScreen";
@@ -23,6 +24,8 @@ import NuovaSegnalazioneScreen from "./src/screens/NuovaSegnalazioneScreen";
 import NuovoItinerarioScreen from "./src/screens/NuovoItinerarioScreen";
 import EliminaAccountScreen from "./src/screens/EliminaAccountScreen";
 import MiaStrutturaScreen from "./src/screens/MiaStrutturaScreen";
+import PiazzoleScreen from "./src/screens/PiazzoleScreen";
+import AvvisiScreen from "./src/screens/AvvisiScreen";
 import MercatinoScreen from "./src/screens/MercatinoScreen";
 import AnnuncioScreen from "./src/screens/AnnuncioScreen";
 import NuovoAnnuncioScreen from "./src/screens/NuovoAnnuncioScreen";
@@ -72,7 +75,6 @@ const PreferitiStack = createNativeStackNavigator();
 const MappaStack = createNativeStackNavigator();
 const ProfiloStack = createNativeStackNavigator();
 const MercatinoStack = createNativeStackNavigator();
-const GiochiStack = createNativeStackNavigator();
 
 function EsploraStackNavigator() {
   return (
@@ -132,7 +134,15 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="MieSegnalazioni" component={MieSegnalazioniScreen} />
       <ProfiloStack.Screen name="NuovaSegnalazione" component={NuovaSegnalazioneScreen} />
       <ProfiloStack.Screen name="MiaStruttura" component={MiaStrutturaScreen} />
+      <ProfiloStack.Screen name="PiazzoleStruttura" component={PiazzoleScreen} />
+      <ProfiloStack.Screen name="AvvisiStruttura" component={AvvisiScreen} />
       <ProfiloStack.Screen name="EliminaAccount" component={EliminaAccountScreen} />
+      <ProfiloStack.Screen name="GiochiHub" component={GiochiHubScreen} />
+      <ProfiloStack.Screen name="Tris" component={TrisScreen} />
+      <ProfiloStack.Screen name="Memory" component={MemoryScreen} />
+      <ProfiloStack.Screen name="Cruciverba" component={CruciverbaScreen} />
+      <ProfiloStack.Screen name="Impiccato" component={ImpiccatoScreen} />
+      <ProfiloStack.Screen name="Oca" component={OcaScreen} />
       <ProfiloStack.Screen name="Accedi" component={AccediScreen} />
     </ProfiloStack.Navigator>
   );
@@ -150,24 +160,9 @@ function MercatinoStackNavigator() {
   );
 }
 
-function GiochiStackNavigator() {
-  return (
-    <GiochiStack.Navigator screenOptions={{ headerShown: false }}>
-      <GiochiStack.Screen name="GiochiHub" component={GiochiHubScreen} />
-      <GiochiStack.Screen name="Tris" component={TrisScreen} />
-      <GiochiStack.Screen name="Memory" component={MemoryScreen} />
-      <GiochiStack.Screen name="Cruciverba" component={CruciverbaScreen} />
-      <GiochiStack.Screen name="Impiccato" component={ImpiccatoScreen} />
-      <GiochiStack.Screen name="Oca" component={OcaScreen} />
-      <GiochiStack.Screen name="Accedi" component={AccediScreen} />
-    </GiochiStack.Navigator>
-  );
-}
-
 const ICONE_TAB = {
   Esplora: "compass",
   Mappa: "map",
-  Giochi: "game-controller",
   Preferiti: "heart",
   Mercatino: "storefront",
   Profilo: "person",
@@ -205,15 +200,16 @@ function ContenutoApp() {
     >
       <StatusBar style="dark" />
       <Tab.Navigator
+        screenListeners={{ tabPress: () => vibraLeggera() }}
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colori.blu,
           tabBarInactiveTintColor: "#9ca3af",
-          tabBarLabelStyle: { fontSize: 9, fontWeight: "700" },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? ICONE_TAB[route.name] : `${ICONE_TAB[route.name]}-outline`}
-              size={19}
+              size={23}
               color={color}
             />
           ),
@@ -221,7 +217,6 @@ function ContenutoApp() {
       >
         <Tab.Screen name="Esplora" component={EsploraStackNavigator} />
         <Tab.Screen name="Mappa" component={MappaStackNavigator} />
-        <Tab.Screen name="Giochi" component={GiochiStackNavigator} />
         <Tab.Screen name="Preferiti" component={PreferitiStackNavigator} />
         <Tab.Screen name="Mercatino" component={MercatinoStackNavigator} />
         <Tab.Screen name="Profilo" component={ProfiloStackNavigator} />

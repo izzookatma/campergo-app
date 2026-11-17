@@ -370,10 +370,20 @@ export default function MiaStrutturaScreen({ navigation }) {
             </Pressable>
           </View>
 
+          <Pressable style={styles.bottonePieno} onPress={() => navigation.navigate("AvvisiStruttura")}>
+            <Ionicons name="notifications-outline" size={17} color={colori.bianco} />
+            <Text style={styles.bottonePienoTesto}>Avvisi</Text>
+          </Pressable>
+
+          <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("PiazzoleStruttura")}>
+            <Ionicons name="resize-outline" size={17} color={colori.blu} />
+            <Text style={styles.bottoneBordoTesto}>Piazzole e alloggi: misure, foto, ordine</Text>
+          </Pressable>
+
           <Pressable style={styles.linkSito} onPress={() => Linking.openURL(URL_PANNELLO_SITO)}>
             <Ionicons name="open-outline" size={15} color={colori.blu} />
             <Text style={styles.linkSitoTesto}>
-              Nome, indirizzo, piazzole, calendario e offerte: apri il pannello completo sul sito
+              Nome, indirizzo, calendario e offerte: apri il pannello completo sul sito
             </Text>
           </Pressable>
         </ScrollView>

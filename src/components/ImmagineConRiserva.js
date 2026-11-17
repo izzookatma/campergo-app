@@ -8,6 +8,13 @@ import { urlImmagineRidimensionata } from "../lib/immagini";
 // se la foto c'è ma il link è rotto (altrimenti resta un riquadro vuoto, non
 // distinguibile da un caricamento bloccato) e chiede a Wikimedia una
 // versione più leggera invece del file originale.
+//
+// Wikimedia risponde 403 alle richieste con l'identità predefinita del client
+// HTTP di Android ("okhttp/…"), quindi su Android nessuna foto Wikimedia si
+// vedeva (verificato il 17/11/2026: okhttp 403, nome descrittivo 200). Per
+// ogni foto si manda un User-Agent descrittivo, come chiede la loro policy.
+const INTESTAZIONI_FOTO = { "User-Agent": "NaturaGo/1.0 (https://naturago.it)" };
+
 export default function ImmagineConRiserva({
   uri,
   larghezza = 400,
@@ -28,5 +35,7 @@ export default function ImmagineConRiserva({
     return icona ? <Ionicons name={icona} size={iconaDimensione} color={iconaColore} /> : <View style={style} />;
   }
 
-  return <Image source={{ uri: urlOttimizzato }} style={style} onError={() => setRotta(true)} />;
+  return (
+    <Image source={{ uri: urlOttimizzato, headers: INTESTAZIONI_FOTO }} style={style} onError={() => setRotta(true)} />
+  );
 }

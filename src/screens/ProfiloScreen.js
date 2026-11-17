@@ -9,6 +9,7 @@ import { usePreferenze } from "../context/PreferenzeContext";
 import AccediScreen from "./AccediScreen";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import { caricaMiaStruttura } from "../lib/host";
+import { registraNotifichePush } from "../lib/notifichePush";
 
 const MOTORI_MAPPA = [
   { chiave: "google", etichetta: "Google" },
@@ -19,6 +20,7 @@ const MOTORI_MAPPA = [
 const VOCI_MENU = [
   { icona: "calendar-outline", testo: "Le mie prenotazioni", azione: "naviga", schermo: "Prenotazioni" },
   { icona: "map-outline", testo: "I miei piani di viaggio", azione: "naviga", schermo: "PianiSalvati" },
+  { icona: "game-controller-outline", testo: "Giochi da viaggio", azione: "naviga", schermo: "GiochiHub" },
   { icona: "flag-outline", testo: "Segnala una struttura mancante", azione: "naviga", schermo: "MieSegnalazioni" },
   {
     icona: "notifications-outline",
@@ -51,6 +53,7 @@ export default function ProfiloScreen({ navigation }) {
       caricaMiaStruttura(utenteId)
         .then((s) => {
           if (attivo) setStruttura(s);
+          if (attivo && s) registraNotifichePush(utenteId);
         })
         .catch((e) => console.error("[NaturaGo app] caricaMiaStruttura", e));
       return () => {
