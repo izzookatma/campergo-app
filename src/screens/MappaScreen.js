@@ -86,19 +86,30 @@ function MappaPlaceholder() {
   );
 }
 
-function MappaVera({ navigation }) {
+function MappaVera({ navigation, route }) {
   const { default: MapView, Marker, Polyline } = require("react-native-maps");
   const { session } = useAuth();
   const mappaRef = useRef(null);
   const [strutture, setStrutture] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
-  const [termine, setTermine] = useState("");
-  // Filtri impostati dalla Ricerca IA (tipo struttura/servizi): non hanno
-  // una propria interfaccia qui (niente chip, a differenza di Esplora), si
-  // impostano solo scrivendo una frase all'IA e si azzerano svuotando la
-  // ricerca con la ×.
-  const [filtriTipoIA, setFiltriTipoIA] = useState([]);
-  const [filtriServiziIA, setFiltriServiziIA] = useState([]);
+  const [termine, setTermine] = useState(() => route?.params?.ricerca || "");
+  // Filtri di tipo/servizi: si impostano con i chip, con la Ricerca IA o
+  // arrivando dal pulsante "Mappa" della lista (EsploraScreen).
+  const [filtriTipoIA, setFiltriTipoIA] = useState(() => route?.params?.filtriTipo || []);
+  const [filtriServiziIA, setFiltriServiziIA] = useState(() => route?.params?.filtriServizi || []);
+  // La tab Mappa resta montata: i filtri in arrivo dalla lista vanno
+  // riapplicati a ogni tocco (il contatore `arrivo` cambia ogni volta).
+  const arrivoApplicato = useRef(route?.params?.arrivo);
+  useEffect(() => {
+    const p = route?.params;
+    if (!p?.arrivo || p.arrivo === arrivoApplicato.current) return;
+    arrivoApplicato.current = p.arrivo;
+    Promise.resolve().then(() => {
+      setFiltriTipoIA(p.filtriTipo || []);
+      setFiltriServiziIA(p.filtriServizi || []);
+      setTermine(p.ricerca || "");
+    });
+  }, [route?.params]);
   const [cercando, setCercando] = useState(false);
   const [senzaConnessione, setSenzaConnessione] = useState(false);
   const [inputAFocus, setInputAFocus] = useState(false);
@@ -764,11 +775,11 @@ function MappaVera({ navigation }) {
   );
 }
 
-export default function MappaScreen({ navigation }) {
+export default function MappaScreen({ navigation, route }) {
   if (DENTRO_EXPO_GO) {
     return <MappaPlaceholder />;
   }
-  return <MappaVera navigation={navigation} />;
+  return <MappaVera navigation={navigation} route={route} />;
 }
 
 const styles = StyleSheet.create({

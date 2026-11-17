@@ -264,8 +264,13 @@ export default function EsploraHubScreen({ navigation }) {
             )}
           </View>
 
-          <Pressable style={styles.vicinoAMeRapido} onPress={vaiVicinoAMe}>
-            <Ionicons name="navigate" size={16} color={colori.bianco} />
+          <Pressable
+            style={styles.vicinoAMeRapido}
+            onPress={vaiVicinoAMe}
+            accessibilityRole="button"
+            accessibilityLabel="Mostra le strutture vicino a te"
+          >
+            <Ionicons name="navigate" size={18} color={colori.bianco} />
             <Text style={styles.vicinoAMeRapidoTesto}>Vicino a te ora</Text>
           </Pressable>
 
@@ -283,7 +288,7 @@ export default function EsploraHubScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={18} color={colori.bianco} />
         </Pressable>
 
-        <Text style={styles.sottotitolo}>Oppure scegli cosa stai cercando</Text>
+        <Text style={styles.sottotitolo}>Cosa stai cercando?</Text>
 
         {SEZIONI.map((sezione) => (
           <View key={sezione.titolo} style={[styles.sezione, { backgroundColor: sezione.tinta }]}>
@@ -302,7 +307,7 @@ export default function EsploraHubScreen({ navigation }) {
               {sezione.tessere.map((tessera) => (
                 <Pressable key={tessera.etichetta} style={styles.tessera} onPress={() => vaiA(tessera)}>
                   <View style={[styles.tesseraIcona, { backgroundColor: colori.bianco }]}>
-                    <Ionicons name={tessera.icona} size={16} color={tessera.colore || sezione.colore} />
+                    <Ionicons name={tessera.icona} size={19} color={tessera.colore || sezione.colore} />
                   </View>
                   <Text style={styles.tesseraTesto}>{tessera.etichetta}</Text>
                   {tessera.inArrivo && <Text style={styles.tesseraArrivo}>In arrivo</Text>}
@@ -319,13 +324,13 @@ export default function EsploraHubScreen({ navigation }) {
 
         <Pressable style={styles.bannerBlog} onPress={() => navigation.push("Blog")}>
           <View style={styles.bannerBlogIcona}>
-            <Ionicons name="book-outline" size={22} color={colori.bianco} />
+            <Ionicons name="book-outline" size={22} color={colori.blu} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.bannerBlogTitolo}>Blog NaturaGo Explorer</Text>
             <Text style={styles.bannerBlogSottotitolo}>Idee, itinerari e consigli per chi viaggia lento</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colori.bianco} />
+          <Ionicons name="chevron-forward" size={18} color={colori.testoSecondario} />
         </Pressable>
 
         <View style={styles.rigaInfo}>
@@ -341,8 +346,8 @@ export default function EsploraHubScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 6 },
-  sottotitolo: { fontSize: 13, fontWeight: "700", color: colori.testoSecondario, textAlign: "center", marginBottom: 2 },
+  contenuto: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
+  sottotitolo: { fontSize: 22, fontWeight: "800", color: colori.testo, marginTop: 6, marginBottom: 2 },
   ricercaRapida: { gap: 8, marginBottom: 2 },
   contenitoreRicerca: { position: "relative", zIndex: 30 },
   tendina: {
@@ -393,23 +398,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     backgroundColor: colori.bianco,
-    borderRadius: 22,
-    height: 44,
-    paddingHorizontal: 16,
+    borderRadius: 26,
+    height: 52,
+    paddingHorizontal: 18,
+    ...ombraCard,
   },
-  inputRicerca: { flex: 1, fontSize: 15, color: colori.testo },
+  inputRicerca: { flex: 1, fontSize: 16, color: colori.testo },
   vicinoAMeRapido: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     backgroundColor: colori.blu,
-    height: 44,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 14,
   },
   vicinoAMeRapidoTesto: { color: colori.bianco, fontWeight: "700", fontSize: 15 },
   sezione: { borderRadius: 16, overflow: "hidden", paddingBottom: 8, gap: 4 },
-  sezioneBanner: { width: "100%", height: 140 },
+  sezioneBanner: { width: "100%", height: 150 },
   sezioneBannerImmagine: { resizeMode: "cover" },
   // Riquadro piccolo, non una fascia su tutta la larghezza/altezza: così
   // non rischia di finire sopra al soggetto della foto (vedi commento sopra
@@ -425,7 +431,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  sezioneTitolo: { fontSize: 14.5, fontWeight: "800", color: "#fff" },
+  sezioneTitolo: { fontSize: 16, fontWeight: "800", color: "#fff" },
   sezionePremuta: { opacity: 0.85 },
   sezioneFreccia: {
     position: "absolute",
@@ -440,8 +446,8 @@ const styles = StyleSheet.create({
   },
   griglia: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 10, paddingTop: 6 },
   tessera: {
-    width: "31%",
-    aspectRatio: 1.35,
+    width: "31.5%",
+    minHeight: 78,
     backgroundColor: "rgba(255,255,255,0.75)",
     borderRadius: 12,
     alignItems: "center",
@@ -450,28 +456,32 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   tesseraIcona: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colori.bianco,
     alignItems: "center",
     justifyContent: "center",
   },
-  tesseraTesto: { fontSize: 11.5, fontWeight: "700", color: colori.testo, textAlign: "center" },
+  tesseraTesto: { fontSize: 12.5, fontWeight: "700", color: colori.testo, textAlign: "center" },
   tesseraArrivo: { fontSize: 8, fontWeight: "700", color: colori.arancio, textTransform: "uppercase" },
   pulsanteTutte: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 4,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colori.blu,
+    backgroundColor: colori.bianco,
   },
-  pulsanteTutteTesto: { fontSize: 13.5, fontWeight: "700", color: colori.blu },
+  pulsanteTutteTesto: { fontSize: 15, fontWeight: "700", color: colori.blu },
   bannerBlog: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: colori.bianco,
     borderRadius: raggioCard,
     padding: 14,
     ...ombraCard,
@@ -480,12 +490,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: colori.bluChiaro,
     alignItems: "center",
     justifyContent: "center",
   },
-  bannerBlogTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.bianco },
-  bannerBlogSottotitolo: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  bannerBlogTitolo: { fontSize: 14.5, fontWeight: "700", color: colori.testo },
+  bannerBlogSottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginTop: 2 },
   bannerPianifica: {
     flexDirection: "row",
     alignItems: "center",
@@ -504,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  bannerPianificaTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.bianco },
+  bannerPianificaTitolo: { fontSize: 14.5, fontWeight: "700", color: colori.bianco },
   bannerPianificaSottotitolo: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   rigaInfo: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 2 },
   pillInfo: {
@@ -514,7 +524,7 @@ const styles = StyleSheet.create({
     backgroundColor: colori.bianco,
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 11,
   },
-  pillInfoTesto: { fontSize: 11, fontWeight: "700", color: colori.testo },
+  pillInfoTesto: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
 });
