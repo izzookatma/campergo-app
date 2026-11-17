@@ -247,8 +247,8 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       richiedeAccesso();
       return;
     }
-    if (!luogoPartenza || !luogoArrivo) {
-      setErrore("Scegli partenza e arrivo da uno dei suggerimenti della lista.");
+    if (testoPartenza.trim().length < 3 || testoArrivo.trim().length < 3) {
+      setErrore("Scrivi la partenza e l'arrivo (almeno 3 lettere ciascuno).");
       return;
     }
     setCaricando(true);
@@ -256,9 +256,21 @@ export default function PianificaViaggioScreen({ navigation, route }) {
     setPiano(null);
     setSalvato(false);
     try {
+      // Se chi usa l'app ha scritto il luogo senza toccare un suggerimento,
+      // si usa il primo suggerimento trovato per quel testo, invece di
+      // lasciare il pulsante spento senza spiegazioni.
+      const risolvi = async (luogo, testo) => luogo || (await suggerimentiLuogo(testo))[0] || null;
+      const partenza = await risolvi(luogoPartenza, testoPartenza);
+      const arrivo = await risolvi(luogoArrivo, testoArrivo);
+      if (!partenza || !arrivo) {
+        setErrore(`Non trovo ${!partenza ? `"${testoPartenza.trim()}"` : `"${testoArrivo.trim()}"`} sulla mappa: prova con un nome più preciso e scegli dalla lista.`);
+        return;
+      }
+      setLuogoPartenza(partenza);
+      setLuogoArrivo(arrivo);
       const { piano: nuovoPiano, richiesta: fraseRichiesta } = await generaPianoStrutturato({
-        partenza: luogoPartenza,
-        arrivo: luogoArrivo,
+        partenza,
+        arrivo,
         giorni,
         preferenzaDormire: dormirePref,
         mostraLuoghiInteresse: luoghiInteresse,
@@ -334,7 +346,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
     setSalvato(false);
   };
 
-  const puoGenerare = luogoPartenza && luogoArrivo && !caricando;
+  const puoGenerare = testoPartenza.trim().length >= 3 && testoArrivo.trim().length >= 3 && !caricando;
 
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
