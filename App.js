@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +45,21 @@ import OcaScreen from "./src/screens/OcaScreen";
 import { colori } from "./src/theme/colors";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { PreferenzeProvider } from "./src/context/PreferenzeContext";
+import { segnaApertura, segnaSchermata, attivaSegnalazioneErrori } from "./src/lib/telemetria";
+
+// Conteggio anonimo dell'uso (vedi src/lib/telemetria.js).
+attivaSegnalazioneErrori();
+const riferimentoNavigazione = createNavigationContainerRef();
+
+function segnaSchermataCorrente() {
+  let stato = riferimentoNavigazione.getRootState();
+  let rotta = null;
+  while (stato && stato.routes?.length) {
+    rotta = stato.routes[stato.index ?? 0];
+    stato = rotta.state;
+  }
+  if (rotta) segnaSchermata(rotta.name, rotta.params);
+}
 
 // Copertina con logo e frase mentre l'app controlla la sessione: resta
 // visibile almeno un attimo anche se il controllo finisce subito, per non
@@ -164,6 +179,7 @@ function ContenutoApp() {
   const [saltatoAccesso, setSaltatoAccesso] = useState(false);
 
   useEffect(() => {
+    segnaApertura();
     const timer = setTimeout(() => setTempoMinimoPassato(true), DURATA_MINIMA_MS);
     return () => clearTimeout(timer);
   }, []);
@@ -182,7 +198,11 @@ function ContenutoApp() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={riferimentoNavigazione}
+      onReady={segnaSchermataCorrente}
+      onStateChange={segnaSchermataCorrente}
+    >
       <StatusBar style="dark" />
       <Tab.Navigator
         screenOptions={({ route }) => ({
