@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
-  rigaTendinaTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
+  rigaTendinaTesto: { flex: 1, fontSize: 14, fontWeight: "600", color: colori.testo },
   rigaTendinaSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
   rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
   tendinaIntestazione: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 16,
   },
-  inputRicerca: { flex: 1, fontSize: 13, color: colori.testo },
+  inputRicerca: { flex: 1, fontSize: 15, color: colori.testo },
   vicinoAMeRapido: {
     flexDirection: "row",
     alignItems: "center",
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
   },
-  vicinoAMeRapidoTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13.5 },
+  vicinoAMeRapidoTesto: { color: colori.bianco, fontWeight: "700", fontSize: 15 },
   sezione: { borderRadius: 16, overflow: "hidden", paddingBottom: 8, gap: 4 },
   sezioneBanner: { width: "100%", height: 140 },
   sezioneBannerImmagine: { resizeMode: "cover" },
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  sezioneTitolo: { fontSize: 13, fontWeight: "800", color: "#fff" },
+  sezioneTitolo: { fontSize: 14.5, fontWeight: "800", color: "#fff" },
   sezionePremuta: { opacity: 0.85 },
   sezioneFreccia: {
     position: "absolute",
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   griglia: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 10, paddingTop: 6 },
   tessera: {
     width: "31%",
-    aspectRatio: 1.7,
+    aspectRatio: 1.35,
     backgroundColor: "rgba(255,255,255,0.75)",
     borderRadius: 12,
     alignItems: "center",
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tesseraTesto: { fontSize: 9.5, fontWeight: "700", color: colori.testo, textAlign: "center" },
+  tesseraTesto: { fontSize: 11.5, fontWeight: "700", color: colori.testo, textAlign: "center" },
   tesseraArrivo: { fontSize: 8, fontWeight: "700", color: colori.arancio, textTransform: "uppercase" },
   pulsanteTutte: {
     flexDirection: "row",
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 4,
   },
-  pulsanteTutteTesto: { fontSize: 12, fontWeight: "700", color: colori.blu },
+  pulsanteTutteTesto: { fontSize: 13.5, fontWeight: "700", color: colori.blu },
   bannerBlog: {
     flexDirection: "row",
     alignItems: "center",
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bannerBlogTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.bianco },
-  bannerBlogSottotitolo: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  bannerBlogSottotitolo: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   bannerPianifica: {
     flexDirection: "row",
     alignItems: "center",
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bannerPianificaTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.bianco },
-  bannerPianificaSottotitolo: { fontSize: 10.5, color: "rgba(255,255,255,0.85)", marginTop: 2 },
+  bannerPianificaSottotitolo: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
   rigaInfo: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 2 },
   pillInfo: {
     flexDirection: "row",

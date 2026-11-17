@@ -277,6 +277,11 @@ export default function SchedaScreen({ route, navigation }) {
               <Text style={styles.avvisoAranciotesto}>{dettaglio.notaVerifica || "Dati da verificare sul posto."}</Text>
             </View>
           )}
+          {struttura.descrizione ? <Text style={styles.descrizione}>{struttura.descrizione}</Text> : null}
+          {dettaglio?.descrizioneEstesa && dettaglio.descrizioneEstesa !== struttura.descrizione ? (
+            <Text style={styles.descrizione}>{dettaglio.descrizioneEstesa}</Text>
+          ) : null}
+
           {dettaglio?.verificato === false && (
             <View style={styles.avvisoRivendica}>
               <Ionicons name="shield-outline" size={20} color={colori.testoSecondario} />
@@ -289,11 +294,6 @@ export default function SchedaScreen({ route, navigation }) {
               </Pressable>
             </View>
           )}
-
-          {struttura.descrizione ? <Text style={styles.descrizione}>{struttura.descrizione}</Text> : null}
-          {dettaglio?.descrizioneEstesa && dettaglio.descrizioneEstesa !== struttura.descrizione ? (
-            <Text style={styles.descrizione}>{dettaglio.descrizioneEstesa}</Text>
-          ) : null}
 
           {/* Informazioni pratiche */}
           <View style={styles.sezione}>
@@ -586,16 +586,20 @@ export default function SchedaScreen({ route, navigation }) {
       </ScrollView>
 
       <SafeAreaView edges={["bottom"]} style={styles.barraAzioni}>
-        <Text style={styles.prezzo}>
-          {struttura.prezzo ? `${struttura.prezzo}€` : "—"}
-          <Text style={styles.prezzoNotte}> /notte</Text>
-        </Text>
+        {struttura.prezzo ? (
+          <Text style={styles.prezzo}>
+            {`${struttura.prezzo}€`}
+            <Text style={styles.prezzoNotte}> /notte</Text>
+          </Text>
+        ) : null}
         <View style={styles.pulsanti}>
-          <Pressable style={styles.pulsanteContorno} onPress={apriChiamata}>
-            <Ionicons name="call-outline" size={17} color={colori.testo} />
+          <Pressable style={styles.pulsanteContorno} onPress={apriChiamata} accessibilityRole="button" accessibilityLabel="Chiama">
+            <Ionicons name="call-outline" size={18} color={colori.testo} />
+            <Text style={styles.pulsanteContornoTesto}>Chiama</Text>
           </Pressable>
-          <Pressable style={styles.pulsanteContorno} onPress={apriMappa}>
-            <Ionicons name="navigate-outline" size={17} color={colori.testo} />
+          <Pressable style={styles.pulsanteContorno} onPress={apriMappa} accessibilityRole="button" accessibilityLabel="Indicazioni stradali">
+            <Ionicons name="navigate-outline" size={18} color={colori.testo} />
+            <Text style={styles.pulsanteContornoTesto}>Indicazioni</Text>
           </Pressable>
           {PRENOTAZIONI_ATTIVE && (
             <Pressable style={styles.prenotaSubito}>
@@ -788,14 +792,17 @@ const styles = StyleSheet.create({
   prezzoNotte: { fontSize: 11, fontWeight: "600", color: colori.testoSecondario },
   pulsanti: { flexDirection: "row", gap: 8, paddingBottom: 6 },
   pulsanteContorno: {
-    width: 44,
-    height: 44,
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    height: 48,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: colori.bordo,
     alignItems: "center",
     justifyContent: "center",
   },
+  pulsanteContornoTesto: { fontSize: 14, fontWeight: "700", color: colori.testo },
   prenotaSubito: {
     flexGrow: 1,
     height: 44,

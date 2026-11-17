@@ -67,7 +67,7 @@ function segnaSchermataCorrente() {
 // Copertina con logo e frase mentre l'app controlla la sessione: resta
 // visibile almeno un attimo anche se il controllo finisce subito, per non
 // far lampeggiare lo schermo.
-const DURATA_MINIMA_MS = 3200;
+const DURATA_MINIMA_MS = 1800;
 
 const Tab = createBottomTabNavigator();
 const EsploraStack = createNativeStackNavigator();
@@ -169,9 +169,8 @@ const ICONE_TAB = {
 };
 
 function ContenutoApp() {
-  const { session, caricamento } = useAuth();
+  const { caricamento } = useAuth();
   const [tempoMinimoPassato, setTempoMinimoPassato] = useState(false);
-  const [saltatoAccesso, setSaltatoAccesso] = useState(false);
 
   useEffect(() => {
     segnaApertura();
@@ -183,15 +182,9 @@ function ContenutoApp() {
     return <SchermataAvvio />;
   }
 
-  // All'avvio, se non si è già loggati, si chiede di accedere o
-  // registrarsi prima di entrare — con la possibilità di continuare senza
-  // account (l'accesso verrà richiesto solo al momento di prenotare). Una
-  // volta scelto (login riuscito o "continua senza account") non si
-  // richiede più finché l'app resta aperta.
-  if (!session && !saltatoAccesso) {
-    return <AccediScreen onSaltaAccesso={() => setSaltatoAccesso(true)} />;
-  }
-
+  // Si entra subito nell'app, senza schermata di accesso: l'account serve
+  // solo per salvare preferiti, prenotare, usare la ricerca IA o il
+  // mercatino, e viene richiesto in quel momento (tab Profilo o avviso).
   return (
     <NavigationContainer
       ref={riferimentoNavigazione}

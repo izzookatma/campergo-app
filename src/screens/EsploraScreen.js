@@ -98,6 +98,24 @@ export default function EsploraScreen({ navigation, route }) {
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
   const [bannerHostVisibile, setBannerHostVisibile] = useState(false);
   const bannerHostMostrato = useRef(false);
+  // Riga dei filtri: se il filtro attivo è fuori schermo (es. "Aree sosta"
+  // arrivando dall'hub), la riga scorre fino a mostrarlo.
+  const righeFiltriRef = useRef(null);
+  const posizioniChip = useRef({});
+  const scorrimentoChip = useRef({ x: 0, larghezza: 0 });
+
+  const mostraChipAttivo = useCallback((nome) => {
+    const pos = posizioniChip.current[nome];
+    const { x, larghezza } = scorrimentoChip.current;
+    if (!pos || !righeFiltriRef.current || larghezza === 0) return;
+    if (pos.x < x || pos.x + pos.w > x + larghezza) {
+      righeFiltriRef.current.scrollTo({ x: Math.max(0, pos.x - 12), animated: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (filtriTipo.length > 0) mostraChipAttivo(filtriTipo[filtriTipo.length - 1]);
+  }, [filtriTipo, mostraChipAttivo]);
 
   useEffect(() => {
     caricaRicercheRecenti().then(setRicercheRecenti);
@@ -465,16 +483,29 @@ export default function EsploraScreen({ navigation, route }) {
 
         <View style={styles.rigaFiltri}>
           <ScrollView
+            ref={righeFiltriRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filtri}
             style={{ flex: 1 }}
+            scrollEventThrottle={32}
+            onScroll={(e) => {
+              scorrimentoChip.current.x = e.nativeEvent.contentOffset.x;
+            }}
+            onLayout={(e) => {
+              scorrimentoChip.current.larghezza = e.nativeEvent.layout.width;
+              if (filtriTipo.length > 0) mostraChipAttivo(filtriTipo[filtriTipo.length - 1]);
+            }}
           >
             {FILTRI.map((f) => {
               const attivo = f === "Tutti" ? filtriTipo.length === 0 : filtriTipo.includes(f);
               return (
                 <Pressable
                   key={f}
+                  onLayout={(e) => {
+                    posizioniChip.current[f] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
+                    if (filtriTipo.length > 0 && filtriTipo[filtriTipo.length - 1] === f) mostraChipAttivo(f);
+                  }}
                   onPress={() => {
                     vibraLeggera();
                     return f === "Tutti"
@@ -582,7 +613,7 @@ export default function EsploraScreen({ navigation, route }) {
                   <View style={styles.cardServizi}>
                     {iconeServizi(item.servizi).map((sv) => (
                       <View key={sv.chiave} style={styles.cardServizioIcona} accessibilityLabel={sv.etichetta}>
-                        <Ionicons name={sv.icona} size={12} color={colori.blu} />
+                        <Ionicons name={sv.icona} size={14} color={colori.blu} />
                       </View>
                     ))}
                   </View>
@@ -703,10 +734,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   cardServizi: { flexDirection: "row", gap: 5, marginTop: 4 },
-  cardServizioIcona: { width: 22, height: 22, borderRadius: 11, backgroundColor: colori.bluChiaro, alignItems: "center", justifyContent: "center" },
+  cardServizioIcona: { width: 26, height: 26, borderRadius: 13, backgroundColor: colori.bluChiaro, alignItems: "center", justifyContent: "center" },
   pillaVicino: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: colori.bluChiaro },
   pillaVicinoAttivo: { backgroundColor: colori.blu },
-  inputRicerca: { flex: 1, fontSize: 13, color: colori.testo },
+  inputRicerca: { flex: 1, fontSize: 15, color: colori.testo },
   tendina: {
     position: "absolute",
     top: 56,
@@ -834,15 +865,15 @@ const styles = StyleSheet.create({
   pulsanteMostraTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
   chip: {
     paddingHorizontal: 12,
-    height: 30,
-    borderRadius: 15,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colori.bianco,
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colori.bordo,
   },
   chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
+  chipTesto: { fontSize: 13, fontWeight: "600", color: colori.testoSecondario },
   chipTestoAttivo: { color: colori.bianco },
   vicinoAMe: {
     flexDirection: "row",
@@ -854,7 +885,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   vicinoAMeTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13.5 },
-  contatore: { fontSize: 11, color: colori.testoSecondario, marginBottom: 4 },
+  contatore: { fontSize: 12.5, color: colori.testoSecondario, marginBottom: 4 },
   bannerHost: {
     flexDirection: "row",
     alignItems: "center",
@@ -884,8 +915,8 @@ const styles = StyleSheet.create({
     ...ombraCard,
   },
   cardFoto: {
-    width: 92,
-    height: 92,
+    width: 104,
+    height: 104,
     borderRadius: 12,
     backgroundColor: colori.bluChiaro,
     alignItems: "center",
@@ -896,12 +927,12 @@ const styles = StyleSheet.create({
   cardImmagine: { width: "100%", height: "100%" },
   cardBollinoPromo: { position: "absolute", top: 3, left: 3 },
   cardInfo: { flex: 1, gap: 2 },
-  cardTipo: { fontSize: 10, fontWeight: "700", color: colori.blu },
-  cardNome: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  cardLocalita: { fontSize: 11, color: colori.testoSecondario },
+  cardTipo: { fontSize: 11.5, fontWeight: "700", color: colori.blu },
+  cardNome: { fontSize: 15, fontWeight: "700", color: colori.testo },
+  cardLocalita: { fontSize: 12.5, color: colori.testoSecondario },
   cardRatingRiga: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 1 },
-  cardRatingTesto: { fontSize: 10.5, fontWeight: "700", color: colori.testo },
-  cardPrezzo: { fontSize: 13, fontWeight: "800", color: colori.testo },
+  cardRatingTesto: { fontSize: 12, fontWeight: "700", color: colori.testo },
+  cardPrezzo: { fontSize: 15, fontWeight: "800", color: colori.testo },
   messaggioErrore: { textAlign: "center", marginTop: 40, color: colori.testoSecondario, paddingHorizontal: 30 },
   bannerOffline: {
     flexDirection: "row",
