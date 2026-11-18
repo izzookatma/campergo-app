@@ -19,7 +19,7 @@ export async function registraNotifichePush(utenteId) {
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
         name: "Avvisi",
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: 3, // = AndroidImportance.DEFAULT (eslint non risolve l'enum)
       });
     }
     let { status } = await Notifications.getPermissionsAsync();
