@@ -97,6 +97,8 @@ function MappaVera({ navigation, route }) {
   // arrivando dal pulsante "Mappa" della lista (EsploraScreen).
   const [filtriTipoIA, setFiltriTipoIA] = useState(() => route?.params?.filtriTipo || []);
   const [filtriServiziIA, setFiltriServiziIA] = useState(() => route?.params?.filtriServizi || []);
+  const [categorieCulturaAttive, setCategorieCulturaAttive] = useState([]);
+  const [categorieItinerarioAttive, setCategorieItinerarioAttive] = useState([]);
   // La tab Mappa resta montata: i filtri in arrivo dalla lista vanno
   // riapplicati a ogni tocco (il contatore `arrivo` cambia ogni volta).
   const arrivoApplicato = useRef(route?.params?.arrivo);
@@ -106,6 +108,8 @@ function MappaVera({ navigation, route }) {
     arrivoApplicato.current = p.arrivo;
     Promise.resolve().then(() => {
       setFiltriTipoIA(p.filtriTipo || []);
+      setCategorieCulturaAttive([]);
+      setCategorieItinerarioAttive([]);
       setFiltriServiziIA(p.filtriServizi || []);
       setTermine(p.ricerca || "");
     });
@@ -117,9 +121,7 @@ function MappaVera({ navigation, route }) {
   const [cercandoPosizione, setCercandoPosizione] = useState(false);
   const [regione, setRegione] = useState(REGIONE_ITALIA);
   const [cultura, setCultura] = useState([]);
-  const [categorieCulturaAttive, setCategorieCulturaAttive] = useState(CATEGORIE_CULTURA);
   const [itinerari, setItinerari] = useState([]);
-  const [categorieItinerarioAttive, setCategorieItinerarioAttive] = useState(CATEGORIE_ITINERARIO);
 
   // "Creami un percorso": percorso stradale vero (tappe nominate + tappe
   // intermedie, src/lib/percorsoStradale.js) disegnato sopra la mappa già
@@ -219,9 +221,16 @@ function MappaVera({ navigation, route }) {
   const categoriaCulturaCercata = PAROLE_CATEGORIA_CULTURA[pulitoMinuscolo];
   const categoriaItinerarioCercata = PAROLE_CATEGORIA_ITINERARIO[pulitoMinuscolo];
 
+  // Un solo filtro per tutta la mappa: nessun chip scelto = "Tutti" (si vede
+  // tutto); appena se ne sceglie uno si vedono SOLO le categorie scelte (prima
+  // i chip Musei/Sentieri/Percorsi 4x4 partivano tutti accesi e toccarne uno
+  // lo spegneva, lasciando in mappa le migliaia di strutture).
+  const nessunaSelezione =
+    filtriTipoIA.length === 0 && categorieCulturaAttive.length === 0 && categorieItinerarioAttive.length === 0;
+
   const culturaVisibile = useMemo(() => {
     if (categoriaCulturaCercata) return cultura.filter((c) => c.categoria === categoriaCulturaCercata);
-    const base = cultura.filter((c) => categorieCulturaAttive.includes(c.categoria));
+    const base = nessunaSelezione ? cultura : cultura.filter((c) => categorieCulturaAttive.includes(c.categoria));
     if (pulitoMinuscolo.length < 2) return base;
     return base.filter(
       (c) =>
@@ -229,16 +238,16 @@ function MappaVera({ navigation, route }) {
         c.citta?.toLowerCase().includes(pulitoMinuscolo) ||
         c.regione?.toLowerCase().includes(pulitoMinuscolo)
     );
-  }, [cultura, categorieCulturaAttive, pulitoMinuscolo, categoriaCulturaCercata]);
+  }, [cultura, categorieCulturaAttive, nessunaSelezione, pulitoMinuscolo, categoriaCulturaCercata]);
 
   const itinerariVisibili = useMemo(() => {
     if (categoriaItinerarioCercata) return itinerari.filter((it) => it.categoria === categoriaItinerarioCercata);
-    const base = itinerari.filter((it) => categorieItinerarioAttive.includes(it.categoria));
+    const base = nessunaSelezione ? itinerari : itinerari.filter((it) => categorieItinerarioAttive.includes(it.categoria));
     if (pulitoMinuscolo.length < 2) return base;
     return base.filter(
       (it) => it.titolo?.toLowerCase().includes(pulitoMinuscolo) || it.regione?.toLowerCase().includes(pulitoMinuscolo)
     );
-  }, [itinerari, categorieItinerarioAttive, pulitoMinuscolo, categoriaItinerarioCercata]);
+  }, [itinerari, categorieItinerarioAttive, nessunaSelezione, pulitoMinuscolo, categoriaItinerarioCercata]);
 
   // Tutte le schede con coordinate (eventualmente filtrate per tipo/servizi),
   // non solo le "migliori" N per punteggio: a differenza di Esplora qui serve
@@ -312,13 +321,21 @@ function MappaVera({ navigation, route }) {
   // Strutture, cultura e itinerari condividono lo stesso clustering: chiavi
   // diverse ("s-"/"c-"/"i-") perché gli id vengono da tabelle diverse e
   // possono coincidere come numero.
+  // Con un chip di sola cultura/itinerari (o una parola-categoria cercata,
+  // es. "4x4") le strutture non vanno mostrate.
+  const struttureMostrate = useMemo(() => {
+    if (categoriaCulturaCercata || categoriaItinerarioCercata) return [];
+    if (!nessunaSelezione && filtriTipoIA.length === 0) return [];
+    return strutture;
+  }, [strutture, nessunaSelezione, filtriTipoIA, categoriaCulturaCercata, categoriaItinerarioCercata]);
+
   const puntiById = useMemo(() => {
     const m = new Map();
-    strutture.forEach((s) => m.set(`s-${s.id}`, { tipo: "struttura", dato: s }));
+    struttureMostrate.forEach((s) => m.set(`s-${s.id}`, { tipo: "struttura", dato: s }));
     culturaVisibile.forEach((c) => m.set(`c-${c.id}`, { tipo: "cultura", dato: c }));
     itinerariVisibili.forEach((it) => m.set(`i-${it.id}`, { tipo: "itinerario", dato: it }));
     return m;
-  }, [strutture, culturaVisibile, itinerariVisibili]);
+  }, [struttureMostrate, culturaVisibile, itinerariVisibili]);
 
   // Indice per il clustering: ricalcolato solo quando cambia l'elenco di
   // schede, non a ogni spostamento della mappa (vedi `cluster` sotto, che
@@ -359,6 +376,8 @@ function MappaVera({ navigation, route }) {
   const svuotaRicerca = () => {
     setTermine("");
     setFiltriTipoIA([]);
+    setCategorieCulturaAttive([]);
+    setCategorieItinerarioAttive([]);
     setFiltriServiziIA([]);
   };
 
@@ -418,6 +437,8 @@ function MappaVera({ navigation, route }) {
       ]);
       return;
     }
+    setCategorieCulturaAttive([]);
+    setCategorieItinerarioAttive([]);
     if (risultato.filtriTipo.length > 0) setFiltriTipoIA(risultato.filtriTipo);
     if (risultato.filtriServizi.length > 0) setFiltriServiziIA(risultato.filtriServizi);
     setTermine(risultato.ricerca || "");
@@ -436,6 +457,8 @@ function MappaVera({ navigation, route }) {
   const alternaFiltroTipo = (f) => {
     if (f === "Tutti") {
       setFiltriTipoIA([]);
+      setCategorieCulturaAttive([]);
+      setCategorieItinerarioAttive([]);
       return;
     }
     setFiltriTipoIA((prev) => (prev.includes(f) ? prev.filter((t) => t !== f) : [...prev, f]));
@@ -660,7 +683,7 @@ function MappaVera({ navigation, route }) {
         <View style={styles.rigaFiltri}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtri}>
             {FILTRI.map((f) => {
-              const attivo = f === "Tutti" ? filtriTipoIA.length === 0 : filtriTipoIA.includes(f);
+              const attivo = f === "Tutti" ? nessunaSelezione : filtriTipoIA.includes(f);
               return (
                 <Pressable key={f} onPress={() => alternaFiltroTipo(f)} style={[styles.chip, attivo && styles.chipAttivo]}>
                   <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{f}</Text>
