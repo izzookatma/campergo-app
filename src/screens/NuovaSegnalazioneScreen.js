@@ -2,12 +2,14 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { TIPO_STRUTTURA_SEGNALABILE_META, SERVIZI_SEGNALAZIONE_META, inviaSegnalazioneStruttura } from "../lib/segnalazioni";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 
 export default function NuovaSegnalazioneScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [tipoStruttura, setTipoStruttura] = useState("campeggio");
   const [amenities, setAmenities] = useState([]);
@@ -53,7 +55,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>Nuova segnalazione</Text>
         <View style={{ width: 34 }} />
@@ -72,7 +74,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
               style={[styles.pill, tipoStruttura === chiave && styles.pillAttiva]}
               onPress={() => setTipoStruttura(chiave)}
             >
-              <Ionicons name={meta.icona} size={13} color={tipoStruttura === chiave ? colori.bianco : colori.testo} />
+              <Ionicons name={meta.icona} size={13} color={tipoStruttura === chiave ? c.sulPrimario : c.testo} />
               <Text style={[styles.pillTesto, tipoStruttura === chiave && styles.pillTestoAttivo]}>{meta.etichetta}</Text>
             </Pressable>
           ))}
@@ -84,7 +86,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
             const attiva = amenities.includes(chiave);
             return (
               <Pressable key={chiave} style={[styles.pill, attiva && styles.pillAttiva]} onPress={() => toggleAmenity(chiave)}>
-                <Ionicons name={meta.icona} size={13} color={attiva ? colori.bianco : colori.testo} />
+                <Ionicons name={meta.icona} size={13} color={attiva ? c.sulPrimario : c.testo} />
                 <Text style={[styles.pillTesto, attiva && styles.pillTestoAttivo]}>{meta.etichetta}</Text>
               </Pressable>
             );
@@ -115,15 +117,16 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
         {errore && <Text style={styles.errore}>{errore}</Text>}
 
         <Pressable style={styles.invia} onPress={invia} disabled={inviando}>
-          {inviando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.inviaTesto}>Invia segnalazione</Text>}
+          {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>Invia segnalazione</Text>}
         </Pressable>
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -132,45 +135,46 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   contenuto: { padding: 20, gap: 8, paddingBottom: 40 },
-  sottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginBottom: 6, lineHeight: 18 },
-  etichetta: { fontSize: 11, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 10, marginBottom: 4 },
+  sottotitolo: { fontSize: 12.5, color: c.testoSecondario, marginBottom: 6, lineHeight: 18 },
+  etichetta: { fontSize: 11, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 10, marginBottom: 4 },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   pill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 999,
     paddingHorizontal: 11,
     paddingVertical: 7,
   },
-  pillAttiva: { backgroundColor: colori.blu, borderColor: colori.blu },
-  pillTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testo },
-  pillTestoAttivo: { color: colori.bianco },
+  pillAttiva: { backgroundColor: c.primario, borderColor: c.primario },
+  pillTesto: { fontSize: 11.5, fontWeight: "600", color: c.testo },
+  pillTestoAttivo: { color: c.sulPrimario },
   campo: {
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: colori.testo,
+    color: c.testo,
   },
-  nota: { fontSize: 11, color: colori.testoSecondario, marginTop: 12, lineHeight: 16 },
-  errore: { fontSize: 12, color: colori.rosso, marginTop: 8 },
+  nota: { fontSize: 11, color: c.testoSecondario, marginTop: 12, lineHeight: 16 },
+  errore: { fontSize: 12, color: c.pericolo, marginTop: 8 },
   invia: {
     marginTop: 16,
     height: 46,
     borderRadius: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
   },
-  inviaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
-});
+  inviaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 13.5 },
+  });
+}

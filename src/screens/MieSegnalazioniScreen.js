@@ -3,11 +3,13 @@ import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaMieSegnalazioni, TIPO_STRUTTURA_SEGNALABILE_META, STATO_SEGNALAZIONE_META } from "../lib/segnalazioni";
 
 export default function MieSegnalazioniScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [segnalazioni, setSegnalazioni] = useState(null);
 
@@ -23,7 +25,7 @@ export default function MieSegnalazioniScreen({ navigation }) {
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>Le mie segnalazioni</Text>
         <View style={{ width: 34 }} />
@@ -35,13 +37,13 @@ export default function MieSegnalazioniScreen({ navigation }) {
         contentContainerStyle={styles.lista}
         ListHeaderComponent={
           <Pressable style={styles.nuova} onPress={() => navigation.navigate("NuovaSegnalazione")}>
-            <Ionicons name="add-circle-outline" size={17} color={colori.blu} />
+            <Ionicons name="add-circle-outline" size={17} color={c.primario} />
             <Text style={styles.nuovaTesto}>Nuova segnalazione</Text>
           </Pressable>
         }
         ListEmptyComponent={
           segnalazioni === null ? (
-            <ActivityIndicator color={colori.blu} style={{ marginTop: 30 }} />
+            <ActivityIndicator color={c.primario} style={{ marginTop: 30 }} />
           ) : (
             <Text style={styles.vuoto}>Non hai ancora segnalato nessuna struttura.</Text>
           )
@@ -52,7 +54,7 @@ export default function MieSegnalazioniScreen({ navigation }) {
           return (
             <View style={styles.card}>
               <View style={styles.cardIntestazione}>
-                {tipoMeta && <Ionicons name={tipoMeta.icona} size={14} color={colori.testoSecondario} />}
+                {tipoMeta && <Ionicons name={tipoMeta.icona} size={14} color={c.testoSecondario} />}
                 <Text style={styles.cardNome}>{item.nome}</Text>
               </View>
               <Text style={styles.cardCitta}>{item.citta}</Text>
@@ -69,8 +71,9 @@ export default function MieSegnalazioniScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -79,32 +82,33 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   lista: { padding: 20, gap: 10, flexGrow: 1 },
   nuova: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colori.grigioSfondo,
+    backgroundColor: c.sfondo,
     borderRadius: 12,
     padding: 13,
     marginBottom: 6,
   },
-  nuovaTesto: { fontSize: 13, fontWeight: "700", color: colori.blu },
-  vuoto: { fontSize: 12.5, color: colori.testoSecondario, textAlign: "center", marginTop: 20 },
+  nuovaTesto: { fontSize: 13, fontWeight: "700", color: c.primario },
+  vuoto: { fontSize: 12.5, color: c.testoSecondario, textAlign: "center", marginTop: 20 },
   card: {
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
+    backgroundColor: c.sfondoGruppo,
+    borderRadius: raggio.l,
     padding: 13,
     gap: 4,
-    ...ombraCard,
+    ...ombra(c),
   },
   cardIntestazione: { flexDirection: "row", alignItems: "center", gap: 7 },
-  cardNome: { fontSize: 13.5, fontWeight: "700", color: colori.testo },
-  cardCitta: { fontSize: 11.5, color: colori.testoSecondario },
+  cardNome: { fontSize: 13.5, fontWeight: "700", color: c.testo },
+  cardCitta: { fontSize: 11.5, color: c.testoSecondario },
   badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3, marginTop: 4 },
   badgeTesto: { fontSize: 10.5, fontWeight: "700" },
-});
+  });
+}

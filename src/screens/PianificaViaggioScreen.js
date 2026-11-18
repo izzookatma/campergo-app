@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { generaPianoStrutturato } from "../lib/pianificatore";
 import { suggerimentiLuogo } from "../lib/geocodifica";
@@ -88,6 +88,8 @@ function useSuggerimentiLuogo(testo, attivo) {
 // luogo e sceglie uno dei suggerimenti già geocodificati (lat/lng pronte),
 // invece di scrivere una frase libera che poi va interpretata dall'IA.
 function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   // Niente setState in onFocus: cambiare stato proprio nell'istante in cui
   // la tastiera sta per aprirsi (build native, non Expo Go) ha fatto
   // restare la tastiera a metà corsa — segnalato dal vivo. I suggerimenti
@@ -99,11 +101,11 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
     <View style={styles.campoContenitore}>
       <Text style={styles.etichettaCampo}>{etichetta}</Text>
       <View style={styles.campoLuogo}>
-        <Ionicons name="location-outline" size={16} color={colori.blu} />
+        <Ionicons name="location-outline" size={16} color={c.primario} />
         <TextInput
           style={styles.campoLuogoInput}
           placeholder={placeholder}
-          placeholderTextColor={colori.testoSecondario}
+          placeholderTextColor={c.testoSecondario}
           value={testo}
           onChangeText={(v) => {
             setTesto(v);
@@ -120,7 +122,7 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
           {risultati.map((r, i) => (
             <Pressable
               key={`${r.nome}-${i}`}
-              style={({ pressed }) => [styles.dropdownVoce, pressed && { backgroundColor: colori.bluChiaro }]}
+              style={({ pressed }) => [styles.dropdownVoce, pressed && { backgroundColor: c.primarioChiaro }]}
               onPress={() => {
                 setTesto(r.nome);
                 setLuogo(r);
@@ -137,16 +139,18 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
 }
 
 function SelettoreGiorni({ valore, onCambia }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   return (
     <View style={styles.campoContenitore}>
       <Text style={styles.etichettaCampo}>Quanti giorni</Text>
       <View style={styles.stepper}>
         <Pressable style={styles.stepperPulsante} onPress={() => onCambia(Math.max(1, valore - 1))} hitSlop={8}>
-          <Ionicons name="remove" size={16} color={colori.blu} />
+          <Ionicons name="remove" size={16} color={c.primario} />
         </Pressable>
         <Text style={styles.stepperValore}>{valore}</Text>
         <Pressable style={styles.stepperPulsante} onPress={() => onCambia(Math.min(GIORNI_MASSIMI, valore + 1))} hitSlop={8}>
-          <Ionicons name="add" size={16} color={colori.blu} />
+          <Ionicons name="add" size={16} color={c.primario} />
         </Pressable>
       </View>
     </View>
@@ -154,10 +158,12 @@ function SelettoreGiorni({ valore, onCambia }) {
 }
 
 function SelettoreDormire({ valore, onCambia }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   return (
     <View style={styles.campoContenitore}>
       <Text style={styles.etichettaCampo}>
-        <Ionicons name="bed-outline" size={12} color={colori.testoSecondario} /> Dove dormire
+        <Ionicons name="bed-outline" size={12} color={c.testoSecondario} /> Dove dormire
       </Text>
       <View style={styles.chipRiga}>
         {OPZIONI_DORMIRE.map((o) => (
@@ -175,9 +181,11 @@ function SelettoreDormire({ valore, onCambia }) {
 }
 
 function ToggleLuoghiInteresse({ attivo, onCambia }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   return (
     <View style={styles.toggleRiga}>
-      <Ionicons name="flag-outline" size={18} color={colori.blu} />
+      <Ionicons name="flag-outline" size={18} color={c.primario} />
       <View style={{ flex: 1 }}>
         <Text style={styles.toggleTitolo}>Luoghi di interesse</Text>
         <Text style={styles.toggleSottotitolo}>Borghi, musei e attività lungo il percorso</Text>
@@ -185,14 +193,16 @@ function ToggleLuoghiInteresse({ attivo, onCambia }) {
       <Switch
         value={attivo}
         onValueChange={onCambia}
-        trackColor={{ true: colori.blu }}
-        thumbColor={colori.bianco}
+        trackColor={{ true: c.primario }}
+        thumbColor={c.sfondoGruppo}
       />
     </View>
   );
 }
 
 export default function PianificaViaggioScreen({ navigation, route }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [richiesta, setRichiesta] = useState("");
   const [testoPartenza, setTestoPartenza] = useState("");
@@ -380,10 +390,10 @@ export default function PianificaViaggioScreen({ navigation, route }) {
 
               <Pressable style={[styles.bottone, !puoGenerare && styles.bottoneDisattivo]} onPress={genera} disabled={!puoGenerare}>
                 {caricando ? (
-                  <ActivityIndicator color={colori.bianco} size="small" />
+                  <ActivityIndicator color={c.sulPrimario} size="small" />
                 ) : (
                   <>
-                    <Ionicons name="sparkles-outline" size={16} color={colori.bianco} />
+                    <Ionicons name="sparkles-outline" size={16} color={c.sulPrimario} />
                     <Text style={styles.bottoneTesto}>Genera il piano</Text>
                   </>
                 )}
@@ -400,9 +410,9 @@ export default function PianificaViaggioScreen({ navigation, route }) {
                   </Text>
                   <Pressable style={styles.pulsanteSalva} onPress={salva} disabled={salvando || salvato}>
                     {salvando ? (
-                      <ActivityIndicator color={colori.blu} size="small" />
+                      <ActivityIndicator color={c.primario} size="small" />
                     ) : (
-                      <Ionicons name={salvato ? "bookmark" : "bookmark-outline"} size={18} color={colori.blu} />
+                      <Ionicons name={salvato ? "bookmark" : "bookmark-outline"} size={18} color={c.primario} />
                     )}
                   </Pressable>
                 </View>
@@ -425,109 +435,113 @@ export default function PianificaViaggioScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bluChiaro },
-  contenuto: { padding: 20, paddingBottom: 40, gap: 4 },
-  titolo: { textAlign: "center", fontSize: 20, fontWeight: "800", color: colori.testo, marginTop: 14 },
-  sottotitolo: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario, marginTop: 4, marginBottom: 14, lineHeight: 18 },
-  card: {
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
-    padding: 16,
-    gap: 14,
-    ...ombraCard,
-  },
-  campoContenitore: { gap: 5 },
-  etichettaCampo: { fontSize: 10.5, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase" },
-  campoLuogo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 42,
-  },
-  campoLuogoInput: { flex: 1, fontSize: 13.5, color: colori.testo },
-  // Non più in overlay assoluto sopra i campi sotto (zIndex/posizione
-  // assoluta: più tentativi, sempre sfarfallii o sovrapposizioni viste dal
-  // vivo sull'iPhone) — nel flusso normale, spinge giù il resto del form
-  // finché non si sceglie un suggerimento: niente più da sovrapporre.
-  dropdown: {
-    marginTop: 4,
-    backgroundColor: colori.bianco,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colori.bordo,
-    maxHeight: 180,
-    overflow: "hidden",
-  },
-  dropdownVoce: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colori.bluChiaro },
-  dropdownTesto: { fontSize: 12.5, color: colori.testo },
-  erroreCampo: { fontSize: 10.5, color: colori.rosso, marginTop: 3 },
-  stepper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    alignSelf: "flex-start",
-  },
-  stepperPulsante: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colori.bianco,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepperValore: { fontSize: 14, fontWeight: "700", color: colori.testo, minWidth: 16, textAlign: "center" },
-  chipRiga: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colori.bordo,
-    backgroundColor: colori.bianco,
-  },
-  chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testo },
-  chipTestoAttivo: { color: colori.bianco },
-  toggleRiga: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: 12,
-    padding: 10,
-  },
-  toggleTitolo: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  toggleSottotitolo: { fontSize: 10.5, color: colori.testoSecondario, marginTop: 1 },
-  bottone: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: colori.blu,
-    borderRadius: 999,
-    paddingVertical: 13,
-  },
-  bottoneDisattivo: { opacity: 0.5 },
-  bottoneTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13.5 },
-  errore: { color: colori.rosso, fontSize: 12.5, marginTop: 10 },
-  risultato: { marginTop: 22, gap: 12 },
-  rigaRisultato: { flexDirection: "row", alignItems: "center", gap: 10 },
-  risultatoTitolo: { flex: 1, fontSize: 15, fontWeight: "800", color: colori.testo },
-  pulsanteSalva: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colori.bianco,
-    ...ombraCard,
-  },
-});
+// Stili derivati dal tema: chiamata (non un vero hook, nessuno stato/effetto
+// interno) da ogni componente di questo file che ne ha bisogno.
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.primarioChiaro },
+    contenuto: { padding: spazio.xl - 4, paddingBottom: spazio.xxl + 8, gap: spazio.xs },
+    titolo: { textAlign: "center", fontSize: 20, fontWeight: "800", color: c.testo, marginTop: 14 },
+    sottotitolo: { textAlign: "center", fontSize: 12.5, color: c.testoSecondario, marginTop: 4, marginBottom: 14, lineHeight: 18 },
+    card: {
+      backgroundColor: c.sfondoGruppo,
+      borderRadius: raggio.l,
+      padding: spazio.l,
+      gap: 14,
+      ...ombra(c),
+    },
+    campoContenitore: { gap: 5 },
+    etichettaCampo: { fontSize: 10.5, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase" },
+    campoLuogo: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: c.primarioChiaro,
+      borderRadius: raggio.m,
+      paddingHorizontal: 12,
+      height: 42,
+    },
+    campoLuogoInput: { flex: 1, fontSize: 13.5, color: c.testo },
+    // Non più in overlay assoluto sopra i campi sotto (zIndex/posizione
+    // assoluta: più tentativi, sempre sfarfallii o sovrapposizioni viste dal
+    // vivo sull'iPhone) — nel flusso normale, spinge giù il resto del form
+    // finché non si sceglie un suggerimento: niente più da sovrapporre.
+    dropdown: {
+      marginTop: 4,
+      backgroundColor: c.sfondoGruppo,
+      borderRadius: raggio.m,
+      borderWidth: 1,
+      borderColor: c.separatore,
+      maxHeight: 180,
+      overflow: "hidden",
+    },
+    dropdownVoce: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.primarioChiaro },
+    dropdownTesto: { fontSize: 12.5, color: c.testo },
+    erroreCampo: { fontSize: 10.5, color: c.pericolo, marginTop: 3 },
+    stepper: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      backgroundColor: c.primarioChiaro,
+      borderRadius: raggio.m,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      alignSelf: "flex-start",
+    },
+    stepperPulsante: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: c.sfondoGruppo,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    stepperValore: { fontSize: 14, fontWeight: "700", color: c.testo, minWidth: 16, textAlign: "center" },
+    chipRiga: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: raggio.pillola,
+      borderWidth: 1,
+      borderColor: c.separatore,
+      backgroundColor: c.sfondoGruppo,
+    },
+    chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
+    chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testo },
+    chipTestoAttivo: { color: c.sulPrimario },
+    toggleRiga: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      backgroundColor: c.primarioChiaro,
+      borderRadius: raggio.m,
+      padding: 10,
+    },
+    toggleTitolo: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+    toggleSottotitolo: { fontSize: 10.5, color: c.testoSecondario, marginTop: 1 },
+    bottone: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: c.primario,
+      borderRadius: raggio.pillola,
+      paddingVertical: 13,
+    },
+    bottoneDisattivo: { opacity: 0.5 },
+    bottoneTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 13.5 },
+    errore: { color: c.pericolo, fontSize: 12.5, marginTop: 10 },
+    risultato: { marginTop: 22, gap: 12 },
+    rigaRisultato: { flexDirection: "row", alignItems: "center", gap: 10 },
+    risultatoTitolo: { flex: 1, fontSize: 15, fontWeight: "800", color: c.testo },
+    pulsanteSalva: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: c.sfondoGruppo,
+      ...ombra(c),
+    },
+  });
+}

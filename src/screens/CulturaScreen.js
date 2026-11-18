@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, TextInput, FlatList, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { caricaSchedeCulturali, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
@@ -11,6 +11,8 @@ import ScheletroCard from "../components/ScheletroCard";
 const CATEGORIE = Object.keys(CATEGORIA_CULTURALE_META);
 
 export default function CulturaScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [categoria, setCategoria] = useState(route.params?.categoria || CATEGORIE[0]);
   const [termine, setTermine] = useState("");
   const [schede, setSchede] = useState([]);
@@ -34,15 +36,15 @@ export default function CulturaScreen({ route, navigation }) {
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
         <Text style={styles.titolo}>Musei, borghi e attività</Text>
         <View style={styles.filtri}>
-          {CATEGORIE.map((c) => {
-            const m = CATEGORIA_CULTURALE_META[c];
-            const attivo = categoria === c;
+          {CATEGORIE.map((chiaveCategoria) => {
+            const m = CATEGORIA_CULTURALE_META[chiaveCategoria];
+            const attivo = categoria === chiaveCategoria;
             return (
               <Pressable
-                key={c}
+                key={chiaveCategoria}
                 style={[styles.chip, attivo && { backgroundColor: m.colore, borderColor: m.colore }]}
                 onPress={() => {
-                  setCategoria(c);
+                  setCategoria(chiaveCategoria);
                   setCaricamento(true);
                 }}
               >
@@ -52,11 +54,11 @@ export default function CulturaScreen({ route, navigation }) {
           })}
         </View>
         <View style={styles.ricerca}>
-          <Ionicons name="search-outline" size={14} color={colori.testoSecondario} />
+          <Ionicons name="search-outline" size={14} color={c.testoSecondario} />
           <TextInput
             style={styles.ricercaInput}
             placeholder="Città, regione o nome…"
-            placeholderTextColor={colori.testoSecondario}
+            placeholderTextColor={c.testoSecondario}
             value={termine}
             onChangeText={(t) => {
               setTermine(t);
@@ -70,7 +72,7 @@ export default function CulturaScreen({ route, navigation }) {
         <ScheletroCard righe={4} />
       ) : schede.length === 0 ? (
         <View style={styles.vuoto}>
-          <Ionicons name={meta.icona} size={28} color={colori.testoSecondario} />
+          <Ionicons name={meta.icona} size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>Nessun risultato trovato.</Text>
         </View>
       ) : (
@@ -106,45 +108,46 @@ export default function CulturaScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 12, gap: 10 },
-  titolo: { textAlign: "center", fontSize: 19, fontWeight: "800", color: colori.testo },
+  titolo: { textAlign: "center", fontSize: 19, fontWeight: "800", color: c.testo },
   filtri: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   chip: {
     paddingHorizontal: 12,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
   },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
-  chipTestoAttivo: { color: colori.bianco },
+  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
+  chipTestoAttivo: { color: "#FFFFFF" },
   ricerca: {
     height: 38,
     borderRadius: 12,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
     paddingHorizontal: 12,
   },
-  ricercaInput: { flex: 1, fontSize: 12.5, color: colori.testo, padding: 0 },
+  ricercaInput: { flex: 1, fontSize: 12.5, color: c.testo, padding: 0 },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
-  vuotoTesto: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario },
-  contatore: { fontSize: 11, color: colori.testoSecondario, marginBottom: 2 },
+  vuotoTesto: { textAlign: "center", fontSize: 12.5, color: c.testoSecondario },
+  contatore: { fontSize: 11, color: c.testoSecondario, marginBottom: 2 },
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
+    backgroundColor: c.sfondoGruppo,
+    borderRadius: raggio.l,
     padding: 12,
-    ...ombraCard,
+    ...ombra(c),
   },
   cardFoto: {
     width: 64,
@@ -156,6 +159,7 @@ const styles = StyleSheet.create({
   },
   cardImmagine: { width: "100%", height: "100%" },
   cardInfo: { flex: 1, gap: 3 },
-  cardTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  cardLocalita: { fontSize: 11, color: colori.testoSecondario },
-});
+  cardTitolo: { fontSize: 13, fontWeight: "700", color: c.testo },
+  cardLocalita: { fontSize: 11, color: c.testoSecondario },
+  });
+}

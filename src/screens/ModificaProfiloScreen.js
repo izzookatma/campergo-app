@@ -7,15 +7,15 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Image,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { caricaFotoProfilo } from "../lib/host";
@@ -24,6 +24,8 @@ import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 // Profilo vero e proprio: foto, nome e password, come nel sito
 // (AccountArea.jsx): stessi campi in user_metadata (nome, avatar_url).
 export default function ModificaProfiloScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session, accedi } = useAuth();
   const utente = session.user;
   const [nome, setNome] = useState(utente.user_metadata?.nome || utente.user_metadata?.full_name || "");
@@ -121,7 +123,7 @@ export default function ModificaProfiloScreen({ navigation }) {
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.indietro} onPress={() => navigation.goBack()} accessibilityLabel="Indietro">
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titolo}>Il mio profilo</Text>
         <View style={{ width: 34 }} />
@@ -131,19 +133,19 @@ export default function ModificaProfiloScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
           <Pressable style={styles.avatarBox} onPress={menuFoto} accessibilityLabel="Cambia la foto del profilo">
             {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
             ) : (
               <View style={[styles.avatar, styles.avatarVuoto]}>
-                <Ionicons name="person" size={44} color={colori.bianco} />
+                <Ionicons name="person" size={44} color={c.sulPrimario} />
               </View>
             )}
             {caricandoFoto && (
               <View style={[styles.avatar, styles.avatarCarica]}>
-                <ActivityIndicator color={colori.bianco} />
+                <ActivityIndicator color="#FFFFFF" />
               </View>
             )}
             <View style={styles.macchina}>
-              <Ionicons name="camera" size={14} color={colori.bianco} />
+              <Ionicons name="camera" size={14} color={c.sulPrimario} />
             </View>
           </Pressable>
           <Text style={styles.cambiaFoto} onPress={menuFoto}>
@@ -152,11 +154,11 @@ export default function ModificaProfiloScreen({ navigation }) {
 
           <View style={styles.box}>
             <Text style={styles.etichetta}>Nome</Text>
-            <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Il tuo nome" placeholderTextColor={colori.testoSecondario} />
+            <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Il tuo nome" placeholderTextColor={c.testoSecondario} />
             <Text style={styles.etichetta}>Email</Text>
             <Text style={styles.emailFissa}>{utente.email}</Text>
             <Pressable style={styles.bottone} onPress={salvaNome} disabled={salvandoNome}>
-              {salvandoNome ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.bottoneTesto}>Salva nome</Text>}
+              {salvandoNome ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>Salva nome</Text>}
             </Pressable>
           </View>
 
@@ -164,11 +166,11 @@ export default function ModificaProfiloScreen({ navigation }) {
             <Text style={styles.sezione}>Password</Text>
             {conPassword ? (
               <>
-                <TextInput style={styles.input} value={passwordAttuale} onChangeText={setPasswordAttuale} placeholder="Password attuale" placeholderTextColor={colori.testoSecondario} secureTextEntry autoCapitalize="none" />
-                <TextInput style={styles.input} value={nuovaPassword} onChangeText={setNuovaPassword} placeholder="Nuova password (almeno 10 caratteri)" placeholderTextColor={colori.testoSecondario} secureTextEntry autoCapitalize="none" />
-                <TextInput style={styles.input} value={confermaPassword} onChangeText={setConfermaPassword} placeholder="Ripeti la nuova password" placeholderTextColor={colori.testoSecondario} secureTextEntry autoCapitalize="none" />
+                <TextInput style={styles.input} value={passwordAttuale} onChangeText={setPasswordAttuale} placeholder="Password attuale" placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
+                <TextInput style={styles.input} value={nuovaPassword} onChangeText={setNuovaPassword} placeholder="Nuova password (almeno 10 caratteri)" placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
+                <TextInput style={styles.input} value={confermaPassword} onChangeText={setConfermaPassword} placeholder="Ripeti la nuova password" placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
                 <Pressable style={styles.bottone} onPress={cambiaPassword} disabled={salvandoPassword}>
-                  {salvandoPassword ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.bottoneTesto}>Cambia password</Text>}
+                  {salvandoPassword ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>Cambia password</Text>}
                 </Pressable>
               </>
             ) : (
@@ -183,24 +185,26 @@ export default function ModificaProfiloScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  intestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 8, backgroundColor: colori.bianco },
-  indietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titolo: { fontSize: 17, fontWeight: "700", color: colori.testo },
-  contenuto: { padding: 20, gap: 16, alignItems: "stretch" },
-  avatarBox: { alignSelf: "center" },
-  avatar: { width: 104, height: 104, borderRadius: 52 },
-  avatarVuoto: { backgroundColor: colori.blu, alignItems: "center", justifyContent: "center" },
-  avatarCarica: { position: "absolute", backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
-  macchina: { position: "absolute", right: 0, bottom: 2, width: 30, height: 30, borderRadius: 15, backgroundColor: colori.blu, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colori.bianco },
-  cambiaFoto: { alignSelf: "center", color: colori.blu, fontWeight: "600", fontSize: 14 },
-  box: { backgroundColor: colori.bianco, borderRadius: 16, padding: 16, gap: 10 },
-  sezione: { fontSize: 15, fontWeight: "700", color: colori.testo },
-  etichetta: { fontSize: 12, fontWeight: "600", color: colori.testoSecondario },
-  input: { borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colori.testo },
-  emailFissa: { fontSize: 15, color: colori.testoSecondario },
-  nota: { fontSize: 13, lineHeight: 19, color: colori.testoSecondario },
-  bottone: { backgroundColor: colori.blu, borderRadius: 12, paddingVertical: 13, alignItems: "center", marginTop: 4 },
-  bottoneTesto: { color: colori.bianco, fontWeight: "700", fontSize: 15 },
-});
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondo },
+    intestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spazio.l, paddingBottom: spazio.s, backgroundColor: c.sfondoGruppo },
+    indietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
+    titolo: { fontSize: 17, fontWeight: "700", color: c.testo },
+    contenuto: { padding: spazio.xl - 4, gap: spazio.l, alignItems: "stretch" },
+    avatarBox: { alignSelf: "center" },
+    avatar: { width: 104, height: 104, borderRadius: 52 },
+    avatarVuoto: { backgroundColor: c.primario, alignItems: "center", justifyContent: "center" },
+    avatarCarica: { position: "absolute", backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+    macchina: { position: "absolute", right: 0, bottom: 2, width: 30, height: 30, borderRadius: 15, backgroundColor: c.primario, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#FFFFFF" },
+    cambiaFoto: { alignSelf: "center", color: c.primario, fontWeight: "600", fontSize: 14 },
+    box: { backgroundColor: c.sfondoGruppo, borderRadius: raggio.l, padding: spazio.l, gap: spazio.s + 2 },
+    sezione: { fontSize: 15, fontWeight: "700", color: c.testo },
+    etichetta: { fontSize: 12, fontWeight: "600", color: c.testoSecondario },
+    input: { borderWidth: 1, borderColor: c.separatore, borderRadius: raggio.m - 2, paddingHorizontal: spazio.l - 2, paddingVertical: spazio.m, fontSize: 15, color: c.testo },
+    emailFissa: { fontSize: 15, color: c.testoSecondario },
+    nota: { fontSize: 13, lineHeight: 19, color: c.testoSecondario },
+    bottone: { backgroundColor: c.primario, borderRadius: raggio.m - 2, paddingVertical: spazio.m + 1, alignItems: "center", marginTop: spazio.xs },
+    bottoneTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 15 },
+  });
+}

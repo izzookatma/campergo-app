@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { isoDaData, dataDaIso, etichettaData, numeroNotti } from "../lib/periodo";
 
 const MESI = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
@@ -10,6 +10,8 @@ const GIORNI = ["L", "M", "M", "G", "V", "S", "D"];
 // Calendario semplice (arrivo → partenza) fatto in JavaScript: nessun
 // modulo nativo in più da compilare.
 export default function SelettoreDate({ visibile, checkIn, checkOut, onConferma, onChiudi }) {
+  const { c } = useTema();
+  const stili = useStili(c);
   const oggi = new Date();
   const oggiIso = isoDaData(new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate()));
   const [mese, setMese] = useState(() => {
@@ -41,7 +43,7 @@ export default function SelettoreDate({ visibile, checkIn, checkOut, onConferma,
           <View style={stili.testata}>
             <Text style={stili.titolo}>Quando vuoi soggiornare?</Text>
             <Pressable onPress={onChiudi} hitSlop={10} accessibilityLabel="Chiudi">
-              <Ionicons name="close" size={22} color={colori.testo} />
+              <Ionicons name="close" size={22} color={c.testo} />
             </Pressable>
           </View>
 
@@ -52,7 +54,7 @@ export default function SelettoreDate({ visibile, checkIn, checkOut, onConferma,
               hitSlop={10}
               accessibilityLabel="Mese precedente"
             >
-              <Ionicons name="chevron-back" size={22} color={puoiTornare ? colori.blu : "#cbd5e1"} />
+              <Ionicons name="chevron-back" size={22} color={puoiTornare ? c.primario : "#cbd5e1"} />
             </Pressable>
             <Text style={stili.meseTitolo}>
               {MESI[mese.getMonth()]} {mese.getFullYear()}
@@ -62,7 +64,7 @@ export default function SelettoreDate({ visibile, checkIn, checkOut, onConferma,
               hitSlop={10}
               accessibilityLabel="Mese successivo"
             >
-              <Ionicons name="chevron-forward" size={22} color={colori.blu} />
+              <Ionicons name="chevron-forward" size={22} color={c.primario} />
             </Pressable>
           </View>
 
@@ -124,25 +126,27 @@ export default function SelettoreDate({ visibile, checkIn, checkOut, onConferma,
   );
 }
 
-const stili = StyleSheet.create({
+function useStili(c) {
+  return StyleSheet.create({
   sfondo: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  foglio: { backgroundColor: colori.bianco, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34, gap: 12 },
+  foglio: { backgroundColor: c.sfondoGruppo, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34, gap: 12 },
   testata: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  titolo: { fontSize: 18, fontWeight: "800", color: colori.testo },
+  titolo: { fontSize: 18, fontWeight: "800", color: c.testo },
   meseRiga: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  meseTitolo: { fontSize: 16, fontWeight: "700", color: colori.testo },
+  meseTitolo: { fontSize: 16, fontWeight: "700", color: c.testo },
   griglia: { flexDirection: "row", flexWrap: "wrap" },
-  giornoSettimana: { width: "14.2857%", textAlign: "center", fontSize: 12, fontWeight: "700", color: colori.testoSecondario, paddingBottom: 6 },
+  giornoSettimana: { width: "14.2857%", textAlign: "center", fontSize: 12, fontWeight: "700", color: c.testoSecondario, paddingBottom: 6 },
   cella: { width: "14.2857%", height: 42, alignItems: "center", justifyContent: "center" },
   cellaDentro: { backgroundColor: "rgba(0,88,124,0.12)" },
-  cellaEstremo: { backgroundColor: colori.blu, borderRadius: 21 },
-  numero: { fontSize: 15, color: colori.testo },
+  cellaEstremo: { backgroundColor: c.primario, borderRadius: 21 },
+  numero: { fontSize: 15, color: c.testo },
   numeroPassato: { color: "#cbd5e1" },
-  numeroEstremo: { color: colori.bianco, fontWeight: "800" },
-  riepilogo: { textAlign: "center", fontSize: 14, fontWeight: "600", color: colori.blu, minHeight: 20 },
+  numeroEstremo: { color: c.sulPrimario, fontWeight: "800" },
+  riepilogo: { textAlign: "center", fontSize: 14, fontWeight: "600", color: c.primario, minHeight: 20 },
   azioni: { flexDirection: "row", gap: 10 },
-  secondario: { flex: 1, borderWidth: 1.5, borderColor: colori.blu, borderRadius: 14, height: 48, alignItems: "center", justifyContent: "center" },
-  secondarioTesto: { color: colori.blu, fontWeight: "700", fontSize: 15 },
-  primario: { flex: 1.4, backgroundColor: colori.blu, borderRadius: 14, height: 48, alignItems: "center", justifyContent: "center" },
-  primarioTesto: { color: colori.bianco, fontWeight: "800", fontSize: 15 },
-});
+  secondario: { flex: 1, borderWidth: 1.5, borderColor: c.primario, borderRadius: 14, height: 48, alignItems: "center", justifyContent: "center" },
+  secondarioTesto: { color: c.primario, fontWeight: "700", fontSize: 15 },
+  primario: { flex: 1.4, backgroundColor: c.primario, borderRadius: 14, height: 48, alignItems: "center", justifyContent: "center" },
+  primarioTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 15 },
+  });
+}

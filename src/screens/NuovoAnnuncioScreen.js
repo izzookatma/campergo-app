@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   Pressable,
-  Image,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
@@ -13,9 +12,10 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { pubblicaAnnuncio, CATEGORIE_MERCATINO, STATO_PRODOTTO_META } from "../lib/mercatino";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
@@ -23,6 +23,8 @@ import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 const MASSIMO_FOTO = 6;
 
 export default function NuovoAnnuncioScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [categoria, setCategoria] = useState("camper");
   const [titolo, setTitolo] = useState("");
@@ -102,7 +104,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
       <SafeAreaView style={styles.schermo} edges={["top"]}>
         <View style={styles.intestazione}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={20} color={colori.testo} />
+            <Ionicons name="chevron-back" size={20} color={c.testo} />
           </Pressable>
           <Text style={styles.titoloSchermo}>Nuovo annuncio</Text>
           <View style={{ width: 20 }} />
@@ -113,15 +115,15 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
             {foto.map((uri) => (
               <View key={uri} style={styles.fotoBox}>
-                <Image source={{ uri }} style={styles.fotoImmagine} />
+                <Image source={{ uri }} style={styles.fotoImmagine} contentFit="cover" />
                 <Pressable style={styles.fotoRimuovi} onPress={() => rimuoviFoto(uri)}>
-                  <Ionicons name="close" size={12} color={colori.bianco} />
+                  <Ionicons name="close" size={12} color="#FFFFFF" />
                 </Pressable>
               </View>
             ))}
             {foto.length < MASSIMO_FOTO && (
               <Pressable style={styles.fotoAggiungi} onPress={scegliFoto}>
-                <Ionicons name="camera-outline" size={22} color={colori.blu} />
+                <Ionicons name="camera-outline" size={22} color={c.primario} />
               </Pressable>
             )}
           </ScrollView>
@@ -140,13 +142,13 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           </ScrollView>
 
           <Text style={styles.etichetta}>Titolo</Text>
-          <TextInput style={styles.campo} placeholder="Es. Camper Fiat Ducato 2018" placeholderTextColor={colori.testoSecondario} value={titolo} onChangeText={setTitolo} />
+          <TextInput style={styles.campo} placeholder="Es. Camper Fiat Ducato 2018" placeholderTextColor={c.testoSecondario} value={titolo} onChangeText={setTitolo} />
 
           <Text style={styles.etichetta}>Descrizione</Text>
           <TextInput
             style={[styles.campo, styles.campoMultilinea]}
             placeholder="Descrivi l'oggetto, le condizioni, eventuali dettagli utili…"
-            placeholderTextColor={colori.testoSecondario}
+            placeholderTextColor={c.testoSecondario}
             value={descrizione}
             onChangeText={setDescrizione}
             multiline
@@ -166,16 +168,16 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           </ScrollView>
 
           <Text style={styles.etichetta}>Prezzo (€)</Text>
-          <TextInput style={styles.campo} placeholder="0" placeholderTextColor={colori.testoSecondario} value={prezzo} onChangeText={setPrezzo} keyboardType="decimal-pad" />
+          <TextInput style={styles.campo} placeholder="0" placeholderTextColor={c.testoSecondario} value={prezzo} onChangeText={setPrezzo} keyboardType="decimal-pad" />
 
           <Text style={styles.etichetta}>Città</Text>
-          <TextInput style={styles.campo} placeholder="Es. Verona" placeholderTextColor={colori.testoSecondario} value={citta} onChangeText={setCitta} />
+          <TextInput style={styles.campo} placeholder="Es. Verona" placeholderTextColor={c.testoSecondario} value={citta} onChangeText={setCitta} />
 
           <Text style={styles.etichetta}>Come si ritira</Text>
           <TextInput
             style={styles.campo}
             placeholder="Es. Consegna a mano, spedizione a carico dell'acquirente…"
-            placeholderTextColor={colori.testoSecondario}
+            placeholderTextColor={c.testoSecondario}
             value={metodoRitiro}
             onChangeText={setMetodoRitiro}
           />
@@ -183,7 +185,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           {errore ? <Text style={styles.errore}>{errore}</Text> : null}
 
           <Pressable style={styles.pulsantePubblica} onPress={pubblica} disabled={pubblicando}>
-            {pubblicando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.pulsantePubblicaTesto}>Pubblica annuncio</Text>}
+            {pubblicando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.pulsantePubblicaTesto}>Pubblica annuncio</Text>}
           </Pressable>
           <Text style={styles.nota}>Il tuo annuncio sarà visibile a tutti dopo l&apos;approvazione di un amministratore.</Text>
         </ScrollView>
@@ -192,8 +194,9 @@ export default function NuovoAnnuncioScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -201,37 +204,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 12,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
-  titoloSchermo: { fontSize: 14, fontWeight: "800", color: colori.testo },
+  titoloSchermo: { fontSize: 14, fontWeight: "800", color: c.testo },
   contenuto: { padding: 20, gap: 6, paddingBottom: 40 },
-  etichetta: { fontSize: 11.5, fontWeight: "700", color: colori.testo, marginTop: 10, marginBottom: 4 },
+  etichetta: { fontSize: 11.5, fontWeight: "700", color: c.testo, marginTop: 10, marginBottom: 4 },
   campo: {
     height: 46,
     borderRadius: 12,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     paddingHorizontal: 14,
     fontSize: 13,
-    color: colori.testo,
+    color: c.testo,
   },
   campoMultilinea: { height: 90, paddingTop: 12, textAlignVertical: "top" },
   chip: {
     paddingHorizontal: 12,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     marginRight: 8,
   },
-  chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
-  chipTestoAttivo: { color: colori.bianco },
+  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
+  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
+  chipTestoAttivo: { color: c.sulPrimario },
   fotoBox: { width: 72, height: 72, borderRadius: 12, marginRight: 8, position: "relative" },
   fotoImmagine: { width: "100%", height: "100%", borderRadius: 12 },
   fotoRimuovi: {
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colori.rosso,
+    backgroundColor: c.pericolo,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -250,21 +253,22 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
   },
-  errore: { color: colori.rosso, fontSize: 12, fontWeight: "600", marginTop: 10 },
+  errore: { color: c.pericolo, fontSize: 12, fontWeight: "600", marginTop: 10 },
   pulsantePubblica: {
     height: 48,
     borderRadius: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 18,
   },
-  pulsantePubblicaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 14 },
-  nota: { fontSize: 10.5, color: colori.testoSecondario, textAlign: "center", marginTop: 8 },
-});
+  pulsantePubblicaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 14 },
+  nota: { fontSize: 10.5, color: c.testoSecondario, textAlign: "center", marginTop: 8 },
+  });
+}

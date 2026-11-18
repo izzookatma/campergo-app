@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Image, View } from "react-native";
+import { View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { urlImmagineRidimensionata } from "../lib/immagini";
 
@@ -36,6 +37,12 @@ export default function ImmagineConRiserva({
   }
 
   return (
-    <Image source={{ uri: urlOttimizzato, headers: INTESTAZIONI_FOTO }} style={style} onError={() => setRotta(true)} />
+    <Image
+      source={{ uri: urlOttimizzato, headers: INTESTAZIONI_FOTO }}
+      style={style}
+      onError={() => setRotta(true)}
+      transition={200}
+      cachePolicy="memory-disk"
+    />
   );
 }

@@ -8,15 +8,15 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Linking,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import {
@@ -37,6 +37,8 @@ const URL_PANNELLO_SITO = "https://www.naturago.it/host";
 // una alla volta, senza un "Salva": in campeggio la rete va e viene, e
 // così ogni scatto riuscito è già al sicuro.
 export default function MiaStrutturaScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const utenteId = session?.user?.id;
 
@@ -183,7 +185,7 @@ export default function MiaStrutturaScreen({ navigation }) {
     <KeyboardAvoidingView style={styles.schermo} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>La mia struttura</Text>
         <View style={{ width: 34 }} />
@@ -191,7 +193,7 @@ export default function MiaStrutturaScreen({ navigation }) {
 
       {caricando ? (
         <View style={styles.centro}>
-          <ActivityIndicator color={colori.blu} />
+          <ActivityIndicator color={c.primario} />
         </View>
       ) : erroreCaricamento ? (
         <View style={styles.centro}>
@@ -199,7 +201,7 @@ export default function MiaStrutturaScreen({ navigation }) {
         </View>
       ) : !struttura ? (
         <View style={styles.centro}>
-          <Ionicons name="business-outline" size={34} color={colori.testoSecondario} />
+          <Ionicons name="business-outline" size={34} color={c.testoSecondario} />
           <Text style={styles.vuotoTitolo}>Nessuna struttura collegata</Text>
           <Text style={styles.vuotoTesto}>
             Questo account non gestisce ancora una struttura. Se ne hai una, registrala gratis dal sito.
@@ -221,10 +223,10 @@ export default function MiaStrutturaScreen({ navigation }) {
             <Text style={styles.cardNota}>È la prima che vedono i viaggiatori, in elenco e in cima alla scheda.</Text>
             <View style={styles.fotoPrincipaleBox}>
               {struttura.foto_url ? (
-                <Image source={{ uri: struttura.foto_url }} style={styles.fotoPrincipale} />
+                <Image source={{ uri: struttura.foto_url }} style={styles.fotoPrincipale} contentFit="cover" transition={200} />
               ) : (
                 <View style={[styles.fotoPrincipale, styles.fotoMancante]}>
-                  <Ionicons name="image-outline" size={30} color={colori.testoSecondario} />
+                  <Ionicons name="image-outline" size={30} color={c.testoSecondario} />
                 </View>
               )}
               {struttura.foto_generica && struttura.foto_url && (
@@ -234,7 +236,7 @@ export default function MiaStrutturaScreen({ navigation }) {
               )}
               {fotoInCorso === "principale" && (
                 <View style={styles.veloCaricamento}>
-                  <ActivityIndicator color={colori.bianco} />
+                  <ActivityIndicator color="#FFFFFF" />
                   <Text style={styles.veloTesto}>Carico la foto…</Text>
                 </View>
               )}
@@ -244,7 +246,7 @@ export default function MiaStrutturaScreen({ navigation }) {
               onPress={() => scegliOrigine("principale")}
               disabled={!!fotoInCorso}
             >
-              <Ionicons name="camera" size={16} color={colori.bianco} />
+              <Ionicons name="camera" size={16} color={c.sulPrimario} />
               <Text style={styles.bottonePienoTesto}>{struttura.foto_url ? "Cambia foto principale" : "Aggiungi foto principale"}</Text>
             </Pressable>
           </View>
@@ -262,7 +264,7 @@ export default function MiaStrutturaScreen({ navigation }) {
               <View style={styles.griglia}>
                 {galleria.map((url) => (
                   <View key={url} style={styles.miniaturaBox}>
-                    <Image source={{ uri: url }} style={styles.miniatura} />
+                    <Image source={{ uri: url }} style={styles.miniatura} contentFit="cover" transition={150} />
                     <Pressable
                       style={styles.togli}
                       onPress={() => chiediRimozione(url)}
@@ -270,7 +272,7 @@ export default function MiaStrutturaScreen({ navigation }) {
                       accessibilityLabel="Togli questa foto"
                       hitSlop={6}
                     >
-                      <Ionicons name="close" size={13} color={colori.bianco} />
+                      <Ionicons name="close" size={13} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ))}
@@ -278,7 +280,7 @@ export default function MiaStrutturaScreen({ navigation }) {
             )}
             {fotoInCorso === "galleria" && (
               <View style={styles.rigaCaricamento}>
-                <ActivityIndicator color={colori.blu} />
+                <ActivityIndicator color={c.primario} />
                 <Text style={styles.rigaCaricamentoTesto}>Aggiorno la galleria…</Text>
               </View>
             )}
@@ -291,7 +293,7 @@ export default function MiaStrutturaScreen({ navigation }) {
                   onPress={() => caricaFoto("galleria", "fotocamera")}
                   disabled={!!fotoInCorso}
                 >
-                  <Ionicons name="camera" size={16} color={colori.bianco} />
+                  <Ionicons name="camera" size={16} color={c.sulPrimario} />
                   <Text style={styles.bottonePienoTesto}>Scatta ora</Text>
                 </Pressable>
                 <Pressable
@@ -299,7 +301,7 @@ export default function MiaStrutturaScreen({ navigation }) {
                   onPress={() => caricaFoto("galleria", "rullino")}
                   disabled={!!fotoInCorso}
                 >
-                  <Ionicons name="images-outline" size={16} color={colori.blu} />
+                  <Ionicons name="images-outline" size={16} color={c.primario} />
                   <Text style={styles.bottoneBordoTesto}>Dal telefono</Text>
                 </Pressable>
               </View>
@@ -366,22 +368,22 @@ export default function MiaStrutturaScreen({ navigation }) {
             {salvato && <Text style={styles.conferma}>Salvato. Le modifiche sono già sulla tua scheda.</Text>}
 
             <Pressable style={[styles.bottonePieno, salvando && styles.disattivato]} onPress={salvaDati} disabled={salvando}>
-              {salvando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.bottonePienoTesto}>Salva i dati</Text>}
+              {salvando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottonePienoTesto}>Salva i dati</Text>}
             </Pressable>
           </View>
 
           <Pressable style={styles.bottonePieno} onPress={() => navigation.navigate("AvvisiStruttura")}>
-            <Ionicons name="notifications-outline" size={17} color={colori.bianco} />
+            <Ionicons name="notifications-outline" size={17} color={c.sulPrimario} />
             <Text style={styles.bottonePienoTesto}>Avvisi</Text>
           </Pressable>
 
           <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("PiazzoleStruttura")}>
-            <Ionicons name="resize-outline" size={17} color={colori.blu} />
+            <Ionicons name="resize-outline" size={17} color={c.primario} />
             <Text style={styles.bottoneBordoTesto}>Piazzole e alloggi: misure, foto, ordine</Text>
           </Pressable>
 
           <Pressable style={styles.linkSito} onPress={() => Linking.openURL(URL_PANNELLO_SITO)}>
-            <Ionicons name="open-outline" size={15} color={colori.blu} />
+            <Ionicons name="open-outline" size={15} color={c.primario} />
             <Text style={styles.linkSitoTesto}>
               Nome, indirizzo, calendario e offerte: apri il pannello completo sul sito
             </Text>
@@ -392,8 +394,9 @@ export default function MiaStrutturaScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -402,22 +405,22 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
-    backgroundColor: colori.bianco,
+    borderBottomColor: c.separatore,
+    backgroundColor: c.sfondoGruppo,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   centro: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 10 },
-  vuotoTitolo: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
-  vuotoTesto: { fontSize: 12.5, color: colori.testoSecondario, textAlign: "center", lineHeight: 18, marginBottom: 6 },
+  vuotoTitolo: { fontSize: 14.5, fontWeight: "800", color: c.testo },
+  vuotoTesto: { fontSize: 12.5, color: c.testoSecondario, textAlign: "center", lineHeight: 18, marginBottom: 6 },
   contenuto: { padding: 16, gap: 14, paddingBottom: 40 },
-  nomeStruttura: { fontSize: 17, fontWeight: "800", color: colori.testo },
-  localita: { fontSize: 12.5, color: colori.testoSecondario, marginTop: 2 },
-  card: { backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 14, gap: 10, ...ombraCard },
+  nomeStruttura: { fontSize: 17, fontWeight: "800", color: c.testo },
+  localita: { fontSize: 12.5, color: c.testoSecondario, marginTop: 2 },
+  card: { backgroundColor: c.sfondoGruppo, borderRadius: raggio.l, padding: 14, gap: 10, ...ombra(c) },
   rigaTitolo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cardTitolo: { fontSize: 13.5, fontWeight: "800", color: colori.testo },
-  cardNota: { fontSize: 11.5, color: colori.testoSecondario, lineHeight: 16 },
-  contatore: { fontSize: 11.5, fontWeight: "700", color: colori.testoSecondario },
+  cardTitolo: { fontSize: 13.5, fontWeight: "800", color: c.testo },
+  cardNota: { fontSize: 11.5, color: c.testoSecondario, lineHeight: 16 },
+  contatore: { fontSize: 11.5, fontWeight: "700", color: c.testoSecondario },
   fotoPrincipaleBox: { borderRadius: 12, overflow: "hidden" },
   fotoPrincipale: { width: "100%", aspectRatio: 16 / 10, backgroundColor: "#eef2f6" },
   fotoMancante: { alignItems: "center", justifyContent: "center" },
@@ -431,7 +434,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 6,
   },
-  bollinoGenericaTesto: { color: colori.bianco, fontSize: 11, fontWeight: "600" },
+  bollinoGenericaTesto: { color: "#FFFFFF", fontSize: 11, fontWeight: "600" },
   veloCaricamento: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,58,84,.6)",
@@ -439,7 +442,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  veloTesto: { color: colori.bianco, fontSize: 12, fontWeight: "700" },
+  veloTesto: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   griglia: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   miniaturaBox: { width: "31%", aspectRatio: 1, borderRadius: 10, overflow: "hidden", backgroundColor: "#eef2f6" },
   miniatura: { width: "100%", height: "100%" },
@@ -455,53 +458,54 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rigaCaricamento: { flexDirection: "row", alignItems: "center", gap: 8 },
-  rigaCaricamentoTesto: { fontSize: 12, color: colori.testoSecondario },
+  rigaCaricamentoTesto: { fontSize: 12, color: c.testoSecondario },
   rigaBottoni: { flexDirection: "row", gap: 8 },
   flex1: { flex: 1 },
   bottonePieno: {
     height: 46,
     borderRadius: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
     paddingHorizontal: 16,
   },
-  bottonePienoTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13 },
+  bottonePienoTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 13 },
   bottoneBordo: {
     height: 46,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colori.blu,
+    borderColor: c.primario,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
     paddingHorizontal: 16,
   },
-  bottoneBordoTesto: { color: colori.blu, fontWeight: "700", fontSize: 13 },
+  bottoneBordoTesto: { color: c.primario, fontWeight: "700", fontSize: 13 },
   disattivato: { opacity: 0.55 },
   etichetta: {
     fontSize: 11,
     fontWeight: "700",
-    color: colori.testoSecondario,
+    color: c.testoSecondario,
     textTransform: "uppercase",
     letterSpacing: 0.4,
     marginTop: 4,
   },
   campo: {
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: colori.testo,
+    color: c.testo,
   },
   campoLungo: { minHeight: 120 },
-  errore: { fontSize: 12, color: colori.rosso, lineHeight: 17 },
+  errore: { fontSize: 12, color: c.pericolo, lineHeight: 17 },
   conferma: { fontSize: 12, color: "#15803d", fontWeight: "600" },
   linkSito: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6, paddingHorizontal: 4 },
-  linkSitoTesto: { flex: 1, fontSize: 12, color: colori.blu, fontWeight: "600", lineHeight: 17 },
-});
+  linkSitoTesto: { flex: 1, fontSize: 12, color: c.primario, fontWeight: "600", lineHeight: 17 },
+  });
+}

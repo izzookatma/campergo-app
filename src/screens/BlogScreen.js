@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, Pressable, FlatList, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { caricaArticoli, etichettaRubrica } from "../lib/blog";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
@@ -13,6 +13,8 @@ function dataBreve(iso) {
 }
 
 export default function BlogScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [articoli, setArticoli] = useState(null);
   const [rubricaScelta, setRubricaScelta] = useState(null);
 
@@ -110,7 +112,7 @@ export default function BlogScreen({ navigation }) {
                   larghezza={200}
                   style={{ width: "100%", height: "100%" }}
                   iconaDimensione={20}
-                  iconaColore={colori.testoSecondario}
+                  iconaColore={c.testoSecondario}
                 />
               </View>
               <View style={styles.cardInfo}>
@@ -129,22 +131,23 @@ export default function BlogScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10, gap: 4 },
-  titolo: { fontSize: 19, fontWeight: "800", color: colori.testo, textAlign: "center", marginTop: 4 },
-  sottotitolo: { fontSize: 12, color: colori.testoSecondario, textAlign: "center" },
+  titolo: { fontSize: 19, fontWeight: "800", color: c.testo, textAlign: "center", marginTop: 4 },
+  sottotitolo: { fontSize: 12, color: c.testoSecondario, textAlign: "center" },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40 },
-  vuotoTesto: { fontSize: 12.5, color: colori.testoSecondario, textAlign: "center" },
+  vuotoTesto: { fontSize: 12.5, color: c.testoSecondario, textAlign: "center" },
   lista: { padding: 20, gap: 12 },
-  cardEvidenza: { height: 180, borderRadius: 16, overflow: "hidden", backgroundColor: colori.bordo },
+  cardEvidenza: { height: 180, borderRadius: 16, overflow: "hidden", backgroundColor: c.separatore },
   cardEvidenzaFoto: { width: "100%", height: "100%", position: "absolute" },
   cardEvidenzaOmbra: { position: "absolute", inset: 0, backgroundColor: "rgba(15,29,23,0.45)" },
   cardEvidenzaTesto: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 14, gap: 4 },
   cardEvidenzaRubrica: {
     alignSelf: "flex-start",
-    backgroundColor: colori.arancio,
-    color: colori.bianco,
+    backgroundColor: c.accento,
+    color: c.sulAccento,
     fontSize: 10,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -152,31 +155,32 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 999,
   },
-  cardEvidenzaTitolo: { color: colori.bianco, fontSize: 16, fontWeight: "800", lineHeight: 21 },
+  cardEvidenzaTitolo: { color: "#FFFFFF", fontSize: 16, fontWeight: "800", lineHeight: 21 },
   filtri: { flexDirection: "row", gap: 7, flexWrap: "wrap" },
   chip: {
     paddingHorizontal: 12,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
   },
-  chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
-  chipTestoAttivo: { color: colori.bianco },
+  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
+  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
+  chipTestoAttivo: { color: c.sulPrimario },
   card: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
+    backgroundColor: c.sfondoGruppo,
+    borderRadius: raggio.l,
     padding: 12,
-    ...ombraCard,
+    ...ombra(c),
   },
   cardFoto: { width: 76, height: 76, borderRadius: 10, overflow: "hidden" },
-  cardFotoSegnaposto: { backgroundColor: colori.grigioSfondo, alignItems: "center", justifyContent: "center" },
+  cardFotoSegnaposto: { backgroundColor: c.sfondo, alignItems: "center", justifyContent: "center" },
   cardInfo: { flex: 1, justifyContent: "center", gap: 4 },
-  cardTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo, lineHeight: 17 },
-  cardSottotitolo: { fontSize: 11, color: colori.testoSecondario },
-});
+  cardTitolo: { fontSize: 13, fontWeight: "700", color: c.testo, lineHeight: 17 },
+  cardSottotitolo: { fontSize: 11, color: c.testoSecondario },
+  });
+}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 
@@ -15,6 +15,8 @@ const TESTO_RICHIESTO = "CANCELLA";
 // per pubblicare su App Store: un'app che permette di registrarsi deve
 // permettere di cancellarsi anche dall'app, non solo dal sito.
 export default function EliminaAccountScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session, accedi, eliminaAccount, esci } = useAuth();
   const [password, setPassword] = useState("");
   const [testoConferma, setTestoConferma] = useState("");
@@ -52,7 +54,7 @@ export default function EliminaAccountScreen({ navigation }) {
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>Elimina account</Text>
         <View style={{ width: 34 }} />
@@ -60,7 +62,7 @@ export default function EliminaAccountScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
         <View style={styles.avviso}>
-          <Ionicons name="warning-outline" size={18} color={colori.rosso} />
+          <Ionicons name="warning-outline" size={18} color={c.pericolo} />
           <Text style={styles.avvisoTesto}>Questa azione è irreversibile.</Text>
         </View>
 
@@ -85,15 +87,16 @@ export default function EliminaAccountScreen({ navigation }) {
           onPress={elimina}
           disabled={eliminando || testoConferma !== TESTO_RICHIESTO || !password}
         >
-          {eliminando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.eliminaTesto}>Elimina definitivamente il mio account</Text>}
+          {eliminando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.eliminaTesto}>Elimina definitivamente il mio account</Text>}
         </Pressable>
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -102,10 +105,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   contenuto: { padding: 20, gap: 8, paddingBottom: 40 },
   avviso: {
     flexDirection: "row",
@@ -118,25 +121,26 @@ const styles = StyleSheet.create({
   },
   avvisoTesto: { fontSize: 12.5, fontWeight: "700", color: "#991b1b" },
   descrizione: { fontSize: 12, lineHeight: 18, color: "#4b5563", marginBottom: 10 },
-  etichetta: { fontSize: 11, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 10, marginBottom: 5 },
+  etichetta: { fontSize: 11, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 10, marginBottom: 5 },
   campo: {
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: colori.testo,
+    color: c.testo,
   },
-  errore: { fontSize: 12, color: colori.rosso, marginTop: 10 },
+  errore: { fontSize: 12, color: c.pericolo, marginTop: 10 },
   elimina: {
     marginTop: 20,
     height: 48,
     borderRadius: 12,
-    backgroundColor: colori.rosso,
+    backgroundColor: c.pericolo,
     alignItems: "center",
     justifyContent: "center",
   },
   eliminaDisabilitato: { opacity: 0.4 },
-  eliminaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
-});
+  eliminaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 13.5 },
+  });
+}

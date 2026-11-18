@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import {
   DIFFICOLTA_META,
@@ -16,7 +16,7 @@ import { REGIONI_ITALIANE } from "../lib/regioni";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import ModuloTappaItinerario from "../components/ModuloTappaItinerario";
 
-function PillGroup({ voci, valore, onScegli }) {
+function PillGroup({ voci, valore, onScegli, styles }) {
   return (
     <View style={styles.pills}>
       {voci.map(([chiave, meta]) => (
@@ -29,11 +29,13 @@ function PillGroup({ voci, valore, onScegli }) {
 }
 
 export default function NuovoItinerarioScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { categoria } = route.params;
   const { session } = useAuth();
   const ePercorso4x4 = categoria === "percorso_4x4";
   const eSentiero = categoria === "sentiero";
-  const coloreAccento = eSentiero ? "#2f6b3f" : colori.blu;
+  const coloreAccento = eSentiero ? "#2f6b3f" : c.primario;
 
   const [titolo, setTitolo] = useState("");
   const [descrizione, setDescrizione] = useState("");
@@ -136,7 +138,7 @@ export default function NuovoItinerarioScreen({ route, navigation }) {
       <View style={styles.schermo}>
         <SafeAreaView edges={["top"]} style={styles.intestazione}>
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
           <Text style={styles.titoloIntestazione}>{ePercorso4x4 ? "Nuovo percorso 4x4" : "Nuovo sentiero"}</Text>
           <View style={{ width: 34 }} />
@@ -161,17 +163,17 @@ export default function NuovoItinerarioScreen({ route, navigation }) {
           </View>
 
           <Text style={styles.etichetta}>Difficoltà</Text>
-          <PillGroup voci={difficoltaVoci} valore={difficolta} onScegli={setDifficolta} />
+          <PillGroup voci={difficoltaVoci} valore={difficolta} onScegli={setDifficolta} styles={styles} />
 
           {ePercorso4x4 ? (
             <>
               <Text style={styles.etichetta}>Tipo veicolo</Text>
-              <PillGroup voci={Object.entries(TIPO_VEICOLO_META)} valore={tipoVeicolo} onScegli={setTipoVeicolo} />
+              <PillGroup voci={Object.entries(TIPO_VEICOLO_META)} valore={tipoVeicolo} onScegli={setTipoVeicolo} styles={styles} />
             </>
           ) : (
             <>
               <Text style={styles.etichetta}>Come si percorre</Text>
-              <PillGroup voci={Object.entries(MODALITA_SENTIERO_META)} valore={modalita} onScegli={setModalita} />
+              <PillGroup voci={Object.entries(MODALITA_SENTIERO_META)} valore={modalita} onScegli={setModalita} styles={styles} />
 
               <View style={styles.rigaDoppia}>
                 <View style={{ flex: 1 }}>
@@ -229,7 +231,7 @@ export default function NuovoItinerarioScreen({ route, navigation }) {
           {errore && <Text style={styles.errore}>{errore}</Text>}
 
           <Pressable style={[styles.invia, { backgroundColor: coloreAccento }]} onPress={invia} disabled={inviando}>
-            {inviando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.inviaTesto}>Invia per approvazione</Text>}
+            {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>Invia per approvazione</Text>}
           </Pressable>
         </ScrollView>
       </View>
@@ -237,8 +239,9 @@ export default function NuovoItinerarioScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -247,38 +250,38 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   contenuto: { padding: 20, gap: 6, paddingBottom: 50 },
-  etichetta: { fontSize: 11, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 12, marginBottom: 5 },
+  etichetta: { fontSize: 11, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase", letterSpacing: 0.4, marginTop: 12, marginBottom: 5 },
   campo: {
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: colori.testo,
+    color: c.testo,
   },
   campoMultilinea: { minHeight: 80, textAlignVertical: "top" },
   rigaDoppia: { flexDirection: "row", gap: 12 },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   pill: {
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 999,
     paddingHorizontal: 11,
     paddingVertical: 7,
   },
-  pillAttiva: { backgroundColor: colori.blu, borderColor: colori.blu },
-  pillTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testo },
-  pillTestoAttivo: { color: colori.bianco },
+  pillAttiva: { backgroundColor: c.primario, borderColor: c.primario },
+  pillTesto: { fontSize: 11.5, fontWeight: "600", color: c.testo },
+  pillTestoAttivo: { color: c.sulPrimario },
   aggiungiTappa: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, alignSelf: "flex-start" },
   aggiungiTappaTesto: { fontSize: 12.5, fontWeight: "700" },
-  nota: { fontSize: 11, color: colori.testoSecondario, marginTop: 16, lineHeight: 16 },
-  errore: { fontSize: 12, color: colori.rosso, marginTop: 8 },
+  nota: { fontSize: 11, color: c.testoSecondario, marginTop: 16, lineHeight: 16 },
+  errore: { fontSize: 12, color: c.pericolo, marginTop: 8 },
   invia: {
     marginTop: 16,
     height: 48,
@@ -286,5 +289,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  inviaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 14 },
-});
+  inviaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 14 },
+  });
+}

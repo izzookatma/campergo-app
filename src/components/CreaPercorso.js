@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { View, TextInput, Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { creaPercorso } from "../lib/pianificatore";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
@@ -14,6 +14,8 @@ import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
 // creaPercorso ora restituisce anche "piano" (giorno per giorno, dove
 // dormire e cosa visitare), che MappaScreen.js mostra in un modale.
 export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onRichiedeAccesso }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
   const [aperto, setAperto] = useState(false);
   const [testo, setTesto] = useState("");
   const [caricando, setCaricando] = useState(false);
@@ -76,12 +78,12 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
     return (
       <View style={styles.rigaChiuso}>
         <Pressable style={styles.pillChiuso} onPress={() => setAperto(true)}>
-          <Ionicons name="sparkles-outline" size={14} color={colori.rosso} />
+          <Ionicons name="sparkles-outline" size={14} color={c.pericolo} />
           <Text style={styles.pillChiusoTesto}>{attivo ? "Modifica il percorso" : "Creami un percorso"}</Text>
         </Pressable>
         {attivo && (
           <Pressable style={styles.pillTogli} onPress={chiudi}>
-            <Ionicons name="close" size={14} color={colori.testoSecondario} />
+            <Ionicons name="close" size={14} color={c.testoSecondario} />
             <Text style={styles.pillTogliTesto}>Togli il percorso</Text>
           </Pressable>
         )}
@@ -92,11 +94,11 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
   return (
     <View style={styles.contenitore}>
       <View style={styles.pill}>
-        <Ionicons name="sparkles-outline" size={16} color={colori.rosso} />
+        <Ionicons name="sparkles-outline" size={16} color={c.pericolo} />
         <TextInput
           style={styles.input}
           placeholder="Es. Da Milano al Lago di Garda in 3 giorni"
-          placeholderTextColor={colori.testoSecondario}
+          placeholderTextColor={c.testoSecondario}
           value={testo}
           onChangeText={setTesto}
           onSubmitEditing={crea}
@@ -109,18 +111,18 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
             onPress={toggleDettatura}
             hitSlop={8}
           >
-            <Ionicons name={ascoltando ? "mic" : "mic-outline"} size={18} color={ascoltando ? colori.rosso : colori.testoSecondario} />
+            <Ionicons name={ascoltando ? "mic" : "mic-outline"} size={18} color={ascoltando ? c.pericolo : c.testoSecondario} />
           </Pressable>
         )}
         <Pressable onPress={() => setAperto(false)} hitSlop={8}>
-          <Ionicons name="close-circle" size={18} color={colori.testoSecondario} />
+          <Ionicons name="close-circle" size={18} color={c.testoSecondario} />
         </Pressable>
         <Pressable
           style={[styles.bottone, (!testo.trim() || caricando) && styles.bottoneDisattivo]}
           onPress={crea}
           disabled={caricando || !testo.trim()}
         >
-          {caricando ? <ActivityIndicator color={colori.bianco} size="small" /> : <Text style={styles.bottoneTesto}>Crea</Text>}
+          {caricando ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.bottoneTesto}>Crea</Text>}
         </Pressable>
       </View>
       {errore ? <Text style={styles.errore}>{errore}</Text> : null}
@@ -128,48 +130,49 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
   );
 }
 
-const styles = StyleSheet.create({
+function useEstili(c) {
+  return StyleSheet.create({
   rigaChiuso: { flexDirection: "row", gap: 8, marginTop: 10 },
   pillChiuso: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: colori.rosso,
+    borderColor: c.pericolo,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  pillChiusoTesto: { color: colori.rosso, fontSize: 12, fontWeight: "700" },
+  pillChiusoTesto: { color: c.pericolo, fontSize: 12, fontWeight: "700" },
   pillTogli: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  pillTogliTesto: { color: colori.testoSecondario, fontSize: 12, fontWeight: "600" },
+  pillTogliTesto: { color: c.testoSecondario, fontSize: 12, fontWeight: "600" },
   contenitore: { marginTop: 10 },
   pill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 22,
     height: 44,
     paddingHorizontal: 14,
     borderWidth: 2,
-    borderColor: colori.rosso,
+    borderColor: c.pericolo,
   },
-  input: { flex: 1, fontSize: 12.5, color: colori.testo },
+  input: { flex: 1, fontSize: 12.5, color: c.testo },
   microfonoAttivo: { backgroundColor: "#fef2f2", borderRadius: 999, padding: 2 },
   bottone: {
-    backgroundColor: colori.rosso,
+    backgroundColor: c.pericolo,
     borderRadius: 16,
     paddingHorizontal: 12,
     height: 30,
@@ -177,6 +180,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bottoneDisattivo: { opacity: 0.5 },
-  bottoneTesto: { color: colori.bianco, fontSize: 11, fontWeight: "700" },
-  errore: { marginTop: 6, fontSize: 11, color: colori.rosso, textAlign: "center" },
-});
+  bottoneTesto: { color: "#FFFFFF", fontSize: 11, fontWeight: "700" },
+  errore: { marginTop: 6, fontSize: 11, color: c.pericolo, textAlign: "center" },
+  });
+}

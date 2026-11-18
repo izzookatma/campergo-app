@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert }
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaPianiSalvati, eliminaPianoSalvato } from "../lib/pianiSalvati";
 
@@ -12,6 +12,8 @@ function dataBreve(iso) {
 }
 
 export default function PianiSalvatiScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [piani, setPiani] = useState(null);
 
@@ -44,7 +46,7 @@ export default function PianiSalvatiScreen({ navigation }) {
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>I miei piani di viaggio</Text>
         <View style={{ width: 34 }} />
@@ -56,7 +58,7 @@ export default function PianiSalvatiScreen({ navigation }) {
         contentContainerStyle={styles.lista}
         ListEmptyComponent={
           piani === null ? (
-            <ActivityIndicator color={colori.blu} style={{ marginTop: 30 }} />
+            <ActivityIndicator color={c.primario} style={{ marginTop: 30 }} />
           ) : (
             <Text style={styles.vuoto}>Non hai ancora salvato nessun piano di viaggio.</Text>
           )
@@ -76,7 +78,7 @@ export default function PianiSalvatiScreen({ navigation }) {
               <Text style={styles.cardData}>Salvato il {dataBreve(item.creatoIl)}</Text>
             </View>
             <Pressable style={styles.elimina} onPress={() => elimina(item)} hitSlop={8}>
-              <Ionicons name="trash-outline" size={17} color={colori.rosso} />
+              <Ionicons name="trash-outline" size={17} color={c.pericolo} />
             </Pressable>
           </Pressable>
         )}
@@ -85,8 +87,9 @@ export default function PianiSalvatiScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -95,23 +98,24 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   lista: { padding: 20, gap: 10, flexGrow: 1 },
-  vuoto: { fontSize: 12.5, color: colori.testoSecondario, textAlign: "center", marginTop: 20 },
+  vuoto: { fontSize: 12.5, color: c.testoSecondario, textAlign: "center", marginTop: 20 },
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
+    backgroundColor: c.sfondoGruppo,
+    borderRadius: raggio.l,
     padding: 13,
-    ...ombraCard,
+    ...ombra(c),
   },
-  cardTitolo: { fontSize: 13.5, fontWeight: "700", color: colori.testo },
-  cardSottotitolo: { fontSize: 11.5, color: colori.blu, fontWeight: "600", marginTop: 3 },
-  cardData: { fontSize: 10.5, color: colori.testoSecondario, marginTop: 3 },
+  cardTitolo: { fontSize: 13.5, fontWeight: "700", color: c.testo },
+  cardSottotitolo: { fontSize: 11.5, color: c.primario, fontWeight: "600", marginTop: 3 },
+  cardData: { fontSize: 10.5, color: c.testoSecondario, marginTop: 3 },
   elimina: { padding: 6 },
-});
+  });
+}

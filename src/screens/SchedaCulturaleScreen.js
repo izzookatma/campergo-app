@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaSchedaCulturale, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { caricaRecensioniEvento, inviaRecensioneEvento } from "../lib/recensioni";
@@ -33,6 +33,8 @@ function formattaData(iso) {
 }
 
 function RigaDettaglio({ icona, testo, colore }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   if (!testo) return null;
   return (
     <View style={styles.rigaDettaglio}>
@@ -43,6 +45,8 @@ function RigaDettaglio({ icona, testo, colore }) {
 }
 
 export default function SchedaCulturaleScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { id } = route.params;
   const { session } = useAuth();
   const [scheda, setScheda] = useState(null);
@@ -88,7 +92,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   if (caricamento) {
     return (
       <View style={styles.schermo}>
-        <ActivityIndicator style={{ marginTop: 60 }} color={colori.blu} />
+        <ActivityIndicator style={{ marginTop: 60 }} color={c.primario} />
       </View>
     );
   }
@@ -114,7 +118,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
             iconaColore={meta.colore}
           />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>
 
@@ -173,7 +177,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
                         larghezza={160}
                         style={{ width: "100%", height: "100%" }}
                         iconaDimensione={20}
-                        iconaColore={colori.testoSecondario}
+                        iconaColore={c.testoSecondario}
                       />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -256,69 +260,73 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
-  hero: { height: 230, alignItems: "center", justifyContent: "center" },
-  heroImmagine: { width: "100%", height: "100%", position: "absolute" },
-  tornaIndietro: {
-    position: "absolute",
-    top: 52,
-    left: 16,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  contenuto: { padding: 20, gap: 10 },
-  badgeTipo: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  badgeTipoTesto: { fontSize: 10, fontWeight: "700" },
-  titolo: { fontSize: 19, fontWeight: "800", color: colori.testo },
-  localita: { fontSize: 12, color: colori.testoSecondario },
-  descrizione: { fontSize: 12.5, lineHeight: 19, color: "#4b5563" },
-  sezione: { gap: 8, marginTop: 6 },
-  rigaDettaglio: { flexDirection: "row", alignItems: "center", gap: 8 },
-  rigaDettaglioTesto: { flex: 1, fontSize: 12, color: "#374151", lineHeight: 17 },
-  sezioneTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  sezionePuoiAlloggiare: { gap: 8, marginTop: 14 },
-  cardStruttura: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
-    padding: 10,
-    ...ombraCard,
-  },
-  cardStrutturaFoto: {
-    width: 52,
-    height: 52,
-    borderRadius: 9,
-    backgroundColor: colori.grigioSfondo,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  cardStrutturaNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  cardStrutturaDistanza: { fontSize: 10.5, color: colori.testoSecondario },
-  cardStrutturaPrezzo: { fontSize: 10.5, fontWeight: "600", color: colori.testoSecondario },
-  sezioneRecensioni: { marginTop: 18, gap: 10 },
-  recensioniIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensisciLink: { fontSize: 12, fontWeight: "700" },
-  giaRecensito: { fontSize: 11.5, color: colori.blu, fontWeight: "600" },
-  recensioniVuoto: { fontSize: 12, color: colori.testoSecondario },
-  recensioneCard: { backgroundColor: colori.grigioSfondo, borderRadius: 14, padding: 12, gap: 4 },
-  recensioneIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensioneNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  recensioneData: { fontSize: 10.5, color: colori.testoSecondario },
-  recensioneTesto: { fontSize: 12, lineHeight: 18, color: "#374151", marginTop: 4 },
-});
+// Stili derivati dal tema: funzione semplice (nessuno stato interno),
+// richiamata da ogni componente di questo file che ne ha bisogno.
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
+    hero: { height: 230, alignItems: "center", justifyContent: "center" },
+    heroImmagine: { width: "100%", height: "100%", position: "absolute" },
+    tornaIndietro: {
+      position: "absolute",
+      top: 52,
+      left: 16,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: "rgba(255,255,255,0.92)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    contenuto: { padding: 20, gap: 10 },
+    badgeTipo: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 9,
+      paddingVertical: 3,
+      borderRadius: raggio.pillola,
+    },
+    badgeTipoTesto: { fontSize: 10, fontWeight: "700" },
+    titolo: { fontSize: 19, fontWeight: "800", color: c.testo },
+    localita: { fontSize: 12, color: c.testoSecondario },
+    descrizione: { fontSize: 12.5, lineHeight: 19, color: c.testo },
+    sezione: { gap: 8, marginTop: 6 },
+    rigaDettaglio: { flexDirection: "row", alignItems: "center", gap: 8 },
+    rigaDettaglioTesto: { flex: 1, fontSize: 12, color: c.testo, lineHeight: 17 },
+    sezioneTitolo: { fontSize: 15, fontWeight: "800", color: c.testo },
+    sezionePuoiAlloggiare: { gap: 8, marginTop: 14 },
+    cardStruttura: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      backgroundColor: c.sfondoGruppo,
+      borderRadius: raggio.l,
+      padding: 10,
+      ...ombra(c),
+    },
+    cardStrutturaFoto: {
+      width: 52,
+      height: 52,
+      borderRadius: raggio.s - 1,
+      backgroundColor: c.sfondo,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    cardStrutturaNome: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+    cardStrutturaDistanza: { fontSize: 10.5, color: c.testoSecondario },
+    cardStrutturaPrezzo: { fontSize: 10.5, fontWeight: "600", color: c.testoSecondario },
+    sezioneRecensioni: { marginTop: 18, gap: 10 },
+    recensioniIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    recensisciLink: { fontSize: 12, fontWeight: "700" },
+    giaRecensito: { fontSize: 11.5, color: c.primario, fontWeight: "600" },
+    recensioniVuoto: { fontSize: 12, color: c.testoSecondario },
+    recensioneCard: { backgroundColor: c.sfondo, borderRadius: raggio.m, padding: 12, gap: 4 },
+    recensioneIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    recensioneNome: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+    recensioneData: { fontSize: 10.5, color: c.testoSecondario },
+    recensioneTesto: { fontSize: 12, lineHeight: 18, color: c.testo, marginTop: 4 },
+  });
+}

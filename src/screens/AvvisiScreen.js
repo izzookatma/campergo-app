@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { caricaAvvisi, segnaAvvisiLetti } from "../lib/host";
@@ -20,6 +20,8 @@ function formattaData(iso) {
 // I non letti hanno il pallino; si segnano letti toccando l'avviso o con
 // «Segna tutti come letti».
 export default function AvvisiScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const utenteId = session?.user?.id;
   const [avvisi, setAvvisi] = useState([]);
@@ -58,16 +60,16 @@ export default function AvvisiScreen({ navigation }) {
     <View style={styles.schermo}>
       <View style={styles.intestazione}>
         <Pressable style={styles.indietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color={colori.testo} />
+          <Ionicons name="chevron-back" size={22} color={c.testo} />
         </Pressable>
         <Text style={styles.titolo}>Avvisi</Text>
         <Pressable style={styles.indietro} disabled={!nonLetti} onPress={() => segna(null)}>
-          <Ionicons name="checkmark-done" size={20} color={nonLetti ? colori.blu : colori.bordo} />
+          <Ionicons name="checkmark-done" size={20} color={nonLetti ? c.primario : c.separatore} />
         </Pressable>
       </View>
       {caricando ? (
         <View style={styles.centro}>
-          <ActivityIndicator color={colori.blu} />
+          <ActivityIndicator color={c.primario} />
         </View>
       ) : (
         <FlatList
@@ -78,7 +80,7 @@ export default function AvvisiScreen({ navigation }) {
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => !item.letto && segna([item.id])}>
               <View style={styles.icona}>
-                <Ionicons name={ICONE[item.tipo] ?? "notifications"} size={17} color={colori.bianco} />
+                <Ionicons name={ICONE[item.tipo] ?? "notifications"} size={17} color={c.sulPrimario} />
               </View>
               <View style={styles.flex1}>
                 <Text style={[styles.cardTitolo, !item.letto && styles.grassetto]}>{item.titolo}</Text>
@@ -96,21 +98,23 @@ export default function AvvisiScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  intestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colori.bordo, backgroundColor: colori.bianco },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
+  intestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: c.separatore, backgroundColor: c.sfondoGruppo },
   indietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titolo: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titolo: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   centro: { flex: 1, alignItems: "center", justifyContent: "center" },
   lista: { padding: 16, gap: 10 },
-  nota: { fontSize: 12.5, color: colori.testoSecondario, lineHeight: 18, textAlign: "center", marginTop: 30 },
-  card: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 12, ...ombraCard },
-  icona: { width: 34, height: 34, borderRadius: 17, backgroundColor: colori.blu, alignItems: "center", justifyContent: "center" },
+  nota: { fontSize: 12.5, color: c.testoSecondario, lineHeight: 18, textAlign: "center", marginTop: 30 },
+  card: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: c.sfondoGruppo, borderRadius: raggio.l, padding: 12, ...ombra(c) },
+  icona: { width: 34, height: 34, borderRadius: 17, backgroundColor: c.primario, alignItems: "center", justifyContent: "center" },
   flex1: { flex: 1, gap: 2 },
-  cardTitolo: { fontSize: 13, color: colori.testo },
+  cardTitolo: { fontSize: 13, color: c.testo },
   grassetto: { fontWeight: "800" },
-  cardTesto: { fontSize: 12, color: colori.testoSecondario, lineHeight: 17 },
+  cardTesto: { fontSize: 12, color: c.testoSecondario, lineHeight: 17 },
   destra: { alignItems: "flex-end", gap: 6 },
-  data: { fontSize: 11, color: colori.testoSecondario },
-  pallino: { width: 9, height: 9, borderRadius: 5, backgroundColor: colori.rosso },
-});
+  data: { fontSize: 11, color: c.testoSecondario },
+  pallino: { width: 9, height: 9, borderRadius: 5, backgroundColor: c.pericolo },
+  });
+}

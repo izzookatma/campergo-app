@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { ETICHETTE_TIPO, ETICHETTA_RIFUGIO } from "../lib/strutture";
 import { CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
@@ -48,13 +48,15 @@ export function struttureNavigazione(s) {
 // visitare) tra le schede vere trovate nei dintorni della stessa tappa —
 // stesso stile a pagina intera già usato per il piano in MappaScreen.js.
 function ModaleScelta({ visibile, titolo, opzioni, onScegli, onChiudi }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   return (
     <Modal visible={visibile} animationType="slide" presentationStyle="pageSheet" onRequestClose={onChiudi}>
       <View style={styles.modaleSchermo}>
         <View style={styles.modaleIntestazione}>
           <Text style={styles.modaleTitolo}>{titolo}</Text>
           <Pressable onPress={onChiudi} hitSlop={10}>
-            <Ionicons name="close" size={22} color={colori.testo} />
+            <Ionicons name="close" size={22} color={c.testo} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={styles.modaleContenuto}>
@@ -73,15 +75,19 @@ function ModaleScelta({ visibile, titolo, opzioni, onScegli, onChiudi }) {
 }
 
 function PulsanteCambia({ onPress }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   return (
     <Pressable style={styles.cambiaLink} onPress={onPress} hitSlop={6}>
-      <Ionicons name="swap-horizontal" size={12} color={colori.blu} />
+      <Ionicons name="swap-horizontal" size={12} color={c.primario} />
       <Text style={styles.cambiaTesto}>Cambia</Text>
     </Pressable>
   );
 }
 
 function CardStrutturaSingola({ struttura, etichetta, icona, navigation, alternative, onCambia }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [apertoScelta, setApertoScelta] = useState(false);
   if (!struttura) return null;
   const altreOpzioni = onCambia
@@ -90,13 +96,13 @@ function CardStrutturaSingola({ struttura, etichetta, icona, navigation, alterna
   return (
     <View style={{ gap: 4 }}>
       <Pressable style={styles.cardBase} onPress={() => navigation.navigate("Scheda", { struttura: struttureNavigazione(struttura) })}>
-        <Ionicons name={icona} size={16} color={colori.blu} />
+        <Ionicons name={icona} size={16} color={c.primario} />
         <View style={{ flex: 1 }}>
           <Text style={styles.cardBaseEtichetta}>{etichetta}</Text>
           <Text style={styles.cardBaseTitolo}>{struttura.nome}</Text>
           {struttura.localita ? <Text style={styles.cardBaseSottotitolo}>{struttura.localita}</Text> : null}
         </View>
-        <Ionicons name="chevron-forward" size={16} color={colori.testoSecondario} />
+        <Ionicons name="chevron-forward" size={16} color={c.testoSecondario} />
       </Pressable>
       {onCambia && altreOpzioni.length > 0 && <PulsanteCambia onPress={() => setApertoScelta(true)} />}
       {onCambia && (
@@ -116,6 +122,8 @@ function CardStrutturaSingola({ struttura, etichetta, icona, navigation, alterna
 }
 
 function SezioneDormire({ dormire, navigation, candidati, onCambia }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   if (!dormire) return null;
   const libera = dormire.libera;
   const etichettaLibera = libera?.tipo === "sosta_libera" ? "Sosta libera" : "Parcheggio";
@@ -152,6 +160,8 @@ function SezioneDormire({ dormire, navigation, candidati, onCambia }) {
 }
 
 function CardVoce({ voce, navigation, alternative, onCambia }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [apertoScelta, setApertoScelta] = useState(false);
   const meta = voce.tipo === "cultura" ? CATEGORIA_CULTURALE_META[voce.categoria] : CATEGORIA_ITINERARIO_META[voce.categoria];
   const sottotitolo = voce.tipo === "cultura" ? voce.citta : voce.regione;
@@ -163,8 +173,8 @@ function CardVoce({ voce, navigation, alternative, onCambia }) {
   return (
     <View>
       <Pressable style={styles.voce} onPress={onPress}>
-        <View style={[styles.voceIcona, { backgroundColor: meta?.colore || colori.testoSecondario }]}>
-          <Ionicons name={meta?.icona || "location-outline"} size={14} color={colori.bianco} />
+        <View style={[styles.voceIcona, { backgroundColor: meta?.colore || c.testoSecondario }]}>
+          <Ionicons name={meta?.icona || "location-outline"} size={14} color="#fff" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.voceTitolo} numberOfLines={1}>
@@ -172,7 +182,7 @@ function CardVoce({ voce, navigation, alternative, onCambia }) {
           </Text>
           {sottotitolo ? <Text style={styles.voceSottotitolo}>{sottotitolo}</Text> : null}
         </View>
-        <Ionicons name="chevron-forward" size={14} color={colori.testoSecondario} />
+        <Ionicons name="chevron-forward" size={14} color={c.testoSecondario} />
       </Pressable>
       {onCambia && altreOpzioni.length > 0 && <PulsanteCambia onPress={() => setApertoScelta(true)} />}
       {onCambia && (
@@ -192,6 +202,8 @@ function CardVoce({ voce, navigation, alternative, onCambia }) {
 }
 
 export function CardGiorno({ giorno, navigation, candidati, onCambiaDormire, onCambiaVoce }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const alternativeVoci = candidati ? [...(candidati.cultura || []), ...(candidati.itinerari || [])] : undefined;
   return (
     <View style={styles.cardGiorno}>
@@ -215,49 +227,53 @@ export function CardGiorno({ giorno, navigation, candidati, onCambiaDormire, onC
   );
 }
 
-const styles = StyleSheet.create({
-  cardGiorno: {
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
-    padding: 16,
-    gap: 8,
-    ...ombraCard,
-  },
-  numeroGiorno: { fontSize: 10.5, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
-  titoloGiorno: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  notaGiorno: { fontSize: 12, color: colori.testoSecondario, lineHeight: 17, marginBottom: 4 },
-  etichettaSezione: { fontSize: 10.5, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
-  cardBase: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: 12,
-    padding: 10,
-  },
-  cardBaseEtichetta: { fontSize: 9.5, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
-  cardBaseTitolo: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  cardBaseSottotitolo: { fontSize: 11, color: colori.testoSecondario },
-  voce: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
-  voceIcona: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  voceTitolo: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
-  voceSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
-  cambiaLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", paddingLeft: 10, paddingVertical: 2 },
-  cambiaTesto: { fontSize: 10.5, fontWeight: "700", color: colori.blu },
-  modaleSchermo: { flex: 1, backgroundColor: colori.bianco },
-  modaleIntestazione: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
-  },
-  modaleTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo, flex: 1, marginRight: 10 },
-  modaleContenuto: { padding: 16, gap: 8 },
-  modaleRiga: { backgroundColor: colori.bluChiaro, borderRadius: 12, padding: 12 },
-  modaleRigaTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  modaleRigaSottotitolo: { fontSize: 11, color: colori.testoSecondario, marginTop: 2 },
-});
+// Stili derivati dal tema: funzione semplice (nessuno stato interno),
+// richiamata da ogni componente di questo file che ne ha bisogno.
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    cardGiorno: {
+      backgroundColor: c.sfondoGruppo,
+      borderRadius: raggio.l,
+      padding: 16,
+      gap: 8,
+      ...ombra(c),
+    },
+    numeroGiorno: { fontSize: 10.5, fontWeight: "700", color: c.primario, textTransform: "uppercase" },
+    titoloGiorno: { fontSize: 15, fontWeight: "800", color: c.testo },
+    notaGiorno: { fontSize: 12, color: c.testoSecondario, lineHeight: 17, marginBottom: 4 },
+    etichettaSezione: { fontSize: 10.5, fontWeight: "700", color: c.primario, textTransform: "uppercase" },
+    cardBase: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      backgroundColor: c.primarioChiaro,
+      borderRadius: raggio.m,
+      padding: 10,
+    },
+    cardBaseEtichetta: { fontSize: 9.5, fontWeight: "700", color: c.primario, textTransform: "uppercase" },
+    cardBaseTitolo: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+    cardBaseSottotitolo: { fontSize: 11, color: c.testoSecondario },
+    voce: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
+    voceIcona: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+    voceTitolo: { flex: 1, fontSize: 12.5, fontWeight: "600", color: c.testo },
+    voceSottotitolo: { fontSize: 10.5, color: c.testoSecondario },
+    cambiaLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", paddingLeft: 10, paddingVertical: 2 },
+    cambiaTesto: { fontSize: 10.5, fontWeight: "700", color: c.primario },
+    modaleSchermo: { flex: 1, backgroundColor: c.sfondoGruppo },
+    modaleIntestazione: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingTop: 18,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: c.separatore,
+    },
+    modaleTitolo: { fontSize: 15, fontWeight: "800", color: c.testo, flex: 1, marginRight: 10 },
+    modaleContenuto: { padding: 16, gap: 8 },
+    modaleRiga: { backgroundColor: c.primarioChiaro, borderRadius: raggio.m, padding: 12 },
+    modaleRigaTitolo: { fontSize: 13, fontWeight: "700", color: c.testo },
+    modaleRigaSottotitolo: { fontSize: 11, color: c.testoSecondario, marginTop: 2 },
+  });
+}

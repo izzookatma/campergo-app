@@ -3,17 +3,20 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import Pulsante from "../components/ui/Pulsante";
+import Testo from "../components/ui/Testo";
 import LogoGoogle from "../components/LogoGoogle";
 
 // `navigation` esiste solo quando questa schermata è aperta da dentro
 // l'app (es. toccando il cuoricino senza account) — all'avvio, prima del
 // Tab.Navigator, la schermata non ha un `navigation` vero.
 export default function AccediScreen({ onSaltaAccesso, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { accedi, registrati, recuperaPassword, accediConGoogle, accediConFacebook, accediConApple } = useAuth();
   const [appleDisponibile, setAppleDisponibile] = useState(false);
   useEffect(() => {
@@ -67,21 +70,27 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           <View style={styles.rigaMarchio}>
             <MarchioNaturaGo style={{ marginBottom: 14 }} />
             {navigation && (
-              <Pressable onPress={() => navigation.goBack()} hitSlop={10} style={styles.chiudi}>
-                <Ionicons name="close" size={20} color={colori.testoSecondario} />
+              <Pressable
+                onPress={() => navigation.goBack()}
+                hitSlop={10}
+                style={styles.chiudi}
+                accessibilityRole="button"
+                accessibilityLabel="Chiudi"
+              >
+                <Ionicons name="close" size={20} color={c.testoSecondario} />
               </Pressable>
             )}
           </View>
-          <Text style={styles.titolo}>
+          <Testo v="titoloGrande" style={styles.testoCentrato}>
             {modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Crea account" : "Recupera password"}
-          </Text>
-          <Text style={styles.sottotitolo}>
+          </Testo>
+          <Testo v="secondario" tono="secondario" style={[styles.testoCentrato, { marginBottom: 10 }]}>
             {modalita === "accedi"
               ? "Per salvare i preferiti e le prenotazioni."
               : modalita === "registrati"
                 ? "Bastano email e password."
                 : "Ti mandiamo un link per impostarne una nuova."}
-          </Text>
+          </Testo>
 
           {modalita !== "recupera" && (
             <View style={{ gap: 10, marginBottom: 4 }}>
@@ -116,12 +125,12 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           )}
 
           {modalita === "registrati" && (
-            <TextInput style={styles.campo} placeholder="Nome" placeholderTextColor={colori.testoSecondario} value={nome} onChangeText={setNome} />
+            <TextInput style={styles.campo} placeholder="Nome" placeholderTextColor={c.testoSecondario} value={nome} onChangeText={setNome} />
           )}
           <TextInput
             style={styles.campo}
             placeholder="Email"
-            placeholderTextColor={colori.testoSecondario}
+            placeholderTextColor={c.testoSecondario}
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -131,15 +140,23 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
             <TextInput
               style={styles.campo}
               placeholder="Password"
-              placeholderTextColor={colori.testoSecondario}
+              placeholderTextColor={c.testoSecondario}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
             />
           )}
 
-          {errore ? <Text style={styles.errore}>{errore}</Text> : null}
-          {messaggio ? <Text style={styles.messaggio}>{messaggio}</Text> : null}
+          {errore ? (
+            <Testo v="secondario" tono="pericolo" style={{ fontWeight: "600" }}>
+              {errore}
+            </Testo>
+          ) : null}
+          {messaggio ? (
+            <Testo v="secondario" tono="primario" style={{ fontWeight: "600" }}>
+              {messaggio}
+            </Testo>
+          ) : null}
 
           <Pulsante
             titolo={modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Registrati" : "Invia il link"}
@@ -149,27 +166,38 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           />
 
           {modalita === "accedi" && (
-            <Pressable onPress={() => setModalita("recupera")}>
-              <Text style={styles.linkSecondario}>Password dimenticata?</Text>
+            <Pressable onPress={() => setModalita("recupera")} accessibilityRole="button">
+              <Testo v="secondario" tono="secondario" style={styles.linkTesto}>
+                Password dimenticata?
+              </Testo>
             </Pressable>
           )}
 
-          <Pressable onPress={() => setModalita(modalita === "registrati" ? "accedi" : "registrati")}>
-            <Text style={styles.cambiaModalita}>
+          <Pressable
+            onPress={() => setModalita(modalita === "registrati" ? "accedi" : "registrati")}
+            accessibilityRole="button"
+          >
+            <Testo v="secondario" tono="primario" style={[styles.testoCentrato, { fontWeight: "600", marginTop: 6 }]}>
               {modalita === "registrati" ? "Hai già un account? Accedi" : "Non hai un account? Registrati"}
-            </Text>
+            </Testo>
           </Pressable>
 
           {modalita === "recupera" && (
-            <Pressable onPress={() => setModalita("accedi")}>
-              <Text style={styles.linkSecondario}>Torna ad accedere</Text>
+            <Pressable onPress={() => setModalita("accedi")} accessibilityRole="button">
+              <Testo v="secondario" tono="secondario" style={styles.linkTesto}>
+                Torna ad accedere
+              </Testo>
             </Pressable>
           )}
 
           {onSaltaAccesso && (
-            <Pressable onPress={onSaltaAccesso} style={{ marginTop: 10, gap: 3 }}>
-              <Text style={styles.saltaAccesso}>Continua senza account</Text>
-              <Text style={styles.saltaAccessoNota}>Ti chiederemo di accedere solo al momento di prenotare.</Text>
+            <Pressable onPress={onSaltaAccesso} style={{ marginTop: 10, gap: 3 }} accessibilityRole="button">
+              <Testo v="secondario" tono="secondario" style={[styles.testoCentrato, { fontWeight: "600" }]}>
+                Continua senza account
+              </Testo>
+              <Testo v="nota" tono="secondario" style={styles.testoCentrato}>
+                Ti chiederemo di accedere solo al momento di prenotare.
+              </Testo>
             </Pressable>
           )}
 
@@ -189,29 +217,28 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { flex: 1, padding: 24, justifyContent: "center", gap: 12 },
-  rigaMarchio: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
-  chiudi: { padding: 4 },
-  titolo: { textAlign: "center", fontSize: 34, lineHeight: 41, fontWeight: "700", letterSpacing: 0.3, color: colori.testo },
-  sottotitolo: { textAlign: "center", fontSize: 15, color: colori.testoSecondario, marginBottom: 10 },
-  campo: {
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: colori.bianco,
-    borderWidth: 1,
-    borderColor: colori.bordo,
-    paddingHorizontal: 14,
-    fontSize: 17,
-    color: colori.testo,
-  },
-  errore: { color: colori.rosso, fontSize: 14, fontWeight: "600" },
-  messaggio: { color: colori.blu, fontSize: 14, fontWeight: "600" },
-  cambiaModalita: { textAlign: "center", color: colori.blu, fontSize: 15, fontWeight: "600", marginTop: 6 },
-  linkSecondario: { textAlign: "center", color: colori.testoSecondario, fontSize: 14, fontWeight: "600", marginTop: 4 },
-  saltaAccesso: { textAlign: "center", color: colori.testoSecondario, fontSize: 15, fontWeight: "600" },
-  saltaAccessoNota: { textAlign: "center", color: colori.testoSecondario, fontSize: 13 },
-  legale: { textAlign: "center", color: colori.testoSecondario, fontSize: 13, marginTop: 14 },
-  legaleLink: { color: colori.blu, fontWeight: "600" },
-});
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondo },
+    // Niente `justifyContent: "center"`: su questa schermata (aperta dentro
+    // una tab, con la barra in basso ancora visibile) centrare verticalmente
+    // lasciava mezzo schermo vuoto sopra il logo prima del contenuto.
+    contenuto: { flex: 1, padding: spazio.xl, gap: spazio.m },
+    rigaMarchio: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+    chiudi: { padding: spazio.xs },
+    testoCentrato: { textAlign: "center" },
+    campo: {
+      height: 50,
+      borderRadius: raggio.m,
+      backgroundColor: c.sfondoCampo,
+      borderWidth: 1,
+      borderColor: c.separatore,
+      paddingHorizontal: spazio.m + 2,
+      fontSize: 17,
+      color: c.testo,
+    },
+    linkTesto: { textAlign: "center", fontWeight: "600", marginTop: spazio.xs },
+    legale: { textAlign: "center", color: c.testoSecondario, fontSize: 13, marginTop: spazio.l - 2 },
+    legaleLink: { color: c.primario, fontWeight: "600" },
+  });
+}

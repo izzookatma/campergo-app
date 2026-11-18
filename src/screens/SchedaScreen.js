@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator, Share, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
 import { vibraConferma } from "../lib/vibrazione";
 import { urlMappa } from "../lib/mappa";
 import { caricaRecensioni, inviaRecensioneStruttura } from "../lib/recensioni";
-import { caricaDettaglioStruttura, caricaPiazzoleStruttura, ETICHETTA_TIPO_ALLOGGIO } from "../lib/strutture";
+import { caricaDettaglioStruttura, caricaPiazzoleStruttura } from "../lib/strutture";
 import { ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
-import { caricaCulturaVicina, CATEGORIA_CULTURALE_META } from "../lib/cultura";
+import { caricaCulturaVicina } from "../lib/cultura";
 import ModuloRecensione from "../components/ModuloRecensione";
 import Pulsante from "../components/ui/Pulsante";
 import CuoreAnimato from "../components/ui/CuoreAnimato";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import GalleriaHero from "../components/scheda/GalleriaHero";
+import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
+import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
 
 const MESI = [
   "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -53,11 +56,11 @@ function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function RigaDettaglio({ icona, testo }) {
+function RigaDettaglio({ icona, testo, styles, c }) {
   if (!testo) return null;
   return (
     <View style={styles.rigaDettaglio}>
-      <Ionicons name={icona} size={15} color={colori.testoSecondario} />
+      <Ionicons name={icona} size={15} color={c.testoSecondario} />
       <Text style={styles.rigaDettaglioTesto}>{testo}</Text>
     </View>
   );
@@ -67,44 +70,9 @@ function RigaDettaglio({ icona, testo }) {
 // finché le prenotazioni sono spente il pulsante non compare.
 const PRENOTAZIONI_ATTIVE = false;
 
-// Galleria a scorrimento orizzontale (stessa foto principale + foto del
-// gestore), con puntini; con una sola foto resta un'immagine fissa.
-function GalleriaHero({ foto }) {
-  const { width } = useWindowDimensions();
-  const [indice, setIndice] = useState(0);
-  if (foto.length <= 1) {
-    return (
-      <ImmagineConRiserva
-        uri={foto[0]}
-        larghezza={780}
-        style={styles.heroImmagine}
-        iconaDimensione={46}
-        iconaColore="#60a5fa"
-      />
-    );
-  }
-  return (
-    <View style={styles.heroImmagine}>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setIndice(Math.round(e.nativeEvent.contentOffset.x / width))}
-      >
-        {foto.map((uri) => (
-          <ImmagineConRiserva key={uri} uri={uri} larghezza={780} style={{ width, height: 230 }} iconaColore="#60a5fa" />
-        ))}
-      </ScrollView>
-      <View style={styles.heroPuntini} pointerEvents="none">
-        {foto.map((uri, i) => (
-          <View key={uri} style={[styles.heroPuntino, i === indice && styles.heroPuntinoAttivo]} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
 export default function SchedaScreen({ route, navigation }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
   const { struttura } = route.params;
   const { session } = useAuth();
   const { motoreMappa } = usePreferenze();
@@ -236,7 +204,7 @@ export default function SchedaScreen({ route, navigation }) {
         <SafeAreaView edges={["top"]} style={styles.hero}>
           <GalleriaHero foto={[struttura.fotoUrl, ...(dettaglio?.fotoExtra || [])].filter(Boolean)} />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
           <Pressable
             style={[styles.preferitoBottone, sipuoSalvare(struttura) && { right: 58 }]}
@@ -244,7 +212,7 @@ export default function SchedaScreen({ route, navigation }) {
             accessibilityRole="button"
             accessibilityLabel="Condividi"
           >
-            <Ionicons name="share-outline" size={18} color={colori.blu} />
+            <Ionicons name="share-outline" size={18} color={c.primario} />
           </Pressable>
           {sipuoSalvare(struttura) && (
             <Pressable
@@ -253,7 +221,7 @@ export default function SchedaScreen({ route, navigation }) {
               accessibilityRole="button"
               accessibilityLabel={preferito ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
             >
-              <CuoreAnimato attivo={preferito} size={18} colore={colori.rosso} />
+              <CuoreAnimato attivo={preferito} size={18} colore={c.pericolo} />
             </Pressable>
           )}
         </SafeAreaView>
@@ -317,7 +285,7 @@ export default function SchedaScreen({ route, navigation }) {
 
           {dettaglio?.verificato === false && (
             <View style={styles.avvisoRivendica}>
-              <Ionicons name="shield-outline" size={20} color={colori.testoSecondario} />
+              <Ionicons name="shield-outline" size={20} color={c.testoSecondario} />
               <Text style={styles.avvisoRivendicaTitolo}>Questa scheda non è ancora stata verificata</Text>
               <Text style={styles.avvisoRivendicaTesto}>
                 Non è ancora possibile prenotare qui. Se gestisci tu questa struttura, rivendica gratis la scheda per completarla e iniziare a ricevere prenotazioni.
@@ -330,17 +298,17 @@ export default function SchedaScreen({ route, navigation }) {
 
           {/* Informazioni pratiche */}
           <View style={styles.sezione}>
-            <RigaDettaglio icona="location-outline" testo={dettaglio?.indirizzo ? `${dettaglio.indirizzo}${dettaglio.cap ? `, ${dettaglio.cap}` : ""}` : null} />
-            <RigaDettaglio icona="calendar-outline" testo={periodoApertura} />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c} icona="location-outline" testo={dettaglio?.indirizzo ? `${dettaglio.indirizzo}${dettaglio.cap ? `, ${dettaglio.cap}` : ""}` : null} />
+            <RigaDettaglio styles={styles} c={c} icona="calendar-outline" testo={periodoApertura} />
+            <RigaDettaglio styles={styles} c={c}
               icona="log-in-outline"
               testo={dettaglio?.orarioCheckin ? `Check-in dalle ${dettaglio.orarioCheckin}` : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="log-out-outline"
               testo={dettaglio?.orarioCheckout ? `Check-out entro le ${dettaglio.orarioCheckout}` : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="time-outline"
               testo={
                 dettaglio?.lateCheckoutDisponibile
@@ -350,7 +318,7 @@ export default function SchedaScreen({ route, navigation }) {
                   : null
               }
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="resize-outline"
               testo={
                 dettaglio?.piazzolaLunghezzaMax
@@ -358,27 +326,27 @@ export default function SchedaScreen({ route, navigation }) {
                   : null
               }
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="swap-vertical-outline"
               testo={dettaglio?.altezzaMassimaM ? `Altezza massima consentita ${dettaglio.altezzaMassimaM} m` : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="bus-outline"
               testo={dettaglio?.fermataBusVicina ? "Fermata bus vicina" : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="train-outline"
               testo={dettaglio?.stazioneTrenoVicina ? "Stazione treno vicina" : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="language-outline"
               testo={dettaglio?.linguaParlate?.length > 0 ? `Lingue parlate: ${dettaglio.linguaParlate.join(", ")}` : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="footsteps-outline"
               testo={dettaglio?.attivitaVicinanze?.length > 0 ? `Nelle vicinanze: ${dettaglio.attivitaVicinanze.join(", ")}` : null}
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="leaf-outline"
               testo={
                 dettaglio?.tipoAmbiente?.length > 0
@@ -386,7 +354,7 @@ export default function SchedaScreen({ route, navigation }) {
                   : null
               }
             />
-            <RigaDettaglio
+            <RigaDettaglio styles={styles} c={c}
               icona="heart-outline"
               testo={
                 dettaglio?.categorieInteresse?.length > 0
@@ -394,12 +362,12 @@ export default function SchedaScreen({ route, navigation }) {
                   : null
               }
             />
-            <RigaDettaglio icona="home-outline" testo={dettaglio?.haAlloggiFissi ? "Offre anche alloggi fissi, oltre alle piazzole" : null} />
-            <RigaDettaglio icona="sparkles-outline" testo={dettaglio?.haEventiFuturi ? "Eventi culturali in programma" : null} />
+            <RigaDettaglio styles={styles} c={c} icona="home-outline" testo={dettaglio?.haAlloggiFissi ? "Offre anche alloggi fissi, oltre alle piazzole" : null} />
+            <RigaDettaglio styles={styles} c={c} icona="sparkles-outline" testo={dettaglio?.haEventiFuturi ? "Eventi culturali in programma" : null} />
             {dettaglio?.sitoWeb && (
               <Pressable style={styles.rigaDettaglio} onPress={apriSito}>
-                <Ionicons name="globe-outline" size={15} color={colori.blu} />
-                <Text style={[styles.rigaDettaglioTesto, { color: colori.blu }]}>Visita il sito web</Text>
+                <Ionicons name="globe-outline" size={15} color={c.primario} />
+                <Text style={[styles.rigaDettaglioTesto, { color: c.primario }]}>Visita il sito web</Text>
               </Pressable>
             )}
           </View>
@@ -407,10 +375,10 @@ export default function SchedaScreen({ route, navigation }) {
           {/* Rifugi: info specifiche */}
           {struttura.origine === "rifugi" && (
             <View style={styles.sezione}>
-              <RigaDettaglio icona="trending-up-outline" testo={dettaglio?.quotaM ? `${dettaglio.quotaM} m di quota` : null} />
-              <RigaDettaglio icona="person-outline" testo={dettaglio?.proprietario ? `Gestito da ${dettaglio.proprietario}` : null} />
-              <RigaDettaglio icona="bed-outline" testo={dettaglio?.postiLetto ? `${dettaglio.postiLetto} posti letto` : null} />
-              <RigaDettaglio
+              <RigaDettaglio styles={styles} c={c} icona="trending-up-outline" testo={dettaglio?.quotaM ? `${dettaglio.quotaM} m di quota` : null} />
+              <RigaDettaglio styles={styles} c={c} icona="person-outline" testo={dettaglio?.proprietario ? `Gestito da ${dettaglio.proprietario}` : null} />
+              <RigaDettaglio styles={styles} c={c} icona="bed-outline" testo={dettaglio?.postiLetto ? `${dettaglio.postiLetto} posti letto` : null} />
+              <RigaDettaglio styles={styles} c={c}
                 icona="restaurant-outline"
                 testo={dettaglio?.ristoro ? `Punto ristoro${dettaglio.ristoroNote ? `: ${dettaglio.ristoroNote}` : ""}` : null}
               />
@@ -433,125 +401,48 @@ export default function SchedaScreen({ route, navigation }) {
           {struttura.tipo === "Camper service" && dettaglio && (dettaglio.parcheggioTariffa || dettaglio.parcheggioPosti) && (
             <View style={styles.sezione}>
               <Text style={styles.sezioneTitolo}>Parcheggio</Text>
-              <RigaDettaglio
+              <RigaDettaglio styles={styles} c={c}
                 icona="cash-outline"
                 testo={dettaglio.parcheggioPrezzoTesto || (dettaglio.parcheggioTariffa === "gratuito" ? "Gratuito" : dettaglio.parcheggioTariffa === "a_pagamento" ? "A pagamento" : dettaglio.parcheggioTariffa === "misto" ? "Parzialmente a pagamento" : null)}
               />
-              <RigaDettaglio icona="car-outline" testo={dettaglio.parcheggioPosti ? `${dettaglio.parcheggioPosti} posti` : null} />
-              <RigaDettaglio icona="shield-checkmark-outline" testo={dettaglio.parcheggioSorvegliato ? "Sorvegliato" : null} />
-              <RigaDettaglio icona="layers-outline" testo={dettaglio.parcheggioSuperficie ? `Fondo: ${dettaglio.parcheggioSuperficie}` : null} />
-              <RigaDettaglio icona="bulb-outline" testo={dettaglio.parcheggioIlluminato ? "Illuminato" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="car-outline" testo={dettaglio.parcheggioPosti ? `${dettaglio.parcheggioPosti} posti` : null} />
+              <RigaDettaglio styles={styles} c={c} icona="shield-checkmark-outline" testo={dettaglio.parcheggioSorvegliato ? "Sorvegliato" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="layers-outline" testo={dettaglio.parcheggioSuperficie ? `Fondo: ${dettaglio.parcheggioSuperficie}` : null} />
+              <RigaDettaglio styles={styles} c={c} icona="bulb-outline" testo={dettaglio.parcheggioIlluminato ? "Illuminato" : null} />
             </View>
           )}
 
           {dettaglio?.camperServiceNonOspiti && (
             <View style={styles.sezione}>
               <Text style={styles.sezioneTitolo}>Camper service (anche per chi non alloggia)</Text>
-              <RigaDettaglio icona="water-outline" testo={dettaglio.camperServiceScaricoNere ? "Scarico acque nere" : null} />
-              <RigaDettaglio icona="water-outline" testo={dettaglio.camperServiceScaricoGrigie ? "Scarico acque grigie" : null} />
-              <RigaDettaglio icona="flask-outline" testo={dettaglio.camperServiceCaricoAcqua ? "Carico acqua potabile" : null} />
-              <RigaDettaglio icona="flash-outline" testo={dettaglio.camperServiceCorrente ? "Corrente elettrica" : null} />
-              <RigaDettaglio icona="pricetag-outline" testo={dettaglio.camperServiceCosto || (dettaglio.camperServiceAltro ?? null)} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.camperServiceScaricoNere ? "Scarico acque nere" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.camperServiceScaricoGrigie ? "Scarico acque grigie" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flask-outline" testo={dettaglio.camperServiceCaricoAcqua ? "Carico acqua potabile" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flash-outline" testo={dettaglio.camperServiceCorrente ? "Corrente elettrica" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="pricetag-outline" testo={dettaglio.camperServiceCosto || (dettaglio.camperServiceAltro ?? null)} />
             </View>
           )}
 
           {struttura.origine === "camper_service" && dettaglio && (
             <View style={styles.sezione}>
               <Text style={styles.sezioneTitolo}>Servizi</Text>
-              <RigaDettaglio icona="key-outline" testo={dettaglio.accesso ? `Accesso ${dettaglio.accesso}` : null} />
-              <RigaDettaglio icona="pricetag-outline" testo={dettaglio.costoIndicativo || null} />
-              <RigaDettaglio icona="water-outline" testo={dettaglio.scaricoAcqueNere ? "Scarico acque nere" : null} />
-              <RigaDettaglio icona="water-outline" testo={dettaglio.scaricoAcqueGrigie ? "Scarico acque grigie" : null} />
-              <RigaDettaglio icona="flask-outline" testo={dettaglio.caricoAcquaPotabile ? "Carico acqua potabile" : null} />
-              <RigaDettaglio icona="flash-outline" testo={dettaglio.correnteElettrica ? "Corrente elettrica" : null} />
-              <RigaDettaglio icona="time-outline" testo={dettaglio.orari || null} />
-              <RigaDettaglio icona="ellipsis-horizontal-outline" testo={dettaglio.altriServizi || null} />
+              <RigaDettaglio styles={styles} c={c} icona="key-outline" testo={dettaglio.accesso ? `Accesso ${dettaglio.accesso}` : null} />
+              <RigaDettaglio styles={styles} c={c} icona="pricetag-outline" testo={dettaglio.costoIndicativo || null} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.scaricoAcqueNere ? "Scarico acque nere" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.scaricoAcqueGrigie ? "Scarico acque grigie" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flask-outline" testo={dettaglio.caricoAcquaPotabile ? "Carico acqua potabile" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flash-outline" testo={dettaglio.correnteElettrica ? "Corrente elettrica" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="time-outline" testo={dettaglio.orari || null} />
+              <RigaDettaglio styles={styles} c={c} icona="ellipsis-horizontal-outline" testo={dettaglio.altriServizi || null} />
             </View>
           )}
 
-          {piazzole.length > 0 && (
-            <View style={styles.sezione}>
-              <Text style={styles.sezioneTitolo}>Piazzole e alloggi</Text>
-              <View style={styles.piazzoleGriglia}>
-                {piazzole.map((pz) => {
-                  const eAlloggio = pz.tipo === "alloggio";
-                  const titolo = eAlloggio
-                    ? `${ETICHETTA_TIPO_ALLOGGIO[pz.tipoAlloggio] || "Alloggio"}${pz.numero ? ` · ${pz.numero}` : ""}`
-                    : `Piazzola${pz.numero ? ` ${pz.numero}` : ""}`;
-                  const dettagli = eAlloggio
-                    ? [
-                        pz.postiLetto ? `${pz.postiLetto} posti letto` : null,
-                        pz.stanze ? `${pz.stanze} stanze` : null,
-                        pz.mq ? `${pz.mq} mq` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")
-                    : pz.lunghezza && pz.larghezza
-                    ? `${pz.lunghezza} x ${pz.larghezza} m`
-                    : null;
-                  return (
-                    <View key={pz.id} style={styles.piazzolaCard}>
-                      <View style={styles.piazzolaFoto}>
-                        <ImmagineConRiserva
-                          uri={pz.fotoUrl}
-                          larghezza={300}
-                          style={styles.piazzolaFoto}
-                          icona="image-outline"
-                          iconaDimensione={20}
-                          iconaColore={colori.testoSecondario}
-                        />
-                      </View>
-                      <View style={styles.piazzolaInfo}>
-                        <View style={styles.piazzolaRigaTitolo}>
-                          <Text style={styles.piazzolaTitolo} numberOfLines={1}>
-                            {titolo}
-                          </Text>
-                          {pz.prezzo != null && <Text style={styles.piazzolaPrezzo}>{pz.prezzo}€/notte</Text>}
-                        </View>
-                        {dettagli && <Text style={styles.piazzolaDettagli}>{dettagli}</Text>}
-                        {pz.descrizione && (
-                          <Text style={styles.piazzolaDescrizione} numberOfLines={2}>
-                            {pz.descrizione}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          )}
+          <PiazzoleGrid piazzole={piazzole} />
 
-          {culturaVicina.length > 0 && (
-            <View style={styles.sezione}>
-              <Text style={styles.sezioneTitolo}>Cosa visitare nei dintorni</Text>
-              <View style={{ gap: 7 }}>
-                {culturaVicina.map((c) => {
-                  const meta = CATEGORIA_CULTURALE_META[c.categoria];
-                  return (
-                    <Pressable
-                      key={c.id}
-                      style={styles.rigaCultura}
-                      onPress={() => navigation.navigate("SchedaCulturale", { id: c.id })}
-                    >
-                      <View style={[styles.rigaCulturaIcona, { backgroundColor: meta.colore + "18" }]}>
-                        <Ionicons name={meta.icona} size={14} color={meta.colore} />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={styles.rigaCulturaTitolo} numberOfLines={1}>
-                          {c.titolo}
-                        </Text>
-                        <Text style={styles.rigaCulturaTipo}>{meta.etichettaSingolare}</Text>
-                      </View>
-                      <Text style={styles.rigaCulturaDistanza}>
-                        {c.distanzaKm < 1 ? "<1" : c.distanzaKm.toFixed(1)} km
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )}
+          <CulturaViciniLista
+            culturaVicina={culturaVicina}
+            onApri={(id) => navigation.navigate("SchedaCulturale", { id })}
+          />
         </View>
 
         {struttura.origine === "campeggi_pubblici" && (
@@ -592,7 +483,7 @@ export default function SchedaScreen({ route, navigation }) {
             )}
 
             {caricandoRecensioni ? (
-              <ActivityIndicator color={colori.blu} style={{ marginTop: 8 }} />
+              <ActivityIndicator color={c.primario} style={{ marginTop: 8 }} />
             ) : recensioni.length === 0 ? (
               <Text style={styles.recensioniVuoto}>Ancora nessuna recensione per questa struttura.</Text>
             ) : (
@@ -629,7 +520,7 @@ export default function SchedaScreen({ route, navigation }) {
           <Pulsante
             titolo="Chiama"
             variante="secondario"
-            icona={<Ionicons name="call-outline" size={20} color={colori.testo} />}
+            icona={<Ionicons name="call-outline" size={20} color={c.testo} />}
             onPress={apriChiamata}
             style={{ flex: 1 }}
           />
@@ -650,18 +541,15 @@ export default function SchedaScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+function useEstili(c) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
   hero: {
     height: 230,
-    backgroundColor: colori.bluChiaro,
+    backgroundColor: c.primarioChiaro,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroPuntini: { position: "absolute", bottom: 10, left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 6 },
-  heroPuntino: { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.55)" },
-  heroPuntinoAttivo: { backgroundColor: "#fff", width: 18 },
-  heroImmagine: { width: "100%", height: "100%", position: "absolute" },
   tornaIndietro: {
     position: "absolute",
     top: 52,
@@ -690,7 +578,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontSize: 13,
     fontWeight: "700",
-    color: colori.blu,
+    color: c.primario,
     backgroundColor: "#e7eefc",
     paddingHorizontal: 9,
     paddingVertical: 3,
@@ -716,11 +604,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   badgeCulturaleTesto: { fontSize: 13, fontWeight: "700", color: "#9333ea" },
-  titolo: { fontSize: 28, lineHeight: 34, fontWeight: "700", color: colori.testo },
+  titolo: { fontSize: 28, lineHeight: 34, fontWeight: "700", color: c.testo },
   rigaInfo: { flexDirection: "row", alignItems: "center", gap: 10 },
-  localita: { fontSize: 13, color: colori.testoSecondario },
+  localita: { fontSize: 13, color: c.testoSecondario },
   rigaRating: { flexDirection: "row", alignItems: "center", gap: 3 },
-  rating: { fontSize: 13, fontWeight: "700", color: colori.testo },
+  rating: { fontSize: 13, fontWeight: "700", color: c.testo },
   descrizione: { fontSize: 13, lineHeight: 19, color: "#4b5563" },
   avvisoRosso: {
     flexDirection: "row",
@@ -747,8 +635,8 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 6,
   },
-  avvisoRivendicaTitolo: { fontSize: 15, fontWeight: "700", color: colori.testo, textAlign: "center" },
-  avvisoRivendicaTesto: { fontSize: 13, color: colori.testoSecondario, textAlign: "center", lineHeight: 16 },
+  avvisoRivendicaTitolo: { fontSize: 15, fontWeight: "700", color: c.testo, textAlign: "center" },
+  avvisoRivendicaTesto: { fontSize: 13, color: c.testoSecondario, textAlign: "center", lineHeight: 16 },
   bottoneRivendica: {
     marginTop: 6,
     width: "100%",
@@ -759,83 +647,52 @@ const styles = StyleSheet.create({
   },
   bottoneRivendicaTesto: { fontSize: 13, fontWeight: "700", color: "#fff" },
   sezione: { gap: 8, marginTop: 6 },
-  sezioneTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo, marginBottom: 2 },
+  sezioneTitolo: { fontSize: 15, fontWeight: "800", color: c.testo, marginBottom: 2 },
   rigaDettaglio: { flexDirection: "row", alignItems: "center", gap: 8 },
   rigaDettaglioTesto: { flex: 1, fontSize: 13, color: "#374151", lineHeight: 17 },
   servizi: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   servizioPill: {
-    backgroundColor: colori.grigioSfondo,
+    backgroundColor: c.sfondo,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  servizioPillTesto: { fontSize: 13, fontWeight: "600", color: colori.testo },
-  rigaCultura: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colori.grigioSfondo,
-    borderRadius: 12,
-    padding: 10,
-  },
-  rigaCulturaIcona: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  rigaCulturaTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  rigaCulturaTipo: { fontSize: 13, color: colori.testoSecondario },
-  rigaCulturaDistanza: { fontSize: 13, fontWeight: "600", color: colori.testoSecondario },
-  piazzoleGriglia: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  piazzolaCard: {
-    width: "47%",
-    backgroundColor: colori.grigioSfondo,
-    borderRadius: 14,
-    overflow: "hidden",
-  },
-  piazzolaFoto: {
-    width: "100%",
-    height: 90,
-    backgroundColor: colori.bluChiaro,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  piazzolaInfo: { padding: 8, gap: 2 },
-  piazzolaRigaTitolo: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 4 },
-  piazzolaTitolo: { flex: 1, fontSize: 13, fontWeight: "700", color: colori.testo },
-  piazzolaPrezzo: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  piazzolaDettagli: { fontSize: 13, color: colori.testoSecondario },
-  piazzolaDescrizione: { fontSize: 13, color: "#4b5563", marginTop: 2 },
+  servizioPillTesto: { fontSize: 13, fontWeight: "600", color: c.testo },
   sezioneRecensioni: { paddingHorizontal: 20, paddingTop: 4, gap: 10 },
-  recensioniTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  recensioniVuoto: { fontSize: 13, color: colori.testoSecondario },
+  recensioniTitolo: { fontSize: 15, fontWeight: "800", color: c.testo },
+  recensioniVuoto: { fontSize: 13, color: c.testoSecondario },
   recensioneCard: {
-    backgroundColor: colori.grigioSfondo,
+    backgroundColor: c.sfondo,
     borderRadius: 14,
     padding: 12,
     gap: 4,
   },
   recensioneIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensioneNome: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  recensioneData: { fontSize: 13, color: colori.testoSecondario },
+  recensioneNome: { fontSize: 13, fontWeight: "700", color: c.testo },
+  recensioneData: { fontSize: 13, color: c.testoSecondario },
   recensioneTesto: { fontSize: 13, lineHeight: 18, color: "#374151", marginTop: 4 },
-  recensioneFoto: { width: 72, height: 72, borderRadius: 10, marginRight: 8, backgroundColor: colori.bluChiaro },
+  recensioneFoto: { width: 72, height: 72, borderRadius: 10, marginRight: 8, backgroundColor: c.primarioChiaro },
   recensioniIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensisciLink: { fontSize: 13, fontWeight: "700", color: colori.blu },
-  giaRecensito: { fontSize: 13, color: colori.blu, fontWeight: "600" },
+  recensisciLink: { fontSize: 13, fontWeight: "700", color: c.primario },
+  giaRecensito: { fontSize: 13, color: c.primario, fontWeight: "600" },
   barraAzioni: {
     borderTopWidth: 1,
-    borderTopColor: colori.bordo,
+    borderTopColor: c.separatore,
     paddingHorizontal: 20,
     paddingTop: 12,
     gap: 10,
   },
-  prezzo: { fontSize: 18, fontWeight: "800", color: colori.testo },
-  prezzoNotte: { fontSize: 13, fontWeight: "600", color: colori.testoSecondario },
+  prezzo: { fontSize: 18, fontWeight: "800", color: c.testo },
+  prezzoNotte: { fontSize: 13, fontWeight: "600", color: c.testoSecondario },
   pulsanti: { flexDirection: "row", gap: 8, paddingBottom: 6 },
   prenotaSubito: {
     flexGrow: 1,
     height: 44,
     borderRadius: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
   },
-  prenotaSubitoTesto: { color: colori.bianco, fontWeight: "800", fontSize: 15 },
-});
+  prenotaSubitoTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 15 },
+  });
+}

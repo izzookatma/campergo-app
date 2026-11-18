@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaStrutturePreferite } from "../lib/preferiti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
@@ -12,6 +12,8 @@ import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 
 export default function PreferitiScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [preferiti, setPreferiti] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -58,7 +60,7 @@ export default function PreferitiScreen({ navigation }) {
 
       {senzaConnessione && (
         <View style={styles.bannerOffline}>
-          <Ionicons name="cloud-offline-outline" size={16} color={colori.testoSecondario} />
+          <Ionicons name="cloud-offline-outline" size={16} color={c.testoSecondario} />
           <Text style={styles.bannerOfflineTesto}>Senza connessione: stai vedendo gli ultimi preferiti salvati.</Text>
         </View>
       )}
@@ -67,7 +69,7 @@ export default function PreferitiScreen({ navigation }) {
         <ScheletroCard righe={4} />
       ) : !session ? (
         <View style={styles.vuoto}>
-          <Ionicons name="heart-outline" size={28} color={colori.testoSecondario} />
+          <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>Accedi al tuo account per salvare le strutture che ti interessano.</Text>
           <Pressable style={styles.pulsanteAccedi} onPress={() => navigation.navigate("Accedi")}>
             <Text style={styles.pulsanteAccediTesto}>Accedi</Text>
@@ -75,7 +77,7 @@ export default function PreferitiScreen({ navigation }) {
         </View>
       ) : preferiti.length === 0 ? (
         <View style={styles.vuoto}>
-          <Ionicons name="heart-outline" size={28} color={colori.testoSecondario} />
+          <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>Non hai ancora salvato nessuna struttura.</Text>
         </View>
       ) : (
@@ -95,7 +97,7 @@ export default function PreferitiScreen({ navigation }) {
                   uri={item.fotoUrl}
                   larghezza={160}
                   style={styles.cardImmagine}
-                  iconaColore={colori.blu}
+                  iconaColore={c.primario}
                 />
               </View>
               <View style={styles.cardInfo}>
@@ -110,49 +112,51 @@ export default function PreferitiScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  intestazione: { paddingHorizontal: 20, paddingTop: 10 },
-  titolo: { textAlign: "center", fontSize: 21, fontWeight: "800", color: colori.testo },
-  sottotitolo: { textAlign: "center", fontSize: 11, color: colori.testoSecondario },
-  vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
-  vuotoTesto: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario },
-  pulsanteAccedi: {
-    backgroundColor: colori.blu,
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 4,
-  },
-  pulsanteAccediTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13 },
-  bannerOffline: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginHorizontal: 20,
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#f1f5f9",
-  },
-  bannerOfflineTesto: { flex: 1, fontSize: 11.5, color: colori.testoSecondario, fontWeight: "600" },
-  card: {
-    flex: 1,
-    borderRadius: raggioCard,
-    backgroundColor: colori.bianco,
-    ...ombraCard,
-  },
-  cardFoto: {
-    height: 84,
-    borderTopLeftRadius: raggioCard,
-    borderTopRightRadius: raggioCard,
-    backgroundColor: colori.bluChiaro,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  cardImmagine: { width: "100%", height: "100%" },
-  cardInfo: { padding: 8, gap: 2 },
-  cardNome: { fontWeight: "700", fontSize: 11, color: colori.testo },
-  cardLocalita: { fontSize: 9, color: colori.testoSecondario },
-});
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondo },
+    intestazione: { paddingHorizontal: 20, paddingTop: 10 },
+    titolo: { textAlign: "center", fontSize: 21, fontWeight: "800", color: c.testo },
+    sottotitolo: { textAlign: "center", fontSize: 11, color: c.testoSecondario },
+    vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
+    vuotoTesto: { textAlign: "center", fontSize: 12.5, color: c.testoSecondario },
+    pulsanteAccedi: {
+      backgroundColor: c.primario,
+      borderRadius: raggio.m,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      marginTop: 4,
+    },
+    pulsanteAccediTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 13 },
+    bannerOffline: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginHorizontal: 20,
+      marginTop: 10,
+      padding: 10,
+      borderRadius: raggio.s,
+      backgroundColor: c.sfondoGruppo,
+    },
+    bannerOfflineTesto: { flex: 1, fontSize: 11.5, color: c.testoSecondario, fontWeight: "600" },
+    card: {
+      flex: 1,
+      borderRadius: raggio.l,
+      backgroundColor: c.sfondoGruppo,
+      ...ombra(c),
+    },
+    cardFoto: {
+      height: 84,
+      borderTopLeftRadius: raggio.l,
+      borderTopRightRadius: raggio.l,
+      backgroundColor: c.primarioChiaro,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    cardImmagine: { width: "100%", height: "100%" },
+    cardInfo: { padding: 8, gap: 2 },
+    cardNome: { fontWeight: "700", fontSize: 11, color: c.testo },
+    cardLocalita: { fontSize: 9, color: c.testoSecondario },
+  });
+}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { percorsoStradale } from "../lib/percorsoStradale";
 
 // react-native-maps richiede moduli nativi non presenti in Expo Go (stesso
@@ -39,6 +39,8 @@ function useTracciatoStradale(tappe) {
 }
 
 function MappaVera({ tappe, colore }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
   const { default: MapView, Marker, Polyline } = require("react-native-maps");
   const percorso = useTracciatoStradale(tappe);
 
@@ -74,7 +76,10 @@ function MappaVera({ tappe, colore }) {
 // Mappa con una tappa numerata per punto e il percorso stradale tracciato
 // fra loro, stessa logica di MappaItinerario in ItinerarioDettaglio.jsx sul
 // sito (lì con Leaflet, qui con react-native-maps).
-export default function MappaItinerario({ tappe, colore = colori.blu }) {
+export default function MappaItinerario({ tappe, colore }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
+  const coloreEffettivo = colore || c.primario;
   const tappeConPosizione = tappe.filter((t) => t.lat != null && t.lng != null);
   if (tappeConPosizione.length === 0) return null;
 
@@ -86,31 +91,33 @@ export default function MappaItinerario({ tappe, colore = colori.blu }) {
           <Text style={styles.placeholderTesto}>Mappa disponibile nella build di sviluppo</Text>
         </View>
       ) : (
-        <MappaVera tappe={tappeConPosizione} colore={colore} />
+        <MappaVera tappe={tappeConPosizione} colore={coloreEffettivo} />
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  contenitore: {
-    height: 220,
-    borderRadius: 16,
-    overflow: "hidden",
-    marginTop: 14,
-    backgroundColor: colori.grigioSfondo,
-  },
-  mappa: { flex: 1 },
-  pin: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  pinTesto: { color: "#fff", fontWeight: "800", fontSize: 11 },
-  placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 20 },
-  placeholderTesto: { fontSize: 11, color: colori.testoSecondario, textAlign: "center" },
-});
+function useEstili(c) {
+  return StyleSheet.create({
+    contenitore: {
+      height: 220,
+      borderRadius: 16,
+      overflow: "hidden",
+      marginTop: 14,
+      backgroundColor: c.sfondo,
+    },
+    mappa: { flex: 1 },
+    pin: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: "#fff",
+    },
+    pinTesto: { color: "#fff", fontWeight: "800", fontSize: 11 },
+    placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 20 },
+    placeholderTesto: { fontSize: 11, color: c.testoSecondario, textAlign: "center" },
+  });
+}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { inviaDomanda } from "../lib/domanda";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
@@ -14,6 +14,8 @@ const MIN_MESSAGGIO = 10;
 // account, scrive qui — non richiede login, a differenza di altre schermate
 // del Profilo.
 export default function NuovaDomandaScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState(session?.user?.email || "");
@@ -45,7 +47,7 @@ export default function NuovaDomandaScreen({ navigation }) {
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={18} color={colori.testo} />
+          <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>Fai una domanda</Text>
         <View style={{ width: 34 }} />
@@ -55,7 +57,7 @@ export default function NuovaDomandaScreen({ navigation }) {
         {inviataA ? (
           <View style={styles.grazie}>
             <View style={styles.grazieIcona}>
-              <Ionicons name="checkmark-circle" size={30} color={colori.blu} />
+              <Ionicons name="checkmark-circle" size={30} color={c.primario} />
             </View>
             <Text style={styles.grazieTitolo}>Grazie!</Text>
             <Text style={styles.grazieTesto}>Ti risponderemo via email all&apos;indirizzo {inviataA} il prima possibile.</Text>
@@ -104,7 +106,7 @@ export default function NuovaDomandaScreen({ navigation }) {
             </Text>
 
             <Pressable style={styles.invia} onPress={invia} disabled={inviando}>
-              {inviando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.inviaTesto}>Invia</Text>}
+              {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>Invia</Text>}
             </Pressable>
 
             <Text style={styles.oppure}>
@@ -124,8 +126,9 @@ export default function NuovaDomandaScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -134,16 +137,16 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
   },
   tornaIndietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
+  titoloIntestazione: { fontSize: 14.5, fontWeight: "800", color: c.testo },
   contenuto: { padding: 20, gap: 8, paddingBottom: 40 },
-  sottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginBottom: 6, lineHeight: 18 },
+  sottotitolo: { fontSize: 12.5, color: c.testoSecondario, marginBottom: 6, lineHeight: 18 },
   etichetta: {
     fontSize: 11,
     fontWeight: "700",
-    color: colori.testoSecondario,
+    color: c.testoSecondario,
     textTransform: "uppercase",
     letterSpacing: 0.4,
     marginTop: 10,
@@ -151,39 +154,40 @@ const styles = StyleSheet.create({
   },
   campo: {
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: colori.testo,
+    color: c.testo,
   },
   campoMessaggio: { minHeight: 120, textAlignVertical: "top" },
-  aiuto: { fontSize: 10.5, color: colori.testoSecondario, marginTop: 3 },
-  errore: { fontSize: 12, color: colori.rosso, marginTop: 8 },
-  privacy: { fontSize: 11, color: colori.testoSecondario, marginTop: 12, lineHeight: 16 },
-  link: { color: colori.blu, fontWeight: "700" },
+  aiuto: { fontSize: 10.5, color: c.testoSecondario, marginTop: 3 },
+  errore: { fontSize: 12, color: c.pericolo, marginTop: 8 },
+  privacy: { fontSize: 11, color: c.testoSecondario, marginTop: 12, lineHeight: 16 },
+  link: { color: c.primario, fontWeight: "700" },
   invia: {
     marginTop: 14,
     height: 46,
     borderRadius: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
   },
-  inviaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
-  oppure: { fontSize: 11, color: colori.testoSecondario, textAlign: "center", marginTop: 14, lineHeight: 17 },
+  inviaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 13.5 },
+  oppure: { fontSize: 11, color: c.testoSecondario, textAlign: "center", marginTop: 14, lineHeight: 17 },
   grazie: { alignItems: "center", paddingTop: 40, gap: 6 },
   grazieIcona: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colori.bluChiaro,
+    backgroundColor: c.primarioChiaro,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
   },
-  grazieTitolo: { fontSize: 17, fontWeight: "800", color: colori.testo },
-  grazieTesto: { fontSize: 12.5, color: colori.testoSecondario, textAlign: "center", lineHeight: 18, paddingHorizontal: 20 },
-  grazieLink: { fontSize: 12.5, fontWeight: "700", color: colori.blu, marginTop: 10 },
-});
+  grazieTitolo: { fontSize: 17, fontWeight: "800", color: c.testo },
+  grazieTesto: { fontSize: 12.5, color: c.testoSecondario, textAlign: "center", lineHeight: 18, paddingHorizontal: 20 },
+  grazieLink: { fontSize: 12.5, fontWeight: "700", color: c.primario, marginTop: 10 },
+  });
+}

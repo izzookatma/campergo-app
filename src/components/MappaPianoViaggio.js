@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { percorsoStradale } from "../lib/percorsoStradale";
 import { ETICHETTE_TIPO, ETICHETTA_RIFUGIO, STILE_PER_TIPO, STILE_DEFAULT } from "../lib/strutture";
 import { CATEGORIA_CULTURALE_META } from "../lib/cultura";
@@ -65,6 +65,8 @@ function useTracciatoStradale(tappe) {
 }
 
 function MappaVera({ piano }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
   const { default: MapView, Marker, Polyline } = require("react-native-maps");
   const tappeRoute = useMemo(() => (piano.tappeCoordinate || []).filter((t) => t.lat != null && t.lng != null), [piano]);
   const percorso = useTracciatoStradale(tappeRoute);
@@ -114,7 +116,7 @@ function MappaVera({ piano }) {
 
   return (
     <MapView style={styles.mappa} initialRegion={regione} scrollEnabled zoomEnabled pitchEnabled={false}>
-      {percorso && <Polyline coordinates={percorso} strokeColor={colori.arancio} strokeWidth={4} />}
+      {percorso && <Polyline coordinates={percorso} strokeColor={c.accento} strokeWidth={4} />}
       {puntiGiorno.map((p) => (
         <Marker
           key={`giorno-${p.numero}`}
@@ -123,7 +125,7 @@ function MappaVera({ piano }) {
           description={`Giorno ${p.numero}`}
         >
           <View style={[styles.segnaposto, { backgroundColor: p.stile.colore }]}>
-            <Ionicons name={p.stile.icona} size={13} color={colori.bianco} />
+            <Ionicons name={p.stile.icona} size={13} color="#FFFFFF" />
           </View>
         </Marker>
       ))}
@@ -135,7 +137,7 @@ function MappaVera({ piano }) {
           description={`Giorno ${p.numero}`}
         >
           <View style={[styles.segnaposto, { backgroundColor: p.stile.colore }]}>
-            <Ionicons name={p.stile.icona} size={13} color={colori.bianco} />
+            <Ionicons name={p.stile.icona} size={13} color="#FFFFFF" />
           </View>
         </Marker>
       ))}
@@ -144,6 +146,8 @@ function MappaVera({ piano }) {
 }
 
 export default function MappaPianoViaggio({ piano }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
   if (!piano?.giorni?.length) return null;
   return (
     <View style={styles.contenitore}>
@@ -159,23 +163,25 @@ export default function MappaPianoViaggio({ piano }) {
   );
 }
 
-const styles = StyleSheet.create({
-  contenitore: {
-    height: 260,
-    borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: colori.grigioSfondo,
-  },
-  mappa: { flex: 1 },
-  segnaposto: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 20 },
-  placeholderTesto: { fontSize: 11, color: colori.testoSecondario, textAlign: "center" },
-});
+function useEstili(c) {
+  return StyleSheet.create({
+    contenitore: {
+      height: 260,
+      borderRadius: 16,
+      overflow: "hidden",
+      backgroundColor: c.sfondo,
+    },
+    mappa: { flex: 1 },
+    segnaposto: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: "#fff",
+    },
+    placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 20 },
+    placeholderTesto: { fontSize: 11, color: c.testoSecondario, textAlign: "center" },
+  });
+}

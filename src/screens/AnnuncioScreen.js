@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { CATEGORIE_MERCATINO, STATO_PRODOTTO_META, inviaMessaggio } from "../lib/mercatino";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
@@ -12,6 +12,8 @@ function formattaData(iso) {
 }
 
 export default function AnnuncioScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { annuncio } = route.params;
   const { session } = useAuth();
   const [testo, setTesto] = useState("");
@@ -62,7 +64,7 @@ export default function AnnuncioScreen({ route, navigation }) {
             <Ionicons name="image-outline" size={46} color="#60a5fa" />
           )}
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>
 
@@ -72,15 +74,15 @@ export default function AnnuncioScreen({ route, navigation }) {
           <Text style={styles.prezzo}>{annuncio.prezzo}€</Text>
 
           <View style={styles.rigaInfo}>
-            <Ionicons name="location-outline" size={14} color={colori.testoSecondario} />
+            <Ionicons name="location-outline" size={14} color={c.testoSecondario} />
             <Text style={styles.infoTesto}>{annuncio.citta}</Text>
           </View>
           <View style={styles.rigaInfo}>
-            <Ionicons name="pricetag-outline" size={14} color={colori.testoSecondario} />
+            <Ionicons name="pricetag-outline" size={14} color={c.testoSecondario} />
             <Text style={styles.infoTesto}>{STATO_PRODOTTO_META[annuncio.stato_prodotto]}</Text>
           </View>
           <View style={styles.rigaInfo}>
-            <Ionicons name="cube-outline" size={14} color={colori.testoSecondario} />
+            <Ionicons name="cube-outline" size={14} color={c.testoSecondario} />
             <Text style={styles.infoTesto}>{annuncio.metodo_ritiro}</Text>
           </View>
 
@@ -89,7 +91,7 @@ export default function AnnuncioScreen({ route, navigation }) {
           <Text style={styles.venditore}>Venduto da {annuncio.nome_venditore} · {formattaData(annuncio.creato_il)}</Text>
 
           <View style={styles.avviso}>
-            <Ionicons name="shield-checkmark-outline" size={16} color={colori.blu} />
+            <Ionicons name="shield-checkmark-outline" size={16} color={c.primario} />
             <Text style={styles.avvisoTesto}>
               Incontrati sempre in un luogo pubblico e verifica l&apos;oggetto prima di pagare. NaturaGo non gestisce né
               garantisce le transazioni tra utenti.
@@ -115,14 +117,14 @@ export default function AnnuncioScreen({ route, navigation }) {
                   <TextInput
                     style={styles.campoMessaggio}
                     placeholder="Scrivi un messaggio..."
-                    placeholderTextColor={colori.testoSecondario}
+                    placeholderTextColor={c.testoSecondario}
                     value={testo}
                     onChangeText={setTesto}
                     multiline
                   />
                   <Pressable style={styles.pulsanteInvia} onPress={invia} disabled={inviando || !testo.trim()}>
                     {inviando ? (
-                      <ActivityIndicator color={colori.bianco} size="small" />
+                      <ActivityIndicator color={c.sulPrimario} size="small" />
                     ) : (
                       <Text style={styles.pulsanteInviaTesto}>Invia messaggio</Text>
                     )}
@@ -137,9 +139,10 @@ export default function AnnuncioScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
-  hero: { height: 230, backgroundColor: colori.bluChiaro, alignItems: "center", justifyContent: "center" },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
+  hero: { height: 230, backgroundColor: c.primarioChiaro, alignItems: "center", justifyContent: "center" },
   heroImmagine: { width: 390, height: 230 },
   tornaIndietro: {
     position: "absolute",
@@ -157,48 +160,49 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontSize: 10,
     fontWeight: "700",
-    color: colori.blu,
+    color: c.primario,
     backgroundColor: "#e7eefc",
     paddingHorizontal: 9,
     paddingVertical: 3,
     borderRadius: 999,
   },
-  titolo: { fontSize: 19, fontWeight: "800", color: colori.testo },
-  prezzo: { fontSize: 22, fontWeight: "800", color: colori.blu, marginBottom: 4 },
+  titolo: { fontSize: 19, fontWeight: "800", color: c.testo },
+  prezzo: { fontSize: 22, fontWeight: "800", color: c.primario, marginBottom: 4 },
   rigaInfo: { flexDirection: "row", alignItems: "center", gap: 6 },
-  infoTesto: { fontSize: 12.5, color: colori.testoSecondario },
+  infoTesto: { fontSize: 12.5, color: c.testoSecondario },
   descrizione: { fontSize: 12.5, lineHeight: 19, color: "#4b5563", marginTop: 6 },
-  venditore: { fontSize: 11, color: colori.testoSecondario, marginTop: 6 },
+  venditore: { fontSize: 11, color: c.testoSecondario, marginTop: 6 },
   avviso: {
     flexDirection: "row",
     gap: 8,
-    backgroundColor: colori.bluChiaro,
+    backgroundColor: c.primarioChiaro,
     borderRadius: 12,
     padding: 10,
     marginTop: 10,
   },
-  avvisoTesto: { flex: 1, fontSize: 10.5, lineHeight: 15, color: colori.testo },
+  avvisoTesto: { flex: 1, fontSize: 10.5, lineHeight: 15, color: c.testo },
   contatta: { marginTop: 16, gap: 8 },
-  contattaTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo },
+  contattaTitolo: { fontSize: 13, fontWeight: "700", color: c.testo },
   campoMessaggio: {
     minHeight: 60,
     borderRadius: 12,
-    backgroundColor: colori.grigioSfondo,
+    backgroundColor: c.sfondo,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 12.5,
-    color: colori.testo,
+    color: c.testo,
     textAlignVertical: "top",
   },
   pulsanteInvia: {
     height: 44,
     borderRadius: 12,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
   },
-  pulsanteInviaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13 },
-  inviatoTesto: { fontSize: 12, color: colori.blu, fontWeight: "600" },
-});
+  pulsanteInviaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 13 },
+  inviatoTesto: { fontSize: 12, color: c.primario, fontWeight: "600" },
+  });
+}

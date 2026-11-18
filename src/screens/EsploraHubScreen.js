@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, Keyboard, Image } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, Keyboard } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import Testo from "../components/ui/Testo";
 import Pulsante from "../components/ui/Pulsante";
@@ -18,11 +19,15 @@ import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } f
 // src/App.jsx), per coerenza visiva app/sito. "Dove dormire" usa invece un
 // furgone in spiaggia al tramonto sul mare (Stefan Kranz su Unsplash): il
 // furgone cade in basso a destra, lontano dall'etichetta in alto a sinistra.
-const SEZIONI = [
+// Le tre sezioni hanno un colore di categoria proprio ("Dove dormire" usa il
+// blu del marchio, le altre due un verde/arancio dedicato): colori fissi
+// apposta, non presi dal tema — distinguono le categorie anche in scuro.
+function useSezioni(c) {
+  return [
   {
     titolo: "Dove dormire",
     icona: "bonfire-outline",
-    colore: colori.blu,
+    colore: c.primario,
     tinta: "rgba(0,88,124,0.08)",
     immagine: "https://images.unsplash.com/photo-1665677455995-9680bb0a5e18?auto=format&fit=crop&w=1000&h=280&q=70",
     tessere: [
@@ -63,9 +68,13 @@ const SEZIONI = [
       { etichetta: "Attività locali", icona: "compass-outline", categoriaCulturale: "attivita", colore: "#0891b2" },
     ],
   },
-];
+  ];
+}
 
 export default function EsploraHubScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
+  const SEZIONI = useSezioni(c);
   const [testoRicerca, setTestoRicerca] = useState("");
   const [inputAFocus, setInputAFocus] = useState(false);
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
@@ -195,11 +204,11 @@ export default function EsploraHubScreen({ navigation }) {
           <View style={styles.contenitoreRicerca}>
             <View style={styles.cardRicerca}>
               <View style={styles.ricercaPill}>
-                <Ionicons name="search" size={20} color={colori.blu} />
+                <Ionicons name="search" size={20} color={c.primario} />
                 <TextInput
                   style={styles.inputRicerca}
                   placeholder="Dove vuoi andare? Zona, regione…"
-                  placeholderTextColor={colori.testoSecondario}
+                  placeholderTextColor={c.testoSecondario}
                   value={testoRicerca}
                   onChangeText={setTestoRicerca}
                   onSubmitEditing={() => (haDate ? Keyboard.dismiss() : apriDate())}
@@ -216,13 +225,13 @@ export default function EsploraHubScreen({ navigation }) {
                 accessibilityRole="button"
                 accessibilityLabel="Scegli le date del soggiorno"
               >
-                <Ionicons name="calendar-outline" size={20} color={colori.blu} />
-                <Text style={[styles.testoDate, !haDate && { color: colori.testoSecondario, fontWeight: "500" }]}>
+                <Ionicons name="calendar-outline" size={20} color={c.primario} />
+                <Text style={[styles.testoDate, !haDate && { color: c.testoSecondario, fontWeight: "500" }]}>
                   {haDate
                     ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} notti`
                     : "Quando? Aggiungi le date"}
                 </Text>
-                <Ionicons name="chevron-forward" size={15} color={colori.testoSecondario} />
+                <Ionicons name="chevron-forward" size={15} color={c.testoSecondario} />
               </Pressable>
               <Pressable style={styles.bottoneCerca} onPress={avviaRicerca} accessibilityRole="button" accessibilityLabel="Cerca">
                 <Text style={styles.bottoneCercaTesto}>Cerca</Text>
@@ -241,7 +250,7 @@ export default function EsploraHubScreen({ navigation }) {
                     </View>
                     {ricercheRecenti.map((termine) => (
                       <Pressable key={`recente-${termine}`} style={styles.rigaTendina} onPress={() => scegliLuogo(termine)}>
-                        <Ionicons name="time-outline" size={15} color={colori.testoSecondario} />
+                        <Ionicons name="time-outline" size={15} color={c.testoSecondario} />
                         <Text style={styles.rigaTendinaTesto}>{termine}</Text>
                       </Pressable>
                     ))}
@@ -249,7 +258,7 @@ export default function EsploraHubScreen({ navigation }) {
                 )}
                 {regioniSuggerite.map((r) => (
                   <Pressable key={`regione-${r}`} style={styles.rigaTendina} onPress={() => scegliLuogo(r)}>
-                    <Ionicons name="map-outline" size={15} color={colori.blu} />
+                    <Ionicons name="map-outline" size={15} color={c.primario} />
                     <Text style={styles.rigaTendinaTesto}>{r}</Text>
                     <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
                   </Pressable>
@@ -263,7 +272,7 @@ export default function EsploraHubScreen({ navigation }) {
                       navigation.navigate("Scheda", { struttura: s });
                     }}
                   >
-                    <Ionicons name="business-outline" size={15} color={colori.testoSecondario} />
+                    <Ionicons name="business-outline" size={15} color={c.testoSecondario} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.rigaTendinaTesto} numberOfLines={1}>
                         {s.nome}
@@ -283,7 +292,7 @@ export default function EsploraHubScreen({ navigation }) {
           <Pulsante
             titolo="Vicino a te ora"
             variante="secondario"
-            icona={<Ionicons name="navigate" size={18} color={colori.blu} />}
+            icona={<Ionicons name="navigate" size={18} color={c.primario} />}
             onPress={vaiVicinoAMe}
             accessibilityLabel="Mostra le strutture vicino a te"
           />
@@ -297,13 +306,13 @@ export default function EsploraHubScreen({ navigation }) {
           accessibilityLabel="Pianifica il viaggio con l'IA"
         >
           <View style={styles.bannerPianificaIcona}>
-            <Ionicons name="sparkles" size={20} color={colori.blu} />
+            <Ionicons name="sparkles" size={20} color={c.primario} />
           </View>
           <View style={{ flex: 1 }}>
             <Testo v="corpoForte">Pianifica il viaggio con l&apos;IA</Testo>
             <Testo v="nota">Dì dove e per quanti giorni: ti proponiamo tappe e soste</Testo>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colori.testoSecondario} />
+          <Ionicons name="chevron-forward" size={18} color={c.testoSecondario} />
         </Pressable>
 
         <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 10, textAlign: "center" }}>
@@ -319,7 +328,13 @@ export default function EsploraHubScreen({ navigation }) {
               accessibilityLabel={sezione.titolo}
             >
               <View style={styles.sezioneBanner}>
-                <Image source={{ uri: sezione.immagine }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
+                <Image
+                  source={{ uri: sezione.immagine }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={200}
+                  accessibilityIgnoresInvertColors
+                />
                 <View style={styles.sezioneVelo} />
                 <View style={styles.sezioneTestiFoto}>
                   <Ionicons name={sezione.icona} size={22} color="#fff" />
@@ -366,8 +381,9 @@ export default function EsploraHubScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   contenuto: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
   ricercaRapida: { gap: 8, marginBottom: 2 },
   contenitoreRicerca: { position: "relative", zIndex: 30 },
@@ -376,7 +392,7 @@ const styles = StyleSheet.create({
     top: 64,
     left: 0,
     right: 0,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 14,
     paddingVertical: 4,
     shadowColor: "#000",
@@ -395,9 +411,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
-  rigaTendinaTesto: { flex: 1, fontSize: 14, fontWeight: "600", color: colori.testo },
-  rigaTendinaSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
-  rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
+  rigaTendinaTesto: { flex: 1, fontSize: 14, fontWeight: "600", color: c.testo },
+  rigaTendinaSottotitolo: { fontSize: 10.5, color: c.testoSecondario },
+  rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: c.primario, textTransform: "uppercase" },
   tendinaIntestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -411,22 +427,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     textTransform: "uppercase",
-    color: colori.testoSecondario,
+    color: c.testoSecondario,
   },
-  tendinaCancella: { fontSize: 11, fontWeight: "700", color: colori.blu },
+  tendinaCancella: { fontSize: 11, fontWeight: "700", color: c.primario },
   cardRicerca: {
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 22,
     padding: 6,
-    ...ombraCard,
+    ...ombra(c),
     shadowOpacity: 0.16,
     shadowRadius: 18,
   },
   separatore: { height: StyleSheet.hairlineWidth, backgroundColor: "#e5e7eb", marginHorizontal: 14 },
   rigaDate: { flexDirection: "row", alignItems: "center", gap: 10, height: 54, paddingHorizontal: 14 },
-  testoDate: { flex: 1, fontSize: 16, fontWeight: "700", color: colori.testo },
-  bottoneCerca: { backgroundColor: colori.blu, borderRadius: 16, height: 52, alignItems: "center", justifyContent: "center", margin: 4, marginTop: 2 },
-  bottoneCercaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 17 },
+  testoDate: { flex: 1, fontSize: 16, fontWeight: "700", color: c.testo },
+  bottoneCerca: { backgroundColor: c.primario, borderRadius: 16, height: 52, alignItems: "center", justifyContent: "center", margin: 4, marginTop: 2 },
+  bottoneCercaTesto: { color: c.sulPrimario, fontWeight: "800", fontSize: 17 },
   ricercaPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -434,7 +450,7 @@ const styles = StyleSheet.create({
     height: 56,
     paddingHorizontal: 14,
   },
-  inputRicerca: { flex: 1, fontSize: 17, fontWeight: "600", color: colori.testo },
+  inputRicerca: { flex: 1, fontSize: 17, fontWeight: "600", color: c.testo },
   sezione: { gap: 10 },
   sezioneBanner: { width: "100%", height: 150, borderRadius: 20, overflow: "hidden", justifyContent: "flex-end" },
   sezioneVelo: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.28)" },
@@ -448,17 +464,17 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 44,
     paddingHorizontal: 14,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 999,
-    ...ombraCard,
+    ...ombra(c),
   },
-  chipTesto: { fontSize: 15, fontWeight: "600", color: colori.testo },
+  chipTesto: { fontSize: 15, fontWeight: "600", color: c.testo },
   bannerPianifica: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: raggioCard,
+    backgroundColor: c.primarioChiaro,
+    borderRadius: raggio.l,
     padding: 14,
     marginTop: 6,
   },
@@ -466,8 +482,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     alignItems: "center",
     justifyContent: "center",
   },
-});
+  });
+}

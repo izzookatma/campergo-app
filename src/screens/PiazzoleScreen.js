@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { caricaMiaStruttura, caricaUnita, salvaMisureUnita, sostituisciFotoUnita, salvaOrdineUnita, creaUnita, TIPI_ALLOGGIO } from "../lib/host";
@@ -14,6 +15,8 @@ const testoMisura = (n) => (n == null ? "" : String(n).replace(".", ","));
 // Strumento da campo: l'host passa tra le piazzole e gli alloggi col telefono,
 // misura, fotografa e riordina. Ogni modifica va subito sul database del sito.
 export default function PiazzoleScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const utenteId = session?.user?.id;
   const [struttura, setStruttura] = useState(null);
@@ -65,14 +68,14 @@ export default function PiazzoleScreen({ navigation }) {
     <KeyboardAvoidingView style={styles.schermo} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.intestazione}>
         <Pressable style={styles.indietro} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color={colori.testo} />
+          <Ionicons name="chevron-back" size={22} color={c.testo} />
         </Pressable>
         <Text style={styles.titolo}>Piazzole e alloggi</Text>
         <View style={styles.indietro} />
       </View>
       {caricando ? (
         <View style={styles.centro}>
-          <ActivityIndicator color={colori.blu} />
+          <ActivityIndicator color={c.primario} />
         </View>
       ) : !struttura ? (
         <View style={styles.centro}>
@@ -106,6 +109,8 @@ export default function PiazzoleScreen({ navigation }) {
 }
 
 function NuovaUnita({ struttura, posizione, onCreata }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [aperto, setAperto] = useState(false);
   const [tipo, setTipo] = useState("piazzola");
   const [tipoAlloggio, setTipoAlloggio] = useState(null);
@@ -200,7 +205,7 @@ function NuovaUnita({ struttura, posizione, onCreata }) {
           </View>
         )}
       </View>
-      {asset && <Image source={{ uri: asset.uri }} style={styles.foto} resizeMode="cover" />}
+      {asset && <Image source={{ uri: asset.uri }} style={styles.foto} contentFit="cover" />}
       <View style={styles.rigaCampi}>
         <Pressable style={[styles.scelta, styles.flex1]} onPress={() => scegliFoto(true)}>
           <Text style={styles.sceltaTesto}>Scatta ora</Text>
@@ -211,7 +216,7 @@ function NuovaUnita({ struttura, posizione, onCreata }) {
       </View>
       {errore && <Text style={styles.errore}>{errore}</Text>}
       <Pressable style={[styles.bottone, salvando && styles.disattivato]} onPress={salva} disabled={salvando}>
-        {salvando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.bottoneTesto}>Aggiungi</Text>}
+        {salvando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>Aggiungi</Text>}
       </Pressable>
       <Pressable onPress={() => setAperto(false)} disabled={salvando}>
         <Text style={styles.linkSito}>Annulla</Text>
@@ -221,6 +226,8 @@ function NuovaUnita({ struttura, posizione, onCreata }) {
 }
 
 function CardUnita({ unita, struttura, primo, ultimo, onSu, onGiu, onAggiorna }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const alloggio = unita.tipo === "alloggio";
   const [lunghezza, setLunghezza] = useState(testoMisura(unita.lunghezza));
   const [larghezza, setLarghezza] = useState(testoMisura(unita.larghezza));
@@ -292,31 +299,31 @@ function CardUnita({ unita, struttura, primo, ultimo, onSu, onGiu, onAggiorna })
         </Text>
         <View style={styles.frecce}>
           <Pressable onPress={onSu} disabled={primo} style={[styles.freccia, primo && styles.disattivato]} hitSlop={6}>
-            <Ionicons name="arrow-up" size={18} color={colori.blu} />
+            <Ionicons name="arrow-up" size={18} color={c.primario} />
           </Pressable>
           <Pressable onPress={onGiu} disabled={ultimo} style={[styles.freccia, ultimo && styles.disattivato]} hitSlop={6}>
-            <Ionicons name="arrow-down" size={18} color={colori.blu} />
+            <Ionicons name="arrow-down" size={18} color={c.primario} />
           </Pressable>
         </View>
       </View>
 
       <Pressable onPress={sceltaFoto} disabled={foto} style={styles.fotoBox}>
         {unita.foto_url ? (
-          <Image source={{ uri: unita.foto_url }} style={styles.foto} resizeMode="cover" />
+          <Image source={{ uri: unita.foto_url }} style={styles.foto} contentFit="cover" transition={150} />
         ) : (
           <View style={[styles.foto, styles.fotoMancante]}>
-            <Ionicons name="camera-outline" size={28} color={colori.testoSecondario} />
+            <Ionicons name="camera-outline" size={28} color={c.testoSecondario} />
             <Text style={styles.nota}>Aggiungi foto</Text>
           </View>
         )}
         {foto && (
           <View style={styles.velo}>
-            <ActivityIndicator color={colori.bianco} />
+            <ActivityIndicator color="#fff" />
           </View>
         )}
         {!!unita.foto_url && !foto && (
           <View style={styles.cambia}>
-            <Ionicons name="camera" size={14} color={colori.bianco} />
+            <Ionicons name="camera" size={14} color="#fff" />
             <Text style={styles.cambiaTesto}>Cambia</Text>
           </View>
         )}
@@ -341,43 +348,47 @@ function CardUnita({ unita, struttura, primo, ultimo, onSu, onGiu, onAggiorna })
       {errore && <Text style={styles.errore}>{errore}</Text>}
       {messaggio && <Text style={styles.conferma}>{messaggio}</Text>}
       <Pressable style={[styles.bottone, salvando && styles.disattivato]} onPress={salva} disabled={salvando}>
-        {salvando ? <ActivityIndicator color={colori.bianco} /> : <Text style={styles.bottoneTesto}>Salva misure</Text>}
+        {salvando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>Salva misure</Text>}
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  intestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colori.bordo, backgroundColor: colori.bianco },
-  indietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
-  titolo: { fontSize: 14.5, fontWeight: "800", color: colori.testo },
-  centro: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28 },
-  contenuto: { padding: 16, gap: 14, paddingBottom: 40 },
-  nota: { fontSize: 12, color: colori.testoSecondario, lineHeight: 17 },
-  card: { backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 14, gap: 10, ...ombraCard },
-  rigaTitolo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cardTitolo: { fontSize: 14, fontWeight: "800", color: colori.testo, flex: 1 },
-  frecce: { flexDirection: "row", gap: 8 },
-  freccia: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: colori.blu, alignItems: "center", justifyContent: "center" },
-  fotoBox: { borderRadius: 12, overflow: "hidden" },
-  foto: { width: "100%", aspectRatio: 16 / 10, backgroundColor: "#eef2f6" },
-  fotoMancante: { alignItems: "center", justifyContent: "center", gap: 4 },
-  velo: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,58,84,.6)", alignItems: "center", justifyContent: "center" },
-  cambia: { position: "absolute", right: 8, bottom: 8, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(17,24,39,.72)", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
-  cambiaTesto: { color: colori.bianco, fontSize: 11, fontWeight: "700" },
-  rigaCampi: { flexDirection: "row", gap: 8 },
-  flex1: { flex: 1 },
-  etichetta: { fontSize: 10.5, fontWeight: "700", color: colori.testoSecondario, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 },
-  campo: { borderWidth: 1, borderColor: colori.bordo, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colori.testo },
-  bottone: { height: 44, borderRadius: 12, backgroundColor: colori.blu, alignItems: "center", justifyContent: "center" },
-  bottoneTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13 },
-  disattivato: { opacity: 0.4 },
-  scelta: { paddingHorizontal: 12, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: colori.blu, alignItems: "center", justifyContent: "center" },
-  sceltaOn: { backgroundColor: colori.blu },
-  sceltaTesto: { color: colori.blu, fontWeight: "700", fontSize: 12.5 },
-  sceltaTestoOn: { color: colori.bianco },
-  errore: { fontSize: 12, color: colori.rosso, lineHeight: 17 },
-  conferma: { fontSize: 12, color: "#15803d", fontWeight: "600" },
-  linkSito: { fontSize: 11.5, color: colori.testoSecondario, textAlign: "center", paddingTop: 6 },
-});
+// Stili derivati dal tema: funzione semplice (nessuno stato interno),
+// richiamata da ogni componente di questo file che ne ha bisogno.
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondo },
+    intestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: c.separatore, backgroundColor: c.sfondoGruppo },
+    indietro: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
+    titolo: { fontSize: 14.5, fontWeight: "800", color: c.testo },
+    centro: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28 },
+    contenuto: { padding: 16, gap: 14, paddingBottom: 40 },
+    nota: { fontSize: 12, color: c.testoSecondario, lineHeight: 17 },
+    card: { backgroundColor: c.sfondoGruppo, borderRadius: raggio.l, padding: 14, gap: 10, ...ombra(c) },
+    rigaTitolo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    cardTitolo: { fontSize: 14, fontWeight: "800", color: c.testo, flex: 1 },
+    frecce: { flexDirection: "row", gap: 8 },
+    freccia: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: c.primario, alignItems: "center", justifyContent: "center" },
+    fotoBox: { borderRadius: raggio.m, overflow: "hidden" },
+    foto: { width: "100%", aspectRatio: 16 / 10, backgroundColor: "#eef2f6" },
+    fotoMancante: { alignItems: "center", justifyContent: "center", gap: 4 },
+    velo: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,58,84,.6)", alignItems: "center", justifyContent: "center" },
+    cambia: { position: "absolute", right: 8, bottom: 8, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(17,24,39,.72)", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
+    cambiaTesto: { color: "#fff", fontSize: 11, fontWeight: "700" },
+    rigaCampi: { flexDirection: "row", gap: 8 },
+    flex1: { flex: 1 },
+    etichetta: { fontSize: 10.5, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 },
+    campo: { borderWidth: 1, borderColor: c.separatore, borderRadius: raggio.s, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: c.testo },
+    bottone: { height: 44, borderRadius: raggio.m, backgroundColor: c.primario, alignItems: "center", justifyContent: "center" },
+    bottoneTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 13 },
+    disattivato: { opacity: 0.4 },
+    scelta: { paddingHorizontal: 12, height: 40, borderRadius: raggio.s, borderWidth: 1.5, borderColor: c.primario, alignItems: "center", justifyContent: "center" },
+    sceltaOn: { backgroundColor: c.primario },
+    sceltaTesto: { color: c.primario, fontWeight: "700", fontSize: 12.5 },
+    sceltaTestoOn: { color: c.sulPrimario },
+    errore: { fontSize: 12, color: c.pericolo, lineHeight: 17 },
+    conferma: { fontSize: 12, color: "#15803d", fontWeight: "600" },
+    linkSito: { fontSize: 11.5, color: c.testoSecondario, textAlign: "center", paddingTop: 6 },
+  });
+}

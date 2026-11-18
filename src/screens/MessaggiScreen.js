@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaConversazioni } from "../lib/mercatino";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
@@ -19,6 +19,8 @@ function formattaData(iso) {
 }
 
 export default function MessaggiScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session } = useAuth();
   const [conversazioni, setConversazioni] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -49,12 +51,12 @@ export default function MessaggiScreen({ navigation }) {
         <ScheletroCard righe={4} />
       ) : !session ? (
         <View style={styles.vuoto}>
-          <Ionicons name="chatbubbles-outline" size={28} color={colori.testoSecondario} />
+          <Ionicons name="chatbubbles-outline" size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>Accedi al tuo account per vedere i tuoi messaggi.</Text>
         </View>
       ) : conversazioni.length === 0 ? (
         <View style={styles.vuoto}>
-          <Ionicons name="chatbubbles-outline" size={28} color={colori.testoSecondario} />
+          <Ionicons name="chatbubbles-outline" size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>Nessun messaggio per ora.</Text>
         </View>
       ) : (
@@ -71,7 +73,7 @@ export default function MessaggiScreen({ navigation }) {
                   style={styles.cardImmagine}
                   icona="pricetag-outline"
                   iconaDimensione={18}
-                  iconaColore={colori.blu}
+                  iconaColore={c.primario}
                 />
               </View>
               <View style={styles.cardInfo}>
@@ -98,43 +100,45 @@ export default function MessaggiScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 10 },
-  titolo: { textAlign: "center", fontSize: 21, fontWeight: "800", color: colori.testo },
+  titolo: { textAlign: "center", fontSize: 21, fontWeight: "800", color: c.testo },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
-  vuotoTesto: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario },
+  vuotoTesto: { textAlign: "center", fontSize: 12.5, color: c.testoSecondario },
   card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
+    backgroundColor: c.sfondoGruppo,
+    borderRadius: raggio.l,
     padding: 12,
-    ...ombraCard,
+    ...ombra(c),
   },
   cardFoto: {
     width: 48,
     height: 48,
     borderRadius: 10,
-    backgroundColor: colori.bluChiaro,
+    backgroundColor: c.primarioChiaro,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   cardImmagine: { width: "100%", height: "100%" },
   cardInfo: { flex: 1, gap: 2 },
-  cardTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  cardMessaggio: { fontSize: 11.5, color: colori.testoSecondario },
-  cardData: { fontSize: 10, color: colori.testoSecondario },
+  cardTitolo: { fontSize: 13, fontWeight: "700", color: c.testo },
+  cardMessaggio: { fontSize: 11.5, color: c.testoSecondario },
+  cardData: { fontSize: 10, color: c.testoSecondario },
   badge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  badgeTesto: { color: colori.bianco, fontSize: 10, fontWeight: "800" },
-});
+  badgeTesto: { color: c.sulPrimario, fontSize: 10, fontWeight: "800" },
+  });
+}

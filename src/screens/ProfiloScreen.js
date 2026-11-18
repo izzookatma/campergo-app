@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Linking, Image, ScrollView } from "react-native";
+import { View, Pressable, StyleSheet, Alert, Linking, ScrollView } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import AccediScreen from "./AccediScreen";
@@ -23,7 +24,6 @@ const MOTORI_MAPPA = [
 const VOCI_MENU = [
   { icona: "calendar-outline", testo: "Le mie prenotazioni", azione: "naviga", schermo: "Prenotazioni" },
   { icona: "map-outline", testo: "I miei piani di viaggio", azione: "naviga", schermo: "PianiSalvati" },
-  { icona: "game-controller-outline", testo: "Giochi da viaggio", azione: "naviga", schermo: "GiochiHub" },
   { icona: "flag-outline", testo: "Segnala una struttura mancante", azione: "naviga", schermo: "MieSegnalazioni" },
   {
     icona: "notifications-outline",
@@ -35,6 +35,8 @@ const VOCI_MENU = [
 ];
 
 export default function ProfiloScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { session, esci } = useAuth();
   const { motoreMappa, setMotoreMappa } = usePreferenze();
 
@@ -82,10 +84,10 @@ export default function ProfiloScreen({ navigation }) {
           accessibilityLabel="Apri il tuo profilo"
         >
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
           ) : (
             <View style={styles.avatar}>
-              <Ionicons name="person" size={24} color={colori.bianco} />
+              <Ionicons name="person" size={24} color={c.sulPrimario} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -95,21 +97,23 @@ export default function ProfiloScreen({ navigation }) {
               Modifica profilo
             </Testo>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colori.testoSecondario} />
+          <Ionicons name="chevron-forward" size={16} color={c.testoSecondario} />
         </Pressable>
 
         {struttura && (
           <Pressable style={styles.struttura} onPress={() => navigation.navigate("MiaStruttura")}>
             <View style={styles.strutturaIcona}>
-              <Ionicons name="camera" size={18} color={colori.bianco} />
+              <Ionicons name="camera" size={18} color={c.sulPrimario} />
             </View>
             <View style={styles.strutturaTesti}>
-              <Text style={styles.strutturaTitolo}>La mia struttura</Text>
-              <Text style={styles.strutturaNome} numberOfLines={1}>
+              <Testo v="corpoForte" style={{ color: c.sulPrimario }}>
+                La mia struttura
+              </Testo>
+              <Testo v="nota" numberOfLines={1} style={{ color: c.sulPrimario, opacity: 0.85, marginTop: 1 }}>
                 {struttura.nome} · foto e dati della vetrina
-              </Text>
+              </Testo>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colori.bianco} />
+            <Ionicons name="chevron-forward" size={16} color={c.sulPrimario} />
           </Pressable>
         )}
 
@@ -121,15 +125,17 @@ export default function ProfiloScreen({ navigation }) {
             accessibilityLabel="Hai una struttura? Registrala su NaturaGo"
           >
             <View style={styles.strutturaIcona}>
-              <Ionicons name="business" size={18} color={colori.bianco} />
+              <Ionicons name="business" size={18} color={c.sulPrimario} />
             </View>
             <View style={styles.strutturaTesti}>
-              <Text style={styles.strutturaTitolo}>Hai una struttura?</Text>
-              <Text style={styles.strutturaNome} numberOfLines={1}>
+              <Testo v="corpoForte" style={{ color: c.sulPrimario }}>
+                Hai una struttura?
+              </Testo>
+              <Testo v="nota" numberOfLines={1} style={{ color: c.sulPrimario, opacity: 0.85, marginTop: 1 }}>
                 Registrala gratis su NaturaGo
-              </Text>
+              </Testo>
             </View>
-            <Ionicons name="open-outline" size={16} color={colori.bianco} />
+            <Ionicons name="open-outline" size={16} color={c.sulPrimario} />
           </Pressable>
         )}
 
@@ -161,15 +167,38 @@ export default function ProfiloScreen({ navigation }) {
                   key={m.chiave}
                   style={[styles.segmento, motoreMappa === m.chiave && styles.segmentoAttivo]}
                   onPress={() => setMotoreMappa(m.chiave)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Usa ${m.etichetta} come motore mappa`}
+                  accessibilityState={{ selected: motoreMappa === m.chiave }}
                 >
-                  <Text style={[styles.segmentoTesto, motoreMappa === m.chiave && styles.segmentoTestoAttivo]}>
+                  <Testo
+                    v="secondario"
+                    style={{ fontWeight: "600", color: motoreMappa === m.chiave ? c.sulPrimario : c.testoSecondario }}
+                  >
                     {m.etichetta}
-                  </Text>
+                  </Testo>
                 </Pressable>
               ))}
             </View>
           </View>
         </View>
+
+        {/* Voce volutamente defilata (niente ombra/sfondo pieno come il
+            resto del menu): i giochi sono un extra per i tempi morti del
+            viaggio, non una funzione principale dell'app — non deve
+            competere in visibilità con prenotazioni/preferiti/mappa. */}
+        <Pressable
+          style={styles.giochiRiga}
+          onPress={() => navigation.navigate("GiochiHub")}
+          accessibilityRole="button"
+          accessibilityLabel="Giochi da viaggio, un extra per i tempi morti"
+        >
+          <Ionicons name="game-controller-outline" size={18} color={c.testoSecondario} />
+          <Testo v="secondario" tono="secondario" style={{ flex: 1 }}>
+            Giochi da viaggio
+          </Testo>
+          <Ionicons name="chevron-forward" size={15} color={c.testoSecondario} />
+        </Pressable>
 
         <Pulsante titolo="Esci" variante="pericolo" onPress={esci} />
 
@@ -186,61 +215,61 @@ export default function ProfiloScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { padding: 20, gap: 20, paddingBottom: 32 },
-  intestazione: { flexDirection: "row", alignItems: "center", gap: 12 },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colori.blu,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  nome: { fontWeight: "800", fontSize: 15, color: colori.testo },
-  email: { fontSize: 11.5, color: colori.testoSecondario },
-  struttura: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: colori.blu,
-    borderRadius: raggioCard,
-    padding: 13,
-    ...ombraCard,
-  },
-  strutturaIcona: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,.18)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  strutturaTesti: { flex: 1 },
-  strutturaTitolo: { color: colori.bianco, fontWeight: "700", fontSize: 16 },
-  strutturaNome: { color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 1 },
-  menu: { backgroundColor: colori.bianco, borderRadius: raggioCard, ...ombraCard },
-  vocemenu: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13 },
-  vocemenuBordo: { borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  vocemenuTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
-  sezione: { gap: 8 },
-  sezioneTitolo: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    color: colori.testoSecondario,
-  },
-  impostazioneBox: { backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 13, gap: 10, ...ombraCard },
-  impostazioneEtichetta: { fontSize: 12.5, fontWeight: "600", color: colori.testo },
-  segmentato: { flexDirection: "row", backgroundColor: "#f1f5f9", borderRadius: 10, padding: 3 },
-  segmento: { flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  segmentoAttivo: { backgroundColor: colori.blu },
-  segmentoTesto: { fontSize: 14, fontWeight: "600", color: colori.testoSecondario },
-  segmentoTestoAttivo: { color: colori.bianco, fontWeight: "600" },
-  esci: { marginTop: "auto", alignItems: "center", paddingVertical: 12 },
-  esciTesto: { color: colori.rosso, fontWeight: "700", fontSize: 12.5 },
-  eliminaAccount: { alignItems: "center", paddingVertical: 8 },
-  eliminaAccountTesto: { color: colori.testoSecondario, fontWeight: "600", fontSize: 11 },
-});
+// Stili derivati dal tema (colori/raggi condivisi con il resto dell'app,
+// vedi src/theme/tema.js): si ricreano a ogni render, costo trascurabile
+// per una schermata che non è in una lista.
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondo },
+    contenuto: { padding: spazio.xl - 4, gap: spazio.xl - 4, paddingBottom: spazio.xxl },
+    intestazione: { flexDirection: "row", alignItems: "center", gap: spazio.m },
+    avatar: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: c.primario,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    struttura: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spazio.m,
+      backgroundColor: c.primario,
+      borderRadius: raggio.l,
+      padding: spazio.m + 1,
+      ...ombra(c),
+    },
+    strutturaIcona: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(255,255,255,.18)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    strutturaTesti: { flex: 1 },
+    sezione: { gap: spazio.s },
+    impostazioneBox: {
+      backgroundColor: c.sfondoGruppo,
+      borderRadius: raggio.l,
+      padding: spazio.m + 1,
+      gap: spazio.s + 2,
+      ...ombra(c),
+    },
+    segmentato: { flexDirection: "row", backgroundColor: c.sfondo, borderRadius: raggio.s, padding: 3 },
+    segmento: { flex: 1, height: 36, borderRadius: raggio.s - 2, alignItems: "center", justifyContent: "center" },
+    segmentoAttivo: { backgroundColor: c.primario },
+    giochiRiga: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spazio.s,
+      borderWidth: 1,
+      borderColor: c.separatore,
+      borderRadius: raggio.m,
+      paddingVertical: spazio.s + 2,
+      paddingHorizontal: spazio.m,
+    },
+    eliminaAccount: { alignItems: "center", paddingVertical: spazio.s },
+  });
+}

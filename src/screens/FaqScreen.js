@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 
 // Domande frequenti (src/FaqPage.jsx sul sito): contenuto statico, non da
@@ -28,7 +28,7 @@ function apriLink(href, navigation) {
 // Paragrafo con link in stile "[testo](percorso)", stessa idea di
 // testoConLink sul sito: qui "/domande" resta dentro l'app, il resto apre
 // il sito in browser (l'app non replica /chi-siamo, /termini, /privacy).
-function Paragrafo({ testo, navigation }) {
+function Paragrafo({ testo, navigation, styles }) {
   const re = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parti = [];
   let ultimo = 0;
@@ -197,17 +197,17 @@ const FAQ_VIAGGIATORI = [
   },
 ];
 
-function Domanda({ f, aperta, onToggle, navigation }) {
+function Domanda({ f, aperta, onToggle, navigation, styles, c }) {
   return (
     <View style={styles.domanda}>
       <Pressable style={styles.domandaIntestazione} onPress={onToggle}>
         <Text style={styles.domandaTesto}>{f.d}</Text>
-        <Ionicons name={aperta ? "chevron-up" : "chevron-down"} size={15} color={colori.testoSecondario} />
+        <Ionicons name={aperta ? "chevron-up" : "chevron-down"} size={15} color={c.testoSecondario} />
       </Pressable>
       {aperta && (
         <View style={styles.rispostaBox}>
           {f.r.map((p, i) => (
-            <Paragrafo key={i} testo={p} navigation={navigation} />
+            <Paragrafo key={i} testo={p} navigation={navigation} styles={styles} />
           ))}
         </View>
       )}
@@ -215,18 +215,28 @@ function Domanda({ f, aperta, onToggle, navigation }) {
   );
 }
 
-function Gruppo({ titolo, voci, apertaId, onToggle, navigation }) {
+function GruppoFaq({ titolo, voci, apertaId, onToggle, navigation, styles, c }) {
   return (
     <View style={{ gap: 8, marginTop: 18 }}>
       <Text style={styles.gruppoTitolo}>{titolo}</Text>
       {voci.map((f) => (
-        <Domanda key={f.id} f={f} aperta={apertaId === f.id} onToggle={() => onToggle(f.id)} navigation={navigation} />
+        <Domanda
+          key={f.id}
+          f={f}
+          aperta={apertaId === f.id}
+          onToggle={() => onToggle(f.id)}
+          navigation={navigation}
+          styles={styles}
+          c={c}
+        />
       ))}
     </View>
   );
 }
 
 export default function FaqScreen({ navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [apertaId, setApertaId] = useState(null);
   const gestori = FAQ_GESTORI.filter((f) => !(f.finoAllApertura && PRENOTAZIONI_ATTIVE));
   const viaggiatori = FAQ_VIAGGIATORI.filter((f) => !(f.finoAllApertura && PRENOTAZIONI_ATTIVE));
@@ -242,8 +252,24 @@ export default function FaqScreen({ navigation }) {
           Le risposte alle domande che ci fanno più spesso, soprattutto i gestori di campeggi, aree sosta e strutture.
         </Text>
 
-        <Gruppo titolo="Per i gestori di strutture e attività" voci={gestori} apertaId={apertaId} onToggle={alterna} navigation={navigation} />
-        <Gruppo titolo="Per chi viaggia" voci={viaggiatori} apertaId={apertaId} onToggle={alterna} navigation={navigation} />
+        <GruppoFaq
+          titolo="Per i gestori di strutture e attività"
+          voci={gestori}
+          apertaId={apertaId}
+          onToggle={alterna}
+          navigation={navigation}
+          styles={styles}
+          c={c}
+        />
+        <GruppoFaq
+          titolo="Per chi viaggia"
+          voci={viaggiatori}
+          apertaId={apertaId}
+          onToggle={alterna}
+          navigation={navigation}
+          styles={styles}
+          c={c}
+        />
 
         <View style={styles.cassettaAiuto}>
           <Text style={styles.cassettaTitolo}>Non hai trovato la risposta?</Text>
@@ -257,21 +283,43 @@ export default function FaqScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { padding: 20, paddingBottom: 40, gap: 8 },
-  titolo: { fontSize: 20, fontWeight: "800", color: colori.testo, textAlign: "center", marginTop: 6 },
-  sottotitolo: { fontSize: 12, color: colori.testoSecondario, textAlign: "center", marginTop: 4, marginBottom: 4 },
-  gruppoTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  domanda: { backgroundColor: colori.bianco, borderRadius: raggioCard, ...ombraCard },
-  domandaIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 13 },
-  domandaTesto: { flex: 1, fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  rispostaBox: { paddingHorizontal: 13, paddingBottom: 13, gap: 8 },
-  risposta: { fontSize: 12, lineHeight: 18, color: "#4b5563" },
-  link: { color: colori.blu, fontWeight: "700", textDecorationLine: "underline" },
-  cassettaAiuto: { marginTop: 22, backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 18, alignItems: "center", gap: 6, ...ombraCard },
-  cassettaTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo, textAlign: "center" },
-  cassettaTesto: { fontSize: 12, color: colori.testoSecondario, textAlign: "center" },
-  cassettaPulsante: { marginTop: 8, backgroundColor: colori.arancio, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 11 },
-  cassettaPulsanteTesto: { color: colori.bianco, fontWeight: "800", fontSize: 12.5 },
-});
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    schermo: { flex: 1, backgroundColor: c.sfondo },
+    contenuto: { padding: spazio.xl - 4, paddingBottom: spazio.xxl + 8, gap: spazio.s },
+    titolo: { fontSize: 20, fontWeight: "800", color: c.testo, textAlign: "center", marginTop: spazio.s - 2 },
+    sottotitolo: { fontSize: 12, color: c.testoSecondario, textAlign: "center", marginTop: spazio.xs, marginBottom: spazio.xs },
+    gruppoTitolo: { fontSize: 15, fontWeight: "800", color: c.testo },
+    domanda: { backgroundColor: c.sfondoGruppo, borderRadius: raggio.l, ...ombra(c) },
+    domandaIntestazione: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spazio.s + 2,
+      padding: spazio.m + 1,
+    },
+    domandaTesto: { flex: 1, fontSize: 12.5, fontWeight: "700", color: c.testo },
+    rispostaBox: { paddingHorizontal: spazio.m + 1, paddingBottom: spazio.m + 1, gap: spazio.s },
+    risposta: { fontSize: 12, lineHeight: 18, color: c.testoSecondario },
+    link: { color: c.primario, fontWeight: "700", textDecorationLine: "underline" },
+    cassettaAiuto: {
+      marginTop: spazio.xl - 2,
+      backgroundColor: c.sfondoGruppo,
+      borderRadius: raggio.l,
+      padding: spazio.l + 2,
+      alignItems: "center",
+      gap: spazio.xs + 2,
+      ...ombra(c),
+    },
+    cassettaTitolo: { fontSize: 15, fontWeight: "800", color: c.testo, textAlign: "center" },
+    cassettaTesto: { fontSize: 12, color: c.testoSecondario, textAlign: "center" },
+    cassettaPulsante: {
+      marginTop: spazio.s,
+      backgroundColor: c.accento,
+      borderRadius: raggio.pillola,
+      paddingHorizontal: spazio.l + 4,
+      paddingVertical: spazio.m - 1,
+    },
+    cassettaPulsanteTesto: { color: c.sulAccento, fontWeight: "800", fontSize: 12.5 },
+  });
+}

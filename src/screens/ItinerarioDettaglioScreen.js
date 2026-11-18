@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import { caricaItinerarioDettaglio, DIFFICOLTA_META, TIPO_VEICOLO_META, MODALITA_SENTIERO_META, STATO_ITINERARIO_META } from "../lib/itinerari";
@@ -27,6 +28,8 @@ function formattaData(iso) {
 }
 
 export default function ItinerarioDettaglioScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { itinerarioId } = route.params;
   const { session } = useAuth();
   const { motoreMappa } = usePreferenze();
@@ -59,7 +62,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
   if (caricamento) {
     return (
       <View style={styles.schermo}>
-        <ActivityIndicator style={{ marginTop: 60 }} color={colori.blu} />
+        <ActivityIndicator style={{ marginTop: 60 }} color={c.primario} />
       </View>
     );
   }
@@ -69,7 +72,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
   const metaDifficolta = DIFFICOLTA_META[itinerario.difficolta];
   const metaVeicolo = TIPO_VEICOLO_META[itinerario.tipoVeicolo];
   const metaModalita = MODALITA_SENTIERO_META[itinerario.modalita];
-  const coloreAccento = itinerario.categoria === "sentiero" ? "#2f6b3f" : colori.blu;
+  const coloreAccento = itinerario.categoria === "sentiero" ? "#2f6b3f" : c.primario;
 
   return (
     <View style={styles.schermo}>
@@ -84,7 +87,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
             iconaColore="#60a5fa"
           />
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>
 
@@ -159,7 +162,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
                     {t.foto?.length > 0 && (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tappaFotoRiga}>
                         {t.foto.map((url) => (
-                          <Image key={url} source={{ uri: url }} style={styles.tappaFoto} />
+                          <Image key={url} source={{ uri: url }} style={styles.tappaFoto} contentFit="cover" transition={150} />
                         ))}
                       </ScrollView>
                     )}
@@ -238,9 +241,10 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
-  hero: { height: 230, backgroundColor: colori.bluChiaro, alignItems: "center", justifyContent: "center" },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
+  hero: { height: 230, backgroundColor: c.primarioChiaro, alignItems: "center", justifyContent: "center" },
   heroImmagine: { width: "100%", height: "100%", position: "absolute" },
   tornaIndietro: {
     position: "absolute",
@@ -254,40 +258,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   contenuto: { padding: 20, gap: 10 },
-  titolo: { fontSize: 19, fontWeight: "800", color: colori.testo },
-  regione: { fontSize: 12.5, color: colori.testoSecondario },
+  titolo: { fontSize: 19, fontWeight: "800", color: c.testo },
+  regione: { fontSize: 12.5, color: c.testoSecondario },
   avvisoStato: { flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 10, padding: 9, marginTop: 8 },
   avvisoStatoTesto: { flex: 1, fontSize: 11, fontWeight: "600", lineHeight: 15 },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 4 },
   badge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeTesto: { fontSize: 10.5, fontWeight: "700" },
-  descrizione: { fontSize: 12.5, lineHeight: 19, color: "#4b5563", marginTop: 6 },
+  descrizione: { fontSize: 12.5, lineHeight: 19, color: c.testoSecondario, marginTop: 6 },
   sezioneTappe: { marginTop: 14, gap: 10 },
-  sezioneTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
+  sezioneTitolo: { fontSize: 15, fontWeight: "800", color: c.testo },
   tappa: { flexDirection: "row", gap: 10 },
   tappaNumero: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colori.bluChiaro,
+    backgroundColor: c.primarioChiaro,
     alignItems: "center",
     justifyContent: "center",
   },
-  tappaNumeroTesto: { fontSize: 11, fontWeight: "800", color: colori.blu },
-  tappaNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  tappaDescrizione: { fontSize: 11.5, color: colori.testoSecondario, marginTop: 2, lineHeight: 16 },
+  tappaNumeroTesto: { fontSize: 11, fontWeight: "800", color: c.primario },
+  tappaNome: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+  tappaDescrizione: { fontSize: 11.5, color: c.testoSecondario, marginTop: 2, lineHeight: 16 },
   tappaFotoRiga: { marginTop: 6 },
-  tappaFoto: { width: 72, height: 72, borderRadius: 10, marginRight: 6, backgroundColor: colori.grigioSfondo },
+  tappaFoto: { width: 72, height: 72, borderRadius: 10, marginRight: 6, backgroundColor: c.sfondo },
   tappaMappaLink: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   tappaMappaLinkTesto: { fontSize: 11, fontWeight: "700" },
   sezioneRecensioni: { marginTop: 18, gap: 10 },
   recensioniIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   recensisciLink: { fontSize: 12, fontWeight: "700" },
-  giaRecensito: { fontSize: 11.5, color: colori.blu, fontWeight: "600" },
-  recensioniVuoto: { fontSize: 12, color: colori.testoSecondario },
-  recensioneCard: { backgroundColor: colori.grigioSfondo, borderRadius: 14, padding: 12, gap: 4 },
+  giaRecensito: { fontSize: 11.5, color: c.primario, fontWeight: "600" },
+  recensioniVuoto: { fontSize: 12, color: c.testoSecondario },
+  recensioneCard: { backgroundColor: c.sfondo, borderRadius: 14, padding: 12, gap: 4 },
   recensioneIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensioneNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  recensioneData: { fontSize: 10.5, color: colori.testoSecondario },
-  recensioneTesto: { fontSize: 12, lineHeight: 18, color: "#374151", marginTop: 4 },
-});
+  recensioneNome: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+  recensioneData: { fontSize: 10.5, color: c.testoSecondario },
+  recensioneTesto: { fontSize: 12, lineHeight: 18, color: c.testo, marginTop: 4 },
+  });
+}

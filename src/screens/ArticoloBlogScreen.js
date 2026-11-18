@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system/legacy";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import {
   caricaArticolo,
   caricaArticoliCorrelati,
@@ -28,7 +28,7 @@ const chiaveMiPiace = (slug) => `naturago_blog_mi_piace_${slug}`;
 // "[testo](/percorso)": i link interni al sito si aprono nel browser (l'app
 // non ha le pagine elenco per categoria/regione), stessa idea di
 // testoConLink in src/ArticoloBlog.jsx sul sito.
-function BloccoTesto({ testo, stile }) {
+function BloccoTesto({ testo, stile, styles }) {
   const re = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parti = [];
   let ultimo = 0;
@@ -52,7 +52,7 @@ function BloccoTesto({ testo, stile }) {
   return <Text style={stile}>{parti}</Text>;
 }
 
-function BloccoArticolo({ paragrafo }) {
+function BloccoArticolo({ paragrafo, styles }) {
   if (paragrafo.startsWith("## ")) {
     return <Text style={styles.sottotitolo}>{paragrafo.slice(3)}</Text>;
   }
@@ -66,10 +66,12 @@ function BloccoArticolo({ paragrafo }) {
       </View>
     );
   }
-  return <BloccoTesto testo={paragrafo} stile={styles.paragrafo} />;
+  return <BloccoTesto testo={paragrafo} stile={styles.paragrafo} styles={styles} />;
 }
 
 export default function ArticoloBlogScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { slug } = route.params;
   const [articolo, setArticolo] = useState(undefined);
   const [correlati, setCorrelati] = useState([]);
@@ -134,7 +136,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
   if (articolo === undefined) {
     return (
       <View style={styles.schermo}>
-        <ActivityIndicator style={{ marginTop: 60 }} color={colori.blu} />
+        <ActivityIndicator style={{ marginTop: 60 }} color={c.primario} />
       </View>
     );
   }
@@ -144,7 +146,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
       <View style={styles.schermo}>
         <SafeAreaView edges={["top"]} style={styles.intestazioneSemplice}>
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={colori.testo} />
+            <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>
         <View style={styles.vuoto}>
@@ -167,20 +169,20 @@ export default function ArticoloBlogScreen({ route, navigation }) {
             <ImmagineConRiserva uri={articolo.foto_copertina} larghezza={900} style={styles.heroImmagine} icona={null} />
             <SafeAreaView edges={["top"]} style={styles.rigaIntestazione}>
               <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-                <Ionicons name="chevron-back" size={18} color={colori.testo} />
+                <Ionicons name="chevron-back" size={18} color={c.testo} />
               </Pressable>
               <Pressable style={styles.tornaIndietro} onPress={condividi}>
-                <Ionicons name="share-social-outline" size={17} color={colori.testo} />
+                <Ionicons name="share-social-outline" size={17} color={c.testo} />
               </Pressable>
             </SafeAreaView>
           </View>
         ) : (
           <SafeAreaView edges={["top"]} style={[styles.intestazioneSemplice, styles.rigaIntestazione]}>
             <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-              <Ionicons name="chevron-back" size={18} color={colori.testo} />
+              <Ionicons name="chevron-back" size={18} color={c.testo} />
             </Pressable>
             <Pressable style={styles.tornaIndietro} onPress={condividi}>
-              <Ionicons name="share-social-outline" size={17} color={colori.testo} />
+              <Ionicons name="share-social-outline" size={17} color={c.testo} />
             </Pressable>
           </SafeAreaView>
         )}
@@ -196,7 +198,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
 
           <View style={{ gap: 10, marginTop: 6 }}>
             {paragrafi.map((p, i) => (
-              <BloccoArticolo key={i} paragrafo={p} />
+              <BloccoArticolo key={i} paragrafo={p} styles={styles} />
             ))}
           </View>
 
@@ -206,8 +208,8 @@ export default function ArticoloBlogScreen({ route, navigation }) {
               onPress={metti}
               disabled={giaMesso}
             >
-              <Ionicons name={giaMesso ? "heart" : "heart-outline"} size={16} color={giaMesso ? colori.arancio : colori.testo} />
-              <Text style={[styles.miPiaceTesto, giaMesso && { color: colori.arancio }]}>
+              <Ionicons name={giaMesso ? "heart" : "heart-outline"} size={16} color={giaMesso ? c.accento : c.testo} />
+              <Text style={[styles.miPiaceTesto, giaMesso && { color: c.accento }]}>
                 Mi piace{conteggio > 0 ? ` (${conteggio})` : ""}
               </Text>
             </Pressable>
@@ -216,7 +218,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
           {urlCta && testoCta && (
             <Pressable style={styles.cta} onPress={() => Linking.openURL(urlCta)}>
               <Text style={styles.ctaTesto}>{testoCta}</Text>
-              <Ionicons name="arrow-forward" size={14} color={colori.bianco} />
+              <Ionicons name="arrow-forward" size={14} color={c.sulAccento} />
             </Pressable>
           )}
 
@@ -233,7 +235,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
                     <ImmagineConRiserva
                       uri={c.foto_copertina}
                       larghezza={300}
-                      style={[styles.correlatoFoto, { backgroundColor: colori.grigioSfondo }]}
+                      style={[styles.correlatoFoto, { backgroundColor: c.sfondo }]}
                       icona={null}
                     />
                     <View style={styles.correlatoOmbra} />
@@ -251,8 +253,9 @@ export default function ArticoloBlogScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bianco },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
   hero: { height: 220 },
   heroImmagine: { width: "100%", height: "100%", position: "absolute" },
   intestazioneSemplice: { paddingTop: 4 },
@@ -269,11 +272,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   contenuto: { padding: 20, gap: 4 },
-  fotoCredito: { fontSize: 10, color: colori.testoSecondario, marginBottom: 6 },
+  fotoCredito: { fontSize: 10, color: c.testoSecondario, marginBottom: 6 },
   rubrica: {
     alignSelf: "flex-start",
-    backgroundColor: colori.arancioChiaro,
-    color: colori.arancio,
+    backgroundColor: c.accentoChiaro,
+    color: c.accento,
     fontSize: 10,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -282,15 +285,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginBottom: 6,
   },
-  titolo: { fontSize: 21, fontWeight: "800", color: colori.testo, lineHeight: 27 },
-  data: { fontSize: 11, color: colori.testoSecondario, marginTop: 6 },
-  estratto: { fontSize: 14, fontWeight: "600", color: colori.testo, marginTop: 10, lineHeight: 20 },
-  sottotitolo: { fontSize: 16, fontWeight: "800", color: colori.testo, marginTop: 6 },
+  titolo: { fontSize: 21, fontWeight: "800", color: c.testo, lineHeight: 27 },
+  data: { fontSize: 11, color: c.testoSecondario, marginTop: 6 },
+  estratto: { fontSize: 14, fontWeight: "600", color: c.testo, marginTop: 10, lineHeight: 20 },
+  sottotitolo: { fontSize: 16, fontWeight: "800", color: c.testo, marginTop: 6 },
   paragrafo: { fontSize: 13.5, lineHeight: 21, color: "#374151" },
-  link: { color: colori.blu, fontWeight: "700", textDecorationLine: "underline" },
+  link: { color: c.primario, fontWeight: "700", textDecorationLine: "underline" },
   figura: { gap: 4 },
   figuraImmagine: { width: "100%", height: 190, borderRadius: 14 },
-  figuraCredito: { fontSize: 10, color: colori.testoSecondario },
+  figuraCredito: { fontSize: 10, color: c.testoSecondario },
   azioni: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 18 },
   miPiace: {
     flexDirection: "row",
@@ -301,28 +304,29 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
   },
-  miPiaceAttivo: { backgroundColor: colori.arancioChiaro, borderColor: colori.arancio },
-  miPiaceTesto: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
+  miPiaceAttivo: { backgroundColor: c.accentoChiaro, borderColor: c.accento },
+  miPiaceTesto: { fontSize: 12.5, fontWeight: "700", color: c.testo },
   cta: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
     marginTop: 14,
-    backgroundColor: colori.arancio,
+    backgroundColor: c.accento,
     borderRadius: 999,
     paddingVertical: 12,
   },
-  ctaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13 },
-  leggiAnche: { marginTop: 22, paddingTop: 16, borderTopWidth: 1, borderTopColor: colori.bordo, gap: 10 },
-  leggiAncheTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
+  ctaTesto: { color: c.sulAccento, fontWeight: "800", fontSize: 13 },
+  leggiAnche: { marginTop: 22, paddingTop: 16, borderTopWidth: 1, borderTopColor: c.separatore, gap: 10 },
+  leggiAncheTitolo: { fontSize: 15, fontWeight: "800", color: c.testo },
   correlatoCard: { width: 140, height: 100, borderRadius: 12, overflow: "hidden" },
   correlatoFoto: { width: "100%", height: "100%", position: "absolute" },
   correlatoOmbra: { position: "absolute", inset: 0, backgroundColor: "rgba(15,29,23,0.35)" },
-  correlatoTitolo: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 8, color: colori.bianco, fontSize: 11, fontWeight: "700", lineHeight: 14 },
+  correlatoTitolo: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 8, color: "#FFFFFF", fontSize: 11, fontWeight: "700", lineHeight: 14 },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 40 },
-  vuotoTitolo: { fontSize: 16, fontWeight: "800", color: colori.testo },
-  vuotoTesto: { fontSize: 12.5, color: colori.testoSecondario },
-});
+  vuotoTitolo: { fontSize: 16, fontWeight: "800", color: c.testo },
+  vuotoTesto: { fontSize: 12.5, color: c.testoSecondario },
+  });
+}

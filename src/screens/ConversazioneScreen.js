@@ -3,11 +3,13 @@ import { View, Text, FlatList, Pressable, TextInput, StyleSheet, ActivityIndicat
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colori } from "../theme/colors";
+import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaMessaggi, inviaMessaggio } from "../lib/mercatino";
 
 export default function ConversazioneScreen({ route, navigation }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const { conversazione } = route.params;
   const { session } = useAuth();
   const [messaggi, setMessaggi] = useState([]);
@@ -50,7 +52,7 @@ export default function ConversazioneScreen({ route, navigation }) {
       <SafeAreaView style={styles.schermo} edges={["top", "bottom"]}>
         <View style={styles.intestazione}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={20} color={colori.testo} />
+            <Ionicons name="chevron-back" size={20} color={c.testo} />
           </Pressable>
           <Text style={styles.titolo} numberOfLines={1}>
             {conversazione.annuncioTitolo}
@@ -59,7 +61,7 @@ export default function ConversazioneScreen({ route, navigation }) {
         </View>
 
         {caricamento ? (
-          <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+          <ActivityIndicator style={{ marginTop: 40 }} color={c.primario} />
         ) : (
           <FlatList
             ref={listaRef}
@@ -82,13 +84,13 @@ export default function ConversazioneScreen({ route, navigation }) {
           <TextInput
             style={styles.campo}
             placeholder="Scrivi un messaggio…"
-            placeholderTextColor={colori.testoSecondario}
+            placeholderTextColor={c.testoSecondario}
             value={testo}
             onChangeText={setTesto}
             multiline
           />
           <Pressable style={styles.pulsanteInvia} onPress={invia} disabled={inviando || !testo.trim()}>
-            <Ionicons name="send" size={16} color={colori.bianco} />
+            <Ionicons name="send" size={16} color={c.sulPrimario} />
           </Pressable>
         </View>
       </SafeAreaView>
@@ -96,8 +98,9 @@ export default function ConversazioneScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -105,43 +108,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 12,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
+    borderBottomColor: c.separatore,
     gap: 10,
   },
-  titolo: { flex: 1, fontSize: 14, fontWeight: "800", color: colori.testo, textAlign: "center" },
+  titolo: { flex: 1, fontSize: 14, fontWeight: "800", color: c.testo, textAlign: "center" },
   bolla: { maxWidth: "78%", borderRadius: 14, paddingHorizontal: 13, paddingVertical: 9 },
-  bollaMia: { alignSelf: "flex-end", backgroundColor: colori.blu },
-  bollaAltra: { alignSelf: "flex-start", backgroundColor: colori.bianco },
-  bollaTesto: { fontSize: 12.5, color: colori.testo, lineHeight: 18 },
-  bollaTestoMio: { color: colori.bianco },
+  bollaMia: { alignSelf: "flex-end", backgroundColor: c.primario },
+  bollaAltra: { alignSelf: "flex-start", backgroundColor: c.sfondoGruppo },
+  bollaTesto: { fontSize: 12.5, color: c.testo, lineHeight: 18 },
+  bollaTestoMio: { color: c.sulPrimario },
   barraInvio: {
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 8,
     padding: 12,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderTopWidth: 1,
-    borderTopColor: colori.bordo,
+    borderTopColor: c.separatore,
   },
   campo: {
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
     borderRadius: 20,
-    backgroundColor: colori.grigioSfondo,
+    backgroundColor: c.sfondo,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 12.5,
-    color: colori.testo,
+    color: c.testo,
   },
   pulsanteInvia: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     alignItems: "center",
     justifyContent: "center",
   },
-});
+  });
+}

@@ -10,27 +10,25 @@ import {
   RefreshControl,
   Alert,
   ScrollView,
-  Modal,
   Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
-import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import { useTema, ombra } from "../theme/tema";
 import { caricaStrutture, caricaStruttureVicine, cercaStrutture } from "../lib/strutture";
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import ScheletroCard from "../components/ScheletroCard";
-import CuoreAnimato from "../components/ui/CuoreAnimato";
 import { vibraLeggera, vibraConferma } from "../lib/vibrazione";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
-import BollinoPromo from "../components/BollinoPromo";
+import CardStruttura from "../components/esplora/CardStruttura";
+import ModaleFiltriEsplora from "../components/esplora/ModaleFiltriEsplora";
 import { useAuth } from "../context/AuthContext";
-import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
+import { caricaIdPreferiti, toggleFavorito } from "../lib/preferiti";
 import { distanzaKm } from "../lib/geo";
 import SelettoreDate from "../components/SelettoreDate";
 import { apertoNelPeriodo, etichettaData, numeroNotti } from "../lib/periodo";
@@ -38,33 +36,9 @@ import { apertoNelPeriodo, etichettaData, numeroNotti } from "../lib/periodo";
 const FILTRI = ["Tutti", "Campeggi", "Agriturismi", "Agricampeggi", "Aree sosta", "Camper service", "Rifugi", "Bivacchi"];
 const STRUTTURE_PER_PAGINA = 60;
 
-// Servizi che un camperista cerca per primi: mostrati come icone nella card
-// (max 5, nell'ordine di importanza) così non serve aprire la scheda.
-const SERVIZI_IN_CARD = [
-  ["elettricita", "flash", "Corrente"],
-  ["camperService", "color-fill", "Camper service"],
-  ["caricoAcqua", "water", "Carico acqua"],
-  ["docce", "rainy", "Docce"],
-  ["wifi", "wifi", "Wi-Fi"],
-  ["petFriendly", "paw", "Animali"],
-  ["animaliAmmessi", "paw", "Animali"],
-  ["piscina", "umbrella", "Piscina"],
-];
-
-function iconeServizi(servizi) {
-  if (!servizi || servizi.length === 0) return [];
-  const viste = new Set();
-  const out = [];
-  for (const [chiave, icona, etichetta] of SERVIZI_IN_CARD) {
-    if (servizi.includes(chiave) && !viste.has(icona)) {
-      viste.add(icona);
-      out.push({ chiave, icona, etichetta });
-    }
-  }
-  return out;
-}
-
 export default function EsploraScreen({ navigation, route }) {
+  const { c } = useTema();
+  const styles = useEstili(c);
   const { session } = useAuth();
   const [strutture, setStrutture] = useState([]);
   const [preferitiIds, setPreferitiIds] = useState(new Set());
@@ -432,11 +406,11 @@ export default function EsploraScreen({ navigation, route }) {
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
 
         <View style={styles.ricercaPill}>
-          <Ionicons name="search" size={16} color={colori.testoSecondario} />
+          <Ionicons name="search" size={16} color={c.testoSecondario} />
           <TextInput
             style={styles.inputRicerca}
             placeholder="Zona, regione, struttura…"
-            placeholderTextColor={colori.testoSecondario}
+            placeholderTextColor={c.testoSecondario}
             value={ricerca}
             onChangeText={setRicerca}
             onFocus={() => setInputAFocus(true)}
@@ -453,9 +427,9 @@ export default function EsploraScreen({ navigation, route }) {
             style={[styles.pillaVicino, posizione && styles.pillaVicinoAttivo]}
           >
             {cercandoPosizione ? (
-              <ActivityIndicator color={colori.blu} size="small" />
+              <ActivityIndicator color={c.primario} size="small" />
             ) : (
-              <Ionicons name="navigate" size={16} color={posizione ? colori.bianco : colori.blu} />
+              <Ionicons name="navigate" size={16} color={posizione ? c.sulPrimario : c.primario} />
             )}
           </Pressable>
         </View>
@@ -484,7 +458,7 @@ export default function EsploraScreen({ navigation, route }) {
                       setInputAFocus(false);
                     }}
                   >
-                    <Ionicons name="time-outline" size={15} color={colori.testoSecondario} />
+                    <Ionicons name="time-outline" size={15} color={c.testoSecondario} />
                     <Text style={styles.rigaTendinaTesto}>{termine}</Text>
                   </Pressable>
                 ))}
@@ -499,7 +473,7 @@ export default function EsploraScreen({ navigation, route }) {
                   setInputAFocus(false);
                 }}
               >
-                <Ionicons name="map-outline" size={15} color={colori.blu} />
+                <Ionicons name="map-outline" size={15} color={c.primario} />
                 <Text style={styles.rigaTendinaTesto}>{r}</Text>
                 <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
               </Pressable>
@@ -513,7 +487,7 @@ export default function EsploraScreen({ navigation, route }) {
                   navigation.navigate("Scheda", { struttura: s });
                 }}
               >
-                <Ionicons name="business-outline" size={15} color={colori.testoSecondario} />
+                <Ionicons name="business-outline" size={15} color={c.testoSecondario} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rigaTendinaTesto} numberOfLines={1}>
                     {s.nome}
@@ -576,8 +550,8 @@ export default function EsploraScreen({ navigation, route }) {
             accessibilityRole="button"
             accessibilityLabel="Cerca con l'intelligenza artificiale"
           >
-            <Ionicons name="sparkles" size={15} color={iaAperta ? colori.bianco : colori.rosso} />
-            <Text style={[styles.bottoneIATesto, iaAperta && { color: colori.bianco }]}>IA</Text>
+            <Ionicons name="sparkles" size={15} color={iaAperta ? c.sulPrimario : c.pericolo} />
+            <Text style={[styles.bottoneIATesto, iaAperta && { color: c.sulPrimario }]}>IA</Text>
           </Pressable>
 
           <Pressable
@@ -586,7 +560,7 @@ export default function EsploraScreen({ navigation, route }) {
             style={[styles.bottoneFiltriServizi, filtriAttiviNumero > 0 && styles.bottoneFiltriServiziAttivo]}
             onPress={() => setModalFiltriAperto(true)}
           >
-            <Ionicons name="options-outline" size={20} color={filtriAttiviNumero > 0 ? colori.bianco : colori.blu} />
+            <Ionicons name="options-outline" size={20} color={filtriAttiviNumero > 0 ? c.sulPrimario : c.primario} />
             {filtriAttiviNumero > 0 && (
               <View style={styles.badgeFiltri}>
                 <Text style={styles.badgeFiltriTesto}>{filtriAttiviNumero}</Text>
@@ -599,7 +573,7 @@ export default function EsploraScreen({ navigation, route }) {
 
       {bannerHostVisibile && (
         <View style={styles.bannerHost}>
-          <Ionicons name="business-outline" size={20} color={colori.blu} />
+          <Ionicons name="business-outline" size={20} color={c.primario} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.bannerHostTitolo}>Gestisci un campeggio o una struttura?</Text>
             <Text style={styles.bannerHostTesto}>Registrala su NaturaGo.it, è gratis.</Text>
@@ -611,14 +585,14 @@ export default function EsploraScreen({ navigation, route }) {
             <Text style={styles.bannerHostPulsanteTesto}>Registrati</Text>
           </Pressable>
           <Pressable onPress={() => setBannerHostVisibile(false)} hitSlop={8}>
-            <Ionicons name="close" size={16} color={colori.testoSecondario} />
+            <Ionicons name="close" size={16} color={c.testoSecondario} />
           </Pressable>
         </View>
       )}
 
       {senzaConnessione && (
         <View style={styles.bannerOffline}>
-          <Ionicons name="cloud-offline-outline" size={16} color={colori.testoSecondario} />
+          <Ionicons name="cloud-offline-outline" size={16} color={c.testoSecondario} />
           <Text style={styles.bannerOfflineTesto}>Senza connessione: stai vedendo gli ultimi risultati salvati.</Text>
         </View>
       )}
@@ -641,13 +615,13 @@ export default function EsploraScreen({ navigation, route }) {
               accessibilityRole="button"
               accessibilityLabel="Scegli le date del soggiorno"
             >
-              <Ionicons name="calendar-outline" size={16} color={colori.blu} />
+              <Ionicons name="calendar-outline" size={16} color={c.primario} />
               <Text style={styles.pillDateTesto}>
                 {dateSoggiorno.checkIn && dateSoggiorno.checkOut
                   ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} notti`
                   : "Aggiungi le date del soggiorno"}
               </Text>
-              <Ionicons name="chevron-forward" size={14} color={colori.testoSecondario} />
+              <Ionicons name="chevron-forward" size={14} color={c.testoSecondario} />
             </Pressable>
             <View style={styles.rigaContatore}>
               <Text style={styles.contatore}>{testoConteggio} strutture</Text>
@@ -658,7 +632,7 @@ export default function EsploraScreen({ navigation, route }) {
                 accessibilityRole="button"
                 accessibilityLabel={`Ordina per, ora: ${etichettaOrdine}`}
               >
-                <Ionicons name="swap-vertical" size={15} color={colori.blu} />
+                <Ionicons name="swap-vertical" size={15} color={c.primario} />
                 <Text style={styles.pulsanteOrdinaTesto}>{etichettaOrdine}</Text>
               </Pressable>
             </View>
@@ -666,7 +640,7 @@ export default function EsploraScreen({ navigation, route }) {
           }
           ListEmptyComponent={
             <View style={styles.vuoto}>
-              <Ionicons name="search-outline" size={34} color={colori.testoSecondario} />
+              <Ionicons name="search-outline" size={34} color={c.testoSecondario} />
               <Text style={styles.vuotoTitolo}>Nessuna struttura trovata</Text>
               <Text style={styles.vuotoTesto}>Prova a togliere qualche filtro o a cercare un&apos;altra zona.</Text>
             </View>
@@ -674,76 +648,16 @@ export default function EsploraScreen({ navigation, route }) {
           onEndReached={caricaAltre}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            caricandoAltre ? <ActivityIndicator style={{ marginVertical: 14 }} color={colori.blu} /> : null
+            caricandoAltre ? <ActivityIndicator style={{ marginVertical: 14 }} color={c.primario} /> : null
           }
-          renderItem={({ item }) => {
-            const servizi = iconeServizi(item.servizi);
-            const visibili = servizi.slice(0, 4);
-            const altri = servizi.length - visibili.length;
-            return (
-              <Pressable
-                style={styles.card}
-                onPress={() => navigation.navigate("Scheda", { struttura: item })}
-                accessibilityRole="button"
-                accessibilityLabel={`${item.tipo} ${item.nome}, ${item.localita || ""}${item.prezzo ? `, da ${item.prezzo} euro a notte` : ""}`}
-              >
-                <View style={styles.cardFoto}>
-                  <ImmagineConRiserva uri={item.fotoUrl} larghezza={640} style={styles.cardImmagine} iconaColore={colori.blu} iconaDimensione={34} />
-                  <View style={styles.cardBadgeTipo}>
-                    <Text style={styles.cardBadgeTipoTesto}>{item.tipo}</Text>
-                  </View>
-                  {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
-                  {sipuoSalvare(item) && (
-                    <Pressable
-                      onPress={() => onToggleFavorito(item)}
-                      hitSlop={6}
-                      style={styles.cardCuore}
-                      accessibilityRole="button"
-                      accessibilityLabel={preferitiIds.has(item.idOriginale) ? "Togli dai preferiti" : "Salva nei preferiti"}
-                    >
-<CuoreAnimato attivo={preferitiIds.has(item.idOriginale)} size={20} colore={colori.rosso} />
-                    </Pressable>
-                  )}
-                </View>
-                <View style={styles.cardInfo}>
-                  <View style={styles.cardRigaTitolo}>
-                    <Text style={styles.cardNome} numberOfLines={2}>
-                      {item.nome}
-                    </Text>
-                    {item.rating ? (
-                      <View style={styles.cardRatingRiga}>
-                        <Ionicons name="star" size={13} color="#f59e0b" />
-                        <Text style={styles.cardRatingTesto}>
-                          {item.rating}
-                          {item.recensioni ? ` (${item.recensioni})` : ""}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text style={styles.cardLocalita} numberOfLines={1}>
-                    {item.localita}
-                    {item.distanzaKm != null ? ` · a ${item.distanzaKm.toFixed(1)} km` : ""}
-                  </Text>
-                  {visibili.length > 0 && (
-                    <View style={styles.cardServizi}>
-                      {visibili.map((sv) => (
-                        <View key={sv.chiave} style={styles.cardServizioPill}>
-                          <Ionicons name={sv.icona} size={12} color={colori.blu} />
-                          <Text style={styles.cardServizioTesto}>{sv.etichetta}</Text>
-                        </View>
-                      ))}
-                      {altri > 0 && <Text style={styles.cardServiziAltri}>+{altri}</Text>}
-                    </View>
-                  )}
-                  {item.prezzo ? (
-                    <Text style={styles.cardPrezzoRiga}>
-                      da <Text style={styles.cardPrezzo}>{item.prezzo}€</Text> / notte
-                    </Text>
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          }}
+          renderItem={({ item }) => (
+            <CardStruttura
+              item={item}
+              preferito={preferitiIds.has(item.idOriginale)}
+              onPress={() => navigation.navigate("Scheda", { struttura: item })}
+              onToggleFavorito={() => onToggleFavorito(item)}
+            />
+          )}
         />
       )}
 
@@ -760,159 +674,57 @@ export default function EsploraScreen({ navigation, route }) {
       />
       {!caricamento && !errore && (
         <Pressable style={styles.bottoneMappa} onPress={apriMappa} accessibilityRole="button" accessibilityLabel="Mostra queste strutture sulla mappa">
-          <Ionicons name="map" size={18} color={colori.bianco} />
+          <Ionicons name="map" size={18} color={c.sulPrimario} />
           <Text style={styles.bottoneMappaTesto}>Mappa</Text>
         </Pressable>
       )}
 
-      <Modal
-        visible={modalFiltriAperto}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setModalFiltriAperto(false)}
-      >
-        <SafeAreaView style={styles.modaleSchermo} edges={["top", "bottom"]}>
-          <View style={styles.modaleIntestazione}>
-            <Text style={styles.modaleTitolo}>Filtri</Text>
-            <Pressable onPress={() => setModalFiltriAperto(false)} hitSlop={10}>
-              <Ionicons name="close" size={22} color={colori.testo} />
-            </Pressable>
-          </View>
-
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 4 }}>
-            <View style={styles.sezioneFiltro}>
-              <View style={styles.sezioneIntestazione}>
-                <Ionicons name="swap-vertical" size={17} color={colori.blu} />
-                <Text style={styles.sezioneTitoloModale}>Ordina per</Text>
-              </View>
-              <View style={styles.gruppoChip}>
-                {[
-                  ["consigliati", "Consigliati"],
-                  ["prezzo", "Prezzo più basso"],
-                  ["valutazione", "Valutazione"],
-                ].map(([chiave, etichetta]) => (
-                  <Pressable
-                    key={chiave}
-                    onPress={() => setOrdine(chiave)}
-                    style={[styles.chipModale, ordine === chiave && styles.chipAttivo]}
-                  >
-                    <Text style={[styles.chipModaleTesto, ordine === chiave && styles.chipTestoAttivo]}>{etichetta}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-            <View style={styles.sezioneFiltro}>
-              <View style={styles.sezioneIntestazione}>
-                <Ionicons name="pricetag-outline" size={17} color={colori.blu} />
-                <Text style={styles.sezioneTitoloModale}>Prezzo a notte</Text>
-              </View>
-              <View style={styles.gruppoChip}>
-                {[
-                  [null, "Qualsiasi"],
-                  [20, "Fino a 20€"],
-                  [35, "Fino a 35€"],
-                  [50, "Fino a 50€"],
-                  [80, "Fino a 80€"],
-                ].map(([valore, etichetta]) => (
-                  <Pressable
-                    key={etichetta}
-                    onPress={() => setPrezzoMax(valore)}
-                    style={[styles.chipModale, prezzoMax === valore && styles.chipAttivo]}
-                  >
-                    <Text style={[styles.chipModaleTesto, prezzoMax === valore && styles.chipTestoAttivo]}>{etichetta}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              {prezzoMax != null && (
-                <Text style={styles.notaPrezzo}>Le strutture senza prezzo indicato (rifugi, aree sosta gratuite) non compaiono.</Text>
-              )}
-            </View>
-            {CATEGORIE_FILTRI_SERVIZI.map((categoria) => {
-              const aperta = !!sezioniAperte[categoria.titolo];
-              return (
-                <View key={categoria.titolo} style={styles.sezioneFiltro}>
-                  <Pressable style={styles.sezioneIntestazione} onPress={() => toggleSezione(categoria.titolo)}>
-                    <Ionicons name={categoria.icona} size={17} color={colori.blu} />
-                    <Text style={styles.sezioneTitoloModale}>{categoria.titolo}</Text>
-                    <Ionicons name={aperta ? "chevron-up" : "chevron-down"} size={16} color={colori.testoSecondario} />
-                  </Pressable>
-                  {aperta &&
-                    categoria.voci.map((voce) => {
-                      const selezionato = filtriServizi.includes(voce.chiave);
-                      return (
-                        <Pressable
-                          key={voce.chiave}
-                          style={styles.rigaServizio}
-                          onPress={() => toggleServizio(voce.chiave)}
-                        >
-                          <Text style={styles.rigaServizioTesto}>{voce.etichetta}</Text>
-                          <Ionicons
-                            name={selezionato ? "checkbox" : "square-outline"}
-                            size={20}
-                            color={selezionato ? colori.blu : colori.testoSecondario}
-                          />
-                        </Pressable>
-                      );
-                    })}
-                </View>
-              );
-            })}
-          </ScrollView>
-
-          <View style={styles.modalePiede}>
-            <Pressable
-              style={styles.pulsanteCancella}
-              onPress={() => {
-                setFiltriServizi([]);
-                setPrezzoMax(null);
-                setOrdine("consigliati");
-              }}
-              disabled={filtriAttiviNumero === 0 && ordine === "consigliati"}
-            >
-              <Text
-                style={[
-                  styles.pulsanteCancellaTesto,
-                  filtriAttiviNumero === 0 && ordine === "consigliati" && styles.pulsanteCancellaTestoDisattivo,
-                ]}
-              >
-                Cancella
-              </Text>
-            </Pressable>
-            <Pressable style={styles.pulsanteMostra} onPress={() => setModalFiltriAperto(false)}>
-              <Text style={styles.pulsanteMostraTesto}>
-                {filtriAttiviNumero === 0
-                  ? "Chiudi"
-                  : `Mostra ${testoConteggio} struttur${risultati.length === 1 && !altreDaCaricare ? "a" : "e"}`}
-              </Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </Modal>
+      <ModaleFiltriEsplora
+        visibile={modalFiltriAperto}
+        onChiudi={() => setModalFiltriAperto(false)}
+        ordine={ordine}
+        onCambiaOrdine={setOrdine}
+        prezzoMax={prezzoMax}
+        onCambiaPrezzoMax={setPrezzoMax}
+        categorieFiltri={CATEGORIE_FILTRI_SERVIZI}
+        sezioniAperte={sezioniAperte}
+        onToggleSezione={toggleSezione}
+        filtriServizi={filtriServizi}
+        onToggleServizio={toggleServizio}
+        filtriAttiviNumero={filtriAttiviNumero}
+        etichettaRisultati={`${testoConteggio} struttur${risultati.length === 1 && !altreDaCaricare ? "a" : "e"}`}
+        onReset={() => {
+          setFiltriServizi([]);
+          setPrezzoMax(null);
+          setOrdine("consigliati");
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
+function useEstili(c) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.sfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 12, gap: 12, position: "relative", zIndex: 30 },
   ricercaPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 22,
     height: 44,
     paddingHorizontal: 16,
   },
-  pillaVicino: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: colori.bluChiaro },
-  pillaVicinoAttivo: { backgroundColor: colori.blu },
-  inputRicerca: { flex: 1, fontSize: 15, color: colori.testo },
+  pillaVicino: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: c.primarioChiaro },
+  pillaVicinoAttivo: { backgroundColor: c.primario },
+  inputRicerca: { flex: 1, fontSize: 15, color: c.testo },
   tendina: {
     position: "absolute",
     top: 56,
     left: 20,
     right: 20,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 14,
     paddingVertical: 4,
     shadowColor: "#000",
@@ -931,9 +743,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
-  rigaTendinaTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
-  rigaTendinaSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
-  rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
+  rigaTendinaTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: c.testo },
+  rigaTendinaSottotitolo: { fontSize: 10.5, color: c.testoSecondario },
+  rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: c.primario, textTransform: "uppercase" },
   tendinaIntestazione: {
     flexDirection: "row",
     alignItems: "center",
@@ -947,36 +759,36 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     textTransform: "uppercase",
-    color: colori.testoSecondario,
+    color: c.testoSecondario,
   },
-  tendinaCancella: { fontSize: 11, fontWeight: "700", color: colori.blu },
+  tendinaCancella: { fontSize: 11, fontWeight: "700", color: c.primario },
   rigaFiltri: { flexDirection: "row", alignItems: "center", gap: 8 },
   filtri: { flexDirection: "row", gap: 8 },
   bottoneIA: {
     height: 44,
     paddingHorizontal: 12,
     borderRadius: 22,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
   },
-  bottoneIATesto: { fontSize: 13, fontWeight: "800", color: colori.rosso },
+  bottoneIATesto: { fontSize: 13, fontWeight: "800", color: c.pericolo },
   bottoneFiltriServizi: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
   },
-  bottoneFiltriServiziAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
+  bottoneFiltriServiziAttivo: { backgroundColor: c.primario, borderColor: c.primario },
   badgeFiltri: {
     position: "absolute",
     top: -4,
@@ -984,108 +796,43 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colori.arancio,
+    backgroundColor: c.accento,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
   },
-  badgeFiltriTesto: { color: colori.bianco, fontSize: 9, fontWeight: "800" },
-  modaleSchermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  modaleIntestazione: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: colori.bianco,
-    borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
-  },
-  modaleTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  sezioneFiltro: {
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
-    marginBottom: 10,
-    ...ombraCard,
-  },
-  sezioneIntestazione: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 14,
-  },
-  sezioneTitoloModale: { flex: 1, fontSize: 15, fontWeight: "700", color: colori.testo },
-  rigaServizio: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
-  },
-  rigaServizioTesto: { fontSize: 14.5, color: colori.testo },
-  modalePiede: {
-    flexDirection: "row",
-    gap: 10,
-    padding: 16,
-    backgroundColor: colori.bianco,
-    borderTopWidth: 1,
-    borderTopColor: colori.bordo,
-  },
-  pulsanteCancella: { height: 46, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
-  pulsanteCancellaTesto: { fontSize: 13, fontWeight: "700", color: colori.testo },
-  pulsanteCancellaTestoDisattivo: { color: colori.testoSecondario },
-  pulsanteMostra: {
-    flex: 1,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: colori.blu,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pulsanteMostraTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
+  badgeFiltriTesto: { color: c.sulAccento, fontSize: 9, fontWeight: "800" },
   chip: {
     paddingHorizontal: 12,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
   },
-  chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
-  chipTesto: { fontSize: 14, fontWeight: "600", color: colori.testoSecondario },
-  chipTestoAttivo: { color: colori.bianco },
-  vicinoAMe: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: colori.blu,
-    height: 44,
-    borderRadius: 12,
-  },
-  vicinoAMeTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13.5 },
-  contatore: { fontSize: 13.5, fontWeight: "600", color: colori.testoSecondario },
+  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
+  chipTesto: { fontSize: 14, fontWeight: "600", color: c.testoSecondario },
+  chipTestoAttivo: { color: c.sulPrimario },
+  contatore: { fontSize: 13.5, fontWeight: "600", color: c.testoSecondario },
   rigaContatore: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4, minHeight: 36 },
   pillDate: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 46,
     marginBottom: 10,
-    ...ombraCard,
+    ...ombra(c),
   },
-  pillDateTesto: { flex: 1, fontSize: 14, fontWeight: "600", color: colori.testo },
+  pillDateTesto: { flex: 1, fontSize: 14, fontWeight: "600", color: c.testo },
   pulsanteOrdina: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 36, paddingLeft: 8 },
-  pulsanteOrdinaTesto: { fontSize: 13.5, fontWeight: "700", color: colori.blu },
+  pulsanteOrdinaTesto: { fontSize: 13.5, fontWeight: "700", color: c.primario },
   vuoto: { alignItems: "center", gap: 8, paddingVertical: 50, paddingHorizontal: 20 },
-  vuotoTitolo: { fontSize: 16, fontWeight: "800", color: colori.testo },
-  vuotoTesto: { fontSize: 13.5, color: colori.testoSecondario, textAlign: "center" },
+  vuotoTitolo: { fontSize: 16, fontWeight: "800", color: c.testo },
+  vuotoTesto: { fontSize: 13.5, color: c.testoSecondario, textAlign: "center" },
   bottoneMappa: {
     position: "absolute",
     bottom: 18,
@@ -1093,7 +840,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colori.testo,
+    backgroundColor: c.testo,
     paddingHorizontal: 20,
     height: 48,
     borderRadius: 24,
@@ -1103,20 +850,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  bottoneMappaTesto: { color: colori.bianco, fontSize: 15, fontWeight: "800" },
-  notaPrezzo: { fontSize: 12.5, color: colori.testoSecondario, paddingHorizontal: 14, paddingBottom: 14, marginTop: -6 },
-  gruppoChip: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
-  chipModale: {
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colori.bordo,
-    backgroundColor: colori.bianco,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chipModaleTesto: { fontSize: 14, fontWeight: "600", color: colori.testo },
+  bottoneMappaTesto: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
   bannerHost: {
     flexDirection: "row",
     alignItems: "center",
@@ -1124,77 +858,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 12,
     padding: 12,
-    backgroundColor: colori.bluChiaro,
+    backgroundColor: c.primarioChiaro,
     borderRadius: 14,
   },
-  bannerHostTitolo: { fontSize: 11.5, fontWeight: "700", color: colori.testo },
-  bannerHostTesto: { fontSize: 10.5, color: colori.testoSecondario },
+  bannerHostTitolo: { fontSize: 11.5, fontWeight: "700", color: c.testo },
+  bannerHostTesto: { fontSize: 10.5, color: c.testoSecondario },
   bannerHostPulsante: {
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  bannerHostPulsanteTesto: { color: colori.bianco, fontSize: 11, fontWeight: "700" },
-  card: {
-    backgroundColor: colori.bianco,
-    borderRadius: 20,
-    overflow: "hidden",
-    ...ombraCard,
-  },
-  cardFoto: {
-    width: "100%",
-    height: 180,
-    backgroundColor: colori.bluChiaro,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    position: "relative",
-  },
-  cardImmagine: { width: "100%", height: "100%" },
-  cardBadgeTipo: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  cardBadgeTipoTesto: { fontSize: 12, fontWeight: "800", color: colori.blu },
-  cardBollinoPromo: { position: "absolute", bottom: 12, left: 12 },
-  cardCuore: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.94)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardInfo: { padding: 14, gap: 5 },
-  cardRigaTitolo: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
-  cardNome: { flex: 1, fontSize: 17, fontWeight: "800", color: colori.testo },
-  cardLocalita: { fontSize: 14, color: colori.testoSecondario },
-  cardRatingRiga: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  cardRatingTesto: { fontSize: 13.5, fontWeight: "700", color: colori.testo },
-  cardServizi: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 4 },
-  cardServizioPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: colori.bluChiaro,
-    borderRadius: 12,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
-  cardServizioTesto: { fontSize: 12.5, fontWeight: "600", color: colori.blu },
-  cardServiziAltri: { fontSize: 12.5, fontWeight: "700", color: colori.testoSecondario },
-  cardPrezzoRiga: { fontSize: 14, color: colori.testoSecondario, marginTop: 4 },
-  cardPrezzo: { fontSize: 18, fontWeight: "800", color: colori.testo },
-  messaggioErrore: { textAlign: "center", marginTop: 40, color: colori.testoSecondario, paddingHorizontal: 30 },
+  bannerHostPulsanteTesto: { color: c.sulPrimario, fontSize: 11, fontWeight: "700" },
+  messaggioErrore: { textAlign: "center", marginTop: 40, color: c.testoSecondario, paddingHorizontal: 30 },
   bannerOffline: {
     flexDirection: "row",
     alignItems: "center",
@@ -1203,7 +879,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 10,
     borderRadius: 10,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: c.sfondo,
   },
-  bannerOfflineTesto: { flex: 1, fontSize: 11.5, color: colori.testoSecondario, fontWeight: "600" },
-});
+  bannerOfflineTesto: { flex: 1, fontSize: 11.5, color: c.testoSecondario, fontWeight: "600" },
+  });
+}

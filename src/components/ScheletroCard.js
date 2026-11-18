@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Animated, View, StyleSheet } from "react-native";
-import { colori, ombraCard, raggioCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 
 // Segnaposto grigio pulsante al posto dell'indicatore di caricamento:
 // la lista "appare" subito con la sua forma vera.
 export default function ScheletroCard({ righe = 6 }) {
+  const { c, spazio, raggio } = useTema();
+  const styles = useEstili(c, spazio, raggio);
   const [opacita] = useState(() => new Animated.Value(0.45));
   useEffect(() => {
     const anim = Animated.loop(
@@ -33,8 +35,10 @@ export default function ScheletroCard({ righe = 6 }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { flexDirection: "row", gap: 12, backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 12, ...ombraCard },
-  foto: { width: 92, height: 92, borderRadius: 12, backgroundColor: colori.bluChiaro },
-  barra: { height: 10, borderRadius: 5, backgroundColor: colori.bluChiaro },
-});
+function useEstili(c, spazio, raggio) {
+  return StyleSheet.create({
+    card: { flexDirection: "row", gap: 12, backgroundColor: c.sfondoGruppo, borderRadius: raggio.l, padding: 12, ...ombra(c) },
+    foto: { width: 92, height: 92, borderRadius: raggio.m, backgroundColor: c.primarioChiaro },
+    barra: { height: 10, borderRadius: 5, backgroundColor: c.primarioChiaro },
+  });
+}

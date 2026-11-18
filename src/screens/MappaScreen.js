@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import { Ionicons } from "@expo/vector-icons";
-import { colori, ombraCard } from "../theme/colors";
+import { useTema, ombra } from "../theme/tema";
 import { caricaTutteLePosizioni, cercaStrutture, STILE_PER_TIPO, STILE_DEFAULT } from "../lib/strutture";
 import { caricaTutteLePosizioniCulturali, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { caricaTutteLePosizioniItinerari, CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
@@ -16,7 +16,8 @@ import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } f
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ModaleServizi from "../components/ModaleServizi";
 import CreaPercorso from "../components/CreaPercorso";
-import { CardGiorno } from "../components/PianoGiorno";
+import TendinaSuggerimentiMappa from "../components/mappa/TendinaSuggerimentiMappa";
+import ModalePianoMappa from "../components/mappa/ModalePianoMappa";
 import { distanzaKmPunti } from "../lib/percorsoStradale";
 
 // react-native-maps richiede moduli nativi non presenti in Expo Go: in attesa
@@ -66,12 +67,14 @@ const PAROLE_CATEGORIA_ITINERARIO = {
 };
 
 function MappaPlaceholder() {
+  const { c } = useTema();
+  const styles = useEstili(c);
   return (
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.sovrapposizioneStatica}>
         <MarchioNaturaGo />
         <View style={styles.ricercaPill}>
-          <Ionicons name="search" size={15} color={colori.testoSecondario} />
+          <Ionicons name="search" size={15} color={c.testoSecondario} />
           <Text style={styles.placeholderRicerca}>Zona, regione, struttura…</Text>
         </View>
       </SafeAreaView>
@@ -88,6 +91,8 @@ function MappaPlaceholder() {
 
 function MappaVera({ navigation, route }) {
   const { default: MapView, Marker, Polyline } = require("react-native-maps");
+  const { c } = useTema();
+  const styles = useEstili(c);
   const { session } = useAuth();
   const mappaRef = useRef(null);
   const [strutture, setStrutture] = useState([]);
@@ -341,8 +346,12 @@ function MappaVera({ navigation, route }) {
   // Indice per il clustering: ricalcolato solo quando cambia l'elenco di
   // schede, non a ogni spostamento della mappa (vedi `cluster` sotto, che
   // invece dipende anche da `regione`).
+  // Raggio alzato da 50 a 80: con tutti e tre i livelli (strutture, cultura,
+  // itinerari) visibili insieme sull'Italia intera, un raggio troppo stretto
+  // lasciava tanti cluster piccoli e vicini che si sovrapponevano tra loro e
+  // con la barra dei filtri sopra - segnalato dal vivo.
   const indiceCluster = useMemo(() => {
-    const sc = new Supercluster({ radius: 50, maxZoom: 16 });
+    const sc = new Supercluster({ radius: 80, maxZoom: 16 });
     sc.load(
       Array.from(puntiById.entries()).map(([chiave, voce]) => ({
         type: "Feature",
@@ -354,7 +363,10 @@ function MappaVera({ navigation, route }) {
   }, [puntiById]);
 
   const cluster = useMemo(() => {
-    const zoom = Math.max(0, Math.min(20, Math.round(Math.log2(360 / regione.longitudeDelta))));
+    // `floor`, non `round`: arrotondare per eccesso sovrastimava lo zoom e
+    // supercluster accorpava meno di quanto lo schermo potesse mostrare
+    // pulito, lasciando cluster vicini non uniti (vedi raggio sopra).
+    const zoom = Math.max(0, Math.min(20, Math.floor(Math.log2(360 / regione.longitudeDelta))));
     const bbox = [
       regione.longitude - regione.longitudeDelta,
       regione.latitude - regione.latitudeDelta,
@@ -503,7 +515,7 @@ function MappaVera({ navigation, route }) {
                 onCalloutPress={() => navigation.navigate("SchedaCulturale", { id: voce.id })}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
-                  <Ionicons name={meta.icona} size={18} color={colori.bianco} />
+                  <Ionicons name={meta.icona} size={18} color={"#FFFFFF"} />
                 </View>
               </Marker>
             );
@@ -520,7 +532,7 @@ function MappaVera({ navigation, route }) {
                 onCalloutPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: it.id })}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
-                  <Ionicons name={meta.icona} size={18} color={colori.bianco} />
+                  <Ionicons name={meta.icona} size={18} color={"#FFFFFF"} />
                 </View>
               </Marker>
             );
@@ -536,7 +548,7 @@ function MappaVera({ navigation, route }) {
               onCalloutPress={() => navigation.navigate("Scheda", { struttura: s })}
             >
               <View style={[styles.segnaposto, { backgroundColor: stile.colore }]}>
-                <Ionicons name={stile.icona} size={18} color={colori.bianco} />
+                <Ionicons name={stile.icona} size={18} color={"#FFFFFF"} />
               </View>
             </Marker>
           );
@@ -547,73 +559,39 @@ function MappaVera({ navigation, route }) {
         <MarchioNaturaGo />
         <View style={styles.contenitoreRicerca}>
           <View style={styles.ricercaPill}>
-            <Ionicons name="search" size={15} color={colori.testoSecondario} />
+            <Ionicons name="search" size={15} color={c.testoSecondario} />
             <TextInput
               style={styles.ricercaInput}
               placeholder="Zona, regione, struttura…"
-              placeholderTextColor={colori.testoSecondario}
+              placeholderTextColor={c.testoSecondario}
               value={termine}
               onChangeText={setTermine}
               onFocus={() => setInputAFocus(true)}
               onBlur={() => setTimeout(() => setInputAFocus(false), 150)}
             />
             {cercando ? (
-              <ActivityIndicator size="small" color={colori.blu} />
+              <ActivityIndicator size="small" color={c.primario} />
             ) : termine ? (
               <Pressable onPress={svuotaRicerca} hitSlop={8}>
-                <Ionicons name="close-circle" size={16} color={colori.testoSecondario} />
+                <Ionicons name="close-circle" size={16} color={c.testoSecondario} />
               </Pressable>
             ) : null}
           </View>
 
           {mostraTendina && (
-            <View style={styles.tendina}>
-              {mostraRicercheRecenti && (
-                <>
-                  <View style={styles.tendinaIntestazione}>
-                    <Text style={styles.tendinaIntestazioneTesto}>Ricerche recenti</Text>
-                    <Pressable onPress={() => cancellaRicercheRecenti().then(setRicercheRecenti)} hitSlop={8}>
-                      <Text style={styles.tendinaCancella}>Cancella</Text>
-                    </Pressable>
-                  </View>
-                  {ricercheRecenti.map((t) => (
-                    <Pressable key={`recente-${t}`} style={styles.rigaTendina} onPress={() => setTermine(t)}>
-                      <Ionicons name="time-outline" size={15} color={colori.testoSecondario} />
-                      <Text style={styles.rigaTendinaTesto}>{t}</Text>
-                    </Pressable>
-                  ))}
-                </>
-              )}
-              {regioniSuggerite.map((r) => (
-                <Pressable key={`regione-${r}`} style={styles.rigaTendina} onPress={() => setTermine(r)}>
-                  <Ionicons name="map-outline" size={15} color={colori.blu} />
-                  <Text style={styles.rigaTendinaTesto}>{r}</Text>
-                  <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
-                </Pressable>
-              ))}
-              {struttureSuggerite.map((s) => (
-                <Pressable
-                  key={`struttura-${s.id}`}
-                  style={styles.rigaTendina}
-                  onPress={() => {
-                    setInputAFocus(false);
-                    navigation.navigate("Scheda", { struttura: s });
-                  }}
-                >
-                  <Ionicons name="business-outline" size={15} color={colori.testoSecondario} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rigaTendinaTesto} numberOfLines={1}>
-                      {s.nome}
-                    </Text>
-                    {s.localita ? (
-                      <Text style={styles.rigaTendinaSottotitolo} numberOfLines={1}>
-                        {s.localita}
-                      </Text>
-                    ) : null}
-                  </View>
-                </Pressable>
-              ))}
-            </View>
+            <TendinaSuggerimentiMappa
+              mostraRicercheRecenti={mostraRicercheRecenti}
+              ricercheRecenti={ricercheRecenti}
+              onCancellaRicerche={() => cancellaRicercheRecenti().then(setRicercheRecenti)}
+              onScegliTermine={setTermine}
+              regioniSuggerite={regioniSuggerite}
+              onScegliRegione={setTermine}
+              struttureSuggerite={struttureSuggerite}
+              onScegliStruttura={(s) => {
+                setInputAFocus(false);
+                navigation.navigate("Scheda", { struttura: s });
+              }}
+            />
           )}
         </View>
 
@@ -637,7 +615,7 @@ function MappaVera({ navigation, route }) {
 
         {!!piano?.giorni?.length && !modalPianoAperto && (
           <Pressable style={styles.pillPiano} onPress={() => setModalPianoAperto(true)}>
-            <Ionicons name="calendar-outline" size={14} color={colori.blu} />
+            <Ionicons name="calendar-outline" size={14} color={c.primario} />
             <Text style={styles.pillPianoTesto}>Vedi il piano</Text>
           </Pressable>
         )}
@@ -661,7 +639,7 @@ function MappaVera({ navigation, route }) {
                   onPress={() => alternaCategoriaCultura(cat)}
                   style={[styles.chip, styles.chipConIcona, attivo && { backgroundColor: meta.colore, borderColor: meta.colore }]}
                 >
-                  <Ionicons name={meta.icona} size={12} color={attivo ? colori.bianco : meta.colore} />
+                  <Ionicons name={meta.icona} size={12} color={attivo ? "#FFFFFF" : meta.colore} />
                   <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{meta.etichetta}</Text>
                 </Pressable>
               );
@@ -675,7 +653,7 @@ function MappaVera({ navigation, route }) {
                   onPress={() => alternaCategoriaItinerario(cat)}
                   style={[styles.chip, styles.chipConIcona, attivo && { backgroundColor: meta.colore, borderColor: meta.colore }]}
                 >
-                  <Ionicons name={meta.icona} size={12} color={attivo ? colori.bianco : meta.colore} />
+                  <Ionicons name={meta.icona} size={12} color={attivo ? "#FFFFFF" : meta.colore} />
                   <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{meta.etichetta}</Text>
                 </Pressable>
               );
@@ -687,7 +665,7 @@ function MappaVera({ navigation, route }) {
             style={[styles.bottoneServizi, filtriServiziIA.length > 0 && styles.bottoneServiziAttivo]}
             onPress={() => setServiziAperti(true)}
           >
-            <Ionicons name="options-outline" size={18} color={filtriServiziIA.length > 0 ? colori.bianco : colori.blu} />
+            <Ionicons name="options-outline" size={18} color={filtriServiziIA.length > 0 ? c.sulPrimario : c.primario} />
             {filtriServiziIA.length > 0 && <Text style={styles.bottoneServiziNumero}>{filtriServiziIA.length}</Text>}
           </Pressable>
         </View>
@@ -701,7 +679,7 @@ function MappaVera({ navigation, route }) {
 
         {senzaConnessione && (
           <View style={styles.bannerOffline}>
-            <Ionicons name="cloud-offline-outline" size={14} color={colori.testoSecondario} />
+            <Ionicons name="cloud-offline-outline" size={14} color={c.testoSecondario} />
             <Text style={styles.bannerOfflineTesto}>Senza connessione: ultimi risultati salvati.</Text>
           </View>
         )}
@@ -709,15 +687,15 @@ function MappaVera({ navigation, route }) {
 
       {caricamento && (
         <View style={styles.caricamentoBadge} pointerEvents="none">
-          <ActivityIndicator color={colori.blu} size="small" />
+          <ActivityIndicator color={c.primario} size="small" />
         </View>
       )}
 
       <Pressable style={styles.pulsanteVicinoAMe} onPress={vaiVicinoAMe} disabled={cercandoPosizione}>
         {cercandoPosizione ? (
-          <ActivityIndicator color={colori.blu} size="small" />
+          <ActivityIndicator color={c.primario} size="small" />
         ) : (
-          <Ionicons name="locate" size={20} color={colori.blu} />
+          <Ionicons name="locate" size={20} color={c.primario} />
         )}
       </Pressable>
 
@@ -750,28 +728,12 @@ function MappaVera({ navigation, route }) {
         </SafeAreaView>
       )}
 
-      <Modal
-        visible={modalPianoAperto}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setModalPianoAperto(false)}
-      >
-        <SafeAreaView style={styles.modalePianoSchermo} edges={["top", "bottom"]}>
-          <View style={styles.modaleIntestazione}>
-            <Text style={styles.modaleTitolo}>
-              {piano ? `${piano.giorniRichiesti} giorni · ${piano.tappe.join(" → ")}` : "Il tuo piano"}
-            </Text>
-            <Pressable onPress={() => setModalPianoAperto(false)} hitSlop={10}>
-              <Ionicons name="close" size={22} color={colori.testo} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.modalePianoContenuto}>
-            {piano?.giorni?.map((g) => (
-              <CardGiorno key={g.numero} giorno={g} navigation={navigation} />
-            ))}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      <ModalePianoMappa
+        visibile={modalPianoAperto}
+        piano={piano}
+        onChiudi={() => setModalPianoAperto(false)}
+        navigation={navigation}
+      />
     </View>
   );
 }
@@ -783,8 +745,9 @@ export default function MappaScreen({ navigation, route }) {
   return <MappaVera navigation={navigation} route={route} />;
 }
 
-const styles = StyleSheet.create({
-  schermo: { flex: 1, backgroundColor: colori.bluChiaro },
+function useEstili(c) {
+  return StyleSheet.create({
+  schermo: { flex: 1, backgroundColor: c.primarioChiaro },
   mappa: { flex: 1 },
   sovrapposizione: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 10, gap: 8 },
   sovrapposizioneStatica: { paddingHorizontal: 16, paddingTop: 10, gap: 8 },
@@ -793,57 +756,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     height: 44,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 22,
     paddingHorizontal: 16,
-    ...ombraCard,
+    ...ombra(c),
   },
-  placeholderRicerca: { fontSize: 12, color: colori.testoSecondario },
-  ricercaInput: { flex: 1, fontSize: 12.5, color: colori.testo, padding: 0 },
+  placeholderRicerca: { fontSize: 12, color: c.testoSecondario },
+  ricercaInput: { flex: 1, fontSize: 12.5, color: c.testo, padding: 0 },
   contenitoreRicerca: { position: "relative", zIndex: 30 },
-  tendina: {
-    position: "absolute",
-    top: 50,
-    left: 0,
-    right: 0,
-    backgroundColor: colori.bianco,
-    borderRadius: 14,
-    paddingVertical: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-    zIndex: 31,
-  },
-  rigaTendina: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
-  },
-  rigaTendinaTesto: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colori.testo },
-  rigaTendinaSottotitolo: { fontSize: 10.5, color: colori.testoSecondario },
-  rigaTendinaEtichetta: { fontSize: 10, fontWeight: "700", color: colori.blu, textTransform: "uppercase" },
-  tendinaIntestazione: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  tendinaIntestazioneTesto: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    color: colori.testoSecondario,
-  },
-  tendinaCancella: { fontSize: 11, fontWeight: "700", color: colori.blu },
   rigaFiltri: { flexDirection: "row", alignItems: "center", gap: 8 },
   bottoneServizi: {
     height: 34,
@@ -854,28 +774,31 @@ const styles = StyleSheet.create({
     gap: 4,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderWidth: 1,
-    borderColor: colori.bordo,
-    ...ombraCard,
+    borderColor: c.separatore,
+    ...ombra(c),
   },
-  bottoneServiziAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
-  bottoneServiziNumero: { color: colori.bianco, fontWeight: "800", fontSize: 12 },
-  filtri: { flexDirection: "row", gap: 8 },
+  bottoneServiziAttivo: { backgroundColor: c.primario, borderColor: c.primario },
+  bottoneServiziNumero: { color: c.sulPrimario, fontWeight: "800", fontSize: 12 },
+  // paddingRight: senza margine l'ultimo chip visibile finiva tagliato di
+  // netto contro il pulsante Servizi affianco, invece di un normale "si
+  // intuisce che si scorre" (segnalato dal vivo su "Agricampeggi").
+  filtri: { flexDirection: "row", gap: 8, paddingRight: 12 },
   chip: {
     paddingHorizontal: 12,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colori.bordo,
-    ...ombraCard,
+    borderColor: c.separatore,
+    ...ombra(c),
   },
-  chipAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
+  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
   chipConIcona: { flexDirection: "row", alignItems: "center", gap: 4 },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
-  chipTestoAttivo: { color: colori.bianco },
+  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
+  chipTestoAttivo: { color: c.sulPrimario },
   segnaposto: {
     width: 34,
     height: 34,
@@ -883,8 +806,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: colori.bianco,
-    ...ombraCard,
+    borderColor: "#FFFFFF",
+    ...ombra(c),
   },
   cluster: {
     width: 36,
@@ -892,12 +815,12 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colori.blu,
+    backgroundColor: c.primario,
     borderWidth: 2,
-    borderColor: colori.bianco,
-    ...ombraCard,
+    borderColor: "#FFFFFF",
+    ...ombra(c),
   },
-  clusterTesto: { color: colori.bianco, fontWeight: "700", fontSize: 12.5 },
+  clusterTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 12.5 },
   bannerOffline: {
     flexDirection: "row",
     alignItems: "center",
@@ -906,22 +829,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
   },
-  bannerOfflineTesto: { fontSize: 10.5, fontWeight: "600", color: colori.testoSecondario },
+  bannerOfflineTesto: { fontSize: 10.5, fontWeight: "600", color: c.testoSecondario },
   centro: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 30 },
-  messaggioCentro: { fontWeight: "700", color: colori.testo },
-  messaggioCentroPiccolo: { fontSize: 11, color: colori.testoSecondario, textAlign: "center" },
+  messaggioCentro: { fontWeight: "700", color: c.testo },
+  messaggioCentroPiccolo: { fontSize: 11, color: c.testoSecondario, textAlign: "center" },
   caricamentoBadge: {
     position: "absolute",
     bottom: 20,
     alignSelf: "center",
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 20,
     padding: 8,
-    ...ombraCard,
+    ...ombra(c),
   },
   pulsanteVicinoAMe: {
     position: "absolute",
@@ -930,10 +853,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     alignItems: "center",
     justifyContent: "center",
-    ...ombraCard,
+    ...ombra(c),
   },
   pinTappa: {
     width: 24,
@@ -943,9 +866,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#C1663A",
     borderWidth: 2,
-    borderColor: colori.bianco,
+    borderColor: "#FFFFFF",
   },
-  pinTappaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 11 },
+  pinTappaTesto: { color: "#FFFFFF", fontWeight: "800", fontSize: 11 },
   strisciaPercorso: { position: "absolute", left: 0, right: 0, bottom: 0 },
   strisciaPercorsoContenuto: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
   pillPiano: {
@@ -953,47 +876,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     alignSelf: "flex-start",
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colori.bordo,
+    borderColor: c.separatore,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginTop: 8,
-    ...ombraCard,
+    ...ombra(c),
   },
-  pillPianoTesto: { color: colori.blu, fontSize: 12, fontWeight: "600" },
-  modalePianoSchermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  modalePianoContenuto: { padding: 20, gap: 12, paddingBottom: 40 },
-  modaleIntestazione: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: colori.bianco,
-    borderBottomWidth: 1,
-    borderBottomColor: colori.bordo,
-  },
-  modaleTitolo: { flex: 1, fontSize: 14, fontWeight: "800", color: colori.testo, marginRight: 10 },
+  pillPianoTesto: { color: c.primario, fontSize: 12, fontWeight: "600" },
   cardStrutturaPercorso: {
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
     maxWidth: 180,
-    ...ombraCard,
+    ...ombra(c),
   },
-  cardStrutturaPercorsoNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  cardStrutturaPercorsoLocalita: { fontSize: 11, color: colori.testoSecondario, marginTop: 2 },
+  cardStrutturaPercorsoNome: { fontSize: 12.5, fontWeight: "700", color: c.testo },
+  cardStrutturaPercorsoLocalita: { fontSize: 11, color: c.testoSecondario, marginTop: 2 },
   strutturaPercorsoVuota: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: colori.bianco,
+    backgroundColor: c.sfondoGruppo,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    ...ombraCard,
+    ...ombra(c),
   },
-  strutturaPercorsoVuotaTesto: { fontSize: 11.5, color: colori.testoSecondario, textAlign: "center" },
-});
+  strutturaPercorsoVuotaTesto: { fontSize: 11.5, color: c.testoSecondario, textAlign: "center" },
+  });
+}
