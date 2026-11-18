@@ -31,6 +31,8 @@ import BollinoPromo from "../components/BollinoPromo";
 import { useAuth } from "../context/AuthContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
 import { distanzaKm } from "../lib/geo";
+import SelettoreDate from "../components/SelettoreDate";
+import { apertoNelPeriodo, etichettaData, numeroNotti } from "../lib/periodo";
 
 const FILTRI = ["Tutti", "Campeggi", "Agriturismi", "Agricampeggi", "Aree sosta", "Camper service", "Rifugi", "Bivacchi"];
 const STRUTTURE_PER_PAGINA = 60;
@@ -97,6 +99,13 @@ export default function EsploraScreen({ navigation, route }) {
   // (i dati del database non hanno un ordine per prezzo/voto utilizzabile
   // in query: restano come ritocco della lista che si sta guardando).
   const [ordine, setOrdine] = useState("consigliati");
+  // Date del soggiorno (dall'hub o scelte qui): tolgono le strutture
+  // stagionali chiuse in quel periodo, come sul sito.
+  const [dateSoggiorno, setDateSoggiorno] = useState(() => ({
+    checkIn: route.params?.dateIniziali?.checkIn || null,
+    checkOut: route.params?.dateIniziali?.checkOut || null,
+  }));
+  const [dateAperte, setDateAperte] = useState(false);
   const [prezzoMax, setPrezzoMax] = useState(null);
   const [modalFiltriAperto, setModalFiltriAperto] = useState(false);
   const [sezioniAperte, setSezioniAperte] = useState({ [CATEGORIE_FILTRI_SERVIZI[0].titolo]: true });
@@ -354,7 +363,7 @@ export default function EsploraScreen({ navigation, route }) {
       ricerca.trim().length === 0 ||
       s.nome?.toLowerCase().includes(ricerca.toLowerCase()) ||
       s.localita?.toLowerCase().includes(ricerca.toLowerCase());
-    return passaFiltro && passaRicerca;
+    return passaFiltro && passaRicerca && apertoNelPeriodo(s, dateSoggiorno.checkIn, dateSoggiorno.checkOut);
   });
 
   if (posizione) {
@@ -624,6 +633,21 @@ export default function EsploraScreen({ navigation, route }) {
           contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 16 }}
           refreshControl={<RefreshControl refreshing={aggiornamento} onRefresh={onRefresh} />}
           ListHeaderComponent={
+            <>
+            <Pressable
+              onPress={() => setDateAperte(true)}
+              style={styles.pillDate}
+              accessibilityRole="button"
+              accessibilityLabel="Scegli le date del soggiorno"
+            >
+              <Ionicons name="calendar-outline" size={16} color={colori.blu} />
+              <Text style={styles.pillDateTesto}>
+                {dateSoggiorno.checkIn && dateSoggiorno.checkOut
+                  ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} notti`
+                  : "Aggiungi le date del soggiorno"}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={colori.testoSecondario} />
+            </Pressable>
             <View style={styles.rigaContatore}>
               <Text style={styles.contatore}>{testoConteggio} strutture</Text>
               <Pressable
@@ -637,6 +661,7 @@ export default function EsploraScreen({ navigation, route }) {
                 <Text style={styles.pulsanteOrdinaTesto}>{etichettaOrdine}</Text>
               </Pressable>
             </View>
+            </>
           }
           ListEmptyComponent={
             <View style={styles.vuoto}>
@@ -725,6 +750,17 @@ export default function EsploraScreen({ navigation, route }) {
         />
       )}
 
+      <SelettoreDate
+        key={`${dateSoggiorno.checkIn}-${dateSoggiorno.checkOut}-${dateAperte}`}
+        visibile={dateAperte}
+        checkIn={dateSoggiorno.checkIn}
+        checkOut={dateSoggiorno.checkOut}
+        onChiudi={() => setDateAperte(false)}
+        onConferma={(d) => {
+          setDateSoggiorno(d);
+          setDateAperte(false);
+        }}
+      />
       {!caricamento && !errore && (
         <Pressable style={styles.bottoneMappa} onPress={apriMappa} accessibilityRole="button" accessibilityLabel="Mostra queste strutture sulla mappa">
           <Ionicons name="map" size={18} color={colori.bianco} />
@@ -1036,6 +1072,18 @@ const styles = StyleSheet.create({
   vicinoAMeTesto: { color: colori.bianco, fontWeight: "700", fontSize: 13.5 },
   contatore: { fontSize: 13.5, fontWeight: "600", color: colori.testoSecondario },
   rigaContatore: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4, minHeight: 36 },
+  pillDate: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colori.bianco,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 46,
+    marginBottom: 10,
+    ...ombraCard,
+  },
+  pillDateTesto: { flex: 1, fontSize: 14, fontWeight: "600", color: colori.testo },
   pulsanteOrdina: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: 36, paddingLeft: 8 },
   pulsanteOrdinaTesto: { fontSize: 13.5, fontWeight: "700", color: colori.blu },
   vuoto: { alignItems: "center", gap: 8, paddingVertical: 50, paddingHorizontal: 20 },

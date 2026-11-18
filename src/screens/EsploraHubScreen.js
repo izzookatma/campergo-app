@@ -4,11 +4,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
-import RicercaIA from "../components/RicercaIA";
+import SelettoreDate from "../components/SelettoreDate";
+import { etichettaData, numeroNotti } from "../lib/periodo";
 import { cercaStrutture } from "../lib/strutture";
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
-import { useAuth } from "../context/AuthContext";
 
 // Foto Unsplash: "Montagna e sentieri" e "Musei, borghi e attività" riusano
 // quelle già in uso sul sito per lo stesso tema (CATEGORIE_INTERESSE in
@@ -63,7 +63,6 @@ const SEZIONI = [
 ];
 
 export default function EsploraHubScreen({ navigation }) {
-  const { session } = useAuth();
   const [testoRicerca, setTestoRicerca] = useState("");
   const [inputAFocus, setInputAFocus] = useState(false);
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
@@ -110,37 +109,24 @@ export default function EsploraHubScreen({ navigation }) {
     navigation.push("EsploraLista", { ricercaIniziale: pulito });
   };
 
-  const avviaRicerca = () => cercaETermina(testoRicerca);
+  // Ricerca con le date del soggiorno: toglie le strutture stagionali chiuse
+  // in quel periodo (stessa regola del sito).
+  const [dateSoggiorno, setDateSoggiorno] = useState({ checkIn: null, checkOut: null });
+  const [dateAperte, setDateAperte] = useState(false);
+  const haDate = !!(dateSoggiorno.checkIn && dateSoggiorno.checkOut);
 
-  const vaiVicinoAMe = () => {
-    navigation.push("EsploraLista", { vicinoAMeIniziale: true });
-  };
-
-  const onRicercaIA = (risultato) => {
-    if (risultato.categoria === "sentiero") {
-      navigation.push("Sentieri", { regioneIniziale: risultato.regione, modalitaIniziale: risultato.modalita });
-      return;
-    }
-    if (risultato.categoria === "percorso_4x4") {
-      navigation.push("Percorsi4x4", {
-        regioneIniziale: risultato.regione,
-        difficoltaIniziale: risultato.difficolta,
-        tipoVeicoloIniziale: risultato.tipoVeicolo,
-      });
-      return;
-    }
+  const avviaRicerca = () => {
+    const pulito = testoRicerca.trim();
+    if (pulito) salvaRicercaRecente(pulito).then(setRicercheRecenti);
+    setInputAFocus(false);
     navigation.push("EsploraLista", {
-      filtriIniziali: risultato.filtriTipo,
-      ricercaIniziale: risultato.ricerca,
-      serviziIniziali: risultato.filtriServizi,
+      ricercaIniziale: pulito || undefined,
+      dateIniziali: haDate ? dateSoggiorno : undefined,
     });
   };
 
-  const onRicercaIARichiedeAccesso = () => {
-    Alert.alert("Accedi", "La ricerca con l'IA è gratuita per chi si registra. Accedi o registrati per usarla.", [
-      { text: "Annulla", style: "cancel" },
-      { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
-    ]);
+  const vaiVicinoAMe = () => {
+    navigation.push("EsploraLista", { vicinoAMeIniziale: true });
   };
 
   const vaiA = (tessera) => {
@@ -198,19 +184,39 @@ export default function EsploraHubScreen({ navigation }) {
 
         <View style={styles.ricercaRapida}>
           <View style={styles.contenitoreRicerca}>
-            <View style={styles.ricercaPill}>
-              <Ionicons name="search" size={16} color={colori.testoSecondario} />
-              <TextInput
-                style={styles.inputRicerca}
-                placeholder="Zona, regione, struttura…"
-                placeholderTextColor={colori.testoSecondario}
-                value={testoRicerca}
-                onChangeText={setTestoRicerca}
-                onSubmitEditing={avviaRicerca}
-                onFocus={() => setInputAFocus(true)}
-                onBlur={() => setTimeout(() => setInputAFocus(false), 150)}
-                returnKeyType="search"
-              />
+            <View style={styles.cardRicerca}>
+              <View style={styles.ricercaPill}>
+                <Ionicons name="search" size={20} color={colori.blu} />
+                <TextInput
+                  style={styles.inputRicerca}
+                  placeholder="Dove vuoi andare? Zona, regione…"
+                  placeholderTextColor={colori.testoSecondario}
+                  value={testoRicerca}
+                  onChangeText={setTestoRicerca}
+                  onSubmitEditing={avviaRicerca}
+                  onFocus={() => setInputAFocus(true)}
+                  onBlur={() => setTimeout(() => setInputAFocus(false), 150)}
+                  returnKeyType="search"
+                />
+              </View>
+              <View style={styles.separatore} />
+              <Pressable
+                style={styles.rigaDate}
+                onPress={() => setDateAperte(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Scegli le date del soggiorno"
+              >
+                <Ionicons name="calendar-outline" size={20} color={colori.blu} />
+                <Text style={[styles.testoDate, !haDate && { color: colori.testoSecondario, fontWeight: "500" }]}>
+                  {haDate
+                    ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} notti`
+                    : "Quando? Aggiungi le date"}
+                </Text>
+                <Ionicons name="chevron-forward" size={15} color={colori.testoSecondario} />
+              </Pressable>
+              <Pressable style={styles.bottoneCerca} onPress={avviaRicerca} accessibilityRole="button" accessibilityLabel="Cerca">
+                <Text style={styles.bottoneCercaTesto}>Cerca</Text>
+              </Pressable>
             </View>
 
             {mostraTendina && (
@@ -274,7 +280,6 @@ export default function EsploraHubScreen({ navigation }) {
             <Text style={styles.vicinoAMeRapidoTesto}>Vicino a te ora</Text>
           </Pressable>
 
-          <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />
         </View>
 
         <Pressable style={styles.bannerPianifica} onPress={() => navigation.push("PianificaViaggio")}>
@@ -282,8 +287,8 @@ export default function EsploraHubScreen({ navigation }) {
             <Ionicons name="sparkles-outline" size={22} color={colori.bianco} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerPianificaTitolo}>Pianifica il tuo viaggio con l&apos;IA</Text>
-            <Text style={styles.bannerPianificaSottotitolo}>Dì dove vuoi andare: l&apos;IA ti propone un piano</Text>
+            <Text style={styles.bannerPianificaTitolo}>Pianifica il viaggio con l&apos;IA</Text>
+            <Text style={styles.bannerPianificaSottotitolo}>Dì dove vuoi andare e per quanti giorni: l&apos;IA ti propone tappe e soste</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colori.bianco} />
         </Pressable>
@@ -340,6 +345,17 @@ export default function EsploraHubScreen({ navigation }) {
           </Pressable>
         </View>
       </ScrollView>
+      <SelettoreDate
+        key={`${dateSoggiorno.checkIn}-${dateSoggiorno.checkOut}-${dateAperte}`}
+        visibile={dateAperte}
+        checkIn={dateSoggiorno.checkIn}
+        checkOut={dateSoggiorno.checkOut}
+        onChiudi={() => setDateAperte(false)}
+        onConferma={(d) => {
+          setDateSoggiorno(d);
+          setDateAperte(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -352,7 +368,7 @@ const styles = StyleSheet.create({
   contenitoreRicerca: { position: "relative", zIndex: 30 },
   tendina: {
     position: "absolute",
-    top: 50,
+    top: 64,
     left: 0,
     right: 0,
     backgroundColor: colori.bianco,
@@ -393,17 +409,27 @@ const styles = StyleSheet.create({
     color: colori.testoSecondario,
   },
   tendinaCancella: { fontSize: 11, fontWeight: "700", color: colori.blu },
+  cardRicerca: {
+    backgroundColor: colori.bianco,
+    borderRadius: 22,
+    padding: 6,
+    ...ombraCard,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+  },
+  separatore: { height: StyleSheet.hairlineWidth, backgroundColor: "#e5e7eb", marginHorizontal: 14 },
+  rigaDate: { flexDirection: "row", alignItems: "center", gap: 10, height: 54, paddingHorizontal: 14 },
+  testoDate: { flex: 1, fontSize: 16, fontWeight: "700", color: colori.testo },
+  bottoneCerca: { backgroundColor: colori.blu, borderRadius: 16, height: 52, alignItems: "center", justifyContent: "center", margin: 4, marginTop: 2 },
+  bottoneCercaTesto: { color: colori.bianco, fontWeight: "800", fontSize: 17 },
   ricercaPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: colori.bianco,
-    borderRadius: 26,
-    height: 52,
-    paddingHorizontal: 18,
-    ...ombraCard,
+    gap: 10,
+    height: 56,
+    paddingHorizontal: 14,
   },
-  inputRicerca: { flex: 1, fontSize: 16, color: colori.testo },
+  inputRicerca: { flex: 1, fontSize: 17, fontWeight: "600", color: colori.testo },
   vicinoAMeRapido: {
     flexDirection: "row",
     alignItems: "center",

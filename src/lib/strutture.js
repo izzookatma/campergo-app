@@ -24,7 +24,7 @@ export const STILE_PER_TIPO = {
 export const STILE_DEFAULT = { icona: "location", colore: colori.rosso };
 
 export const COLONNE_CAMPEGGIO =
-  "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione, ha_promo_attiva, amenities";
+  "id, nome, localita, prezzo, prezzo_da, lat, lng, tipo_struttura, foto_url, foto_generica, rating, recensioni, telefono, descrizione, ha_promo_attiva, amenities, periodo_apertura_tipo, apertura_mese_inizio, apertura_mese_fine";
 
 export const COLONNE_RIFUGIO = "id, nome, comune, provincia, gruppo_montuoso, lat, lng, foto_url, tipo";
 
@@ -133,6 +133,9 @@ export function normalizzaCampeggio(c) {
     descrizione: c.descrizione,
     haPromoAttiva: c.ha_promo_attiva === true,
     servizi: Array.isArray(c.amenities) ? c.amenities : [],
+    periodoAperturaTipo: c.periodo_apertura_tipo,
+    aperturaMeseInizio: c.apertura_mese_inizio,
+    aperturaMeseFine: c.apertura_mese_fine,
   };
 }
 
