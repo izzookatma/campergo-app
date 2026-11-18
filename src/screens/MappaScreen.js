@@ -14,7 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
-import RicercaIA from "../components/RicercaIA";
+import ModaleServizi from "../components/ModaleServizi";
 import CreaPercorso from "../components/CreaPercorso";
 import { CardGiorno } from "../components/PianoGiorno";
 import { distanzaKmPunti } from "../lib/percorsoStradale";
@@ -115,6 +115,7 @@ function MappaVera({ navigation, route }) {
     });
   }, [route?.params]);
   const [cercando, setCercando] = useState(false);
+  const [serviziAperti, setServiziAperti] = useState(false);
   const [senzaConnessione, setSenzaConnessione] = useState(false);
   const [inputAFocus, setInputAFocus] = useState(false);
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
@@ -230,7 +231,7 @@ function MappaVera({ navigation, route }) {
 
   const culturaVisibile = useMemo(() => {
     if (categoriaCulturaCercata) return cultura.filter((c) => c.categoria === categoriaCulturaCercata);
-    const base = nessunaSelezione ? cultura : cultura.filter((c) => categorieCulturaAttive.includes(c.categoria));
+    const base = filtriServiziIA.length > 0 ? [] : nessunaSelezione ? cultura : cultura.filter((c) => categorieCulturaAttive.includes(c.categoria));
     if (pulitoMinuscolo.length < 2) return base;
     return base.filter(
       (c) =>
@@ -238,16 +239,16 @@ function MappaVera({ navigation, route }) {
         c.citta?.toLowerCase().includes(pulitoMinuscolo) ||
         c.regione?.toLowerCase().includes(pulitoMinuscolo)
     );
-  }, [cultura, categorieCulturaAttive, nessunaSelezione, pulitoMinuscolo, categoriaCulturaCercata]);
+  }, [cultura, categorieCulturaAttive, nessunaSelezione, filtriServiziIA, pulitoMinuscolo, categoriaCulturaCercata]);
 
   const itinerariVisibili = useMemo(() => {
     if (categoriaItinerarioCercata) return itinerari.filter((it) => it.categoria === categoriaItinerarioCercata);
-    const base = nessunaSelezione ? itinerari : itinerari.filter((it) => categorieItinerarioAttive.includes(it.categoria));
+    const base = filtriServiziIA.length > 0 ? [] : nessunaSelezione ? itinerari : itinerari.filter((it) => categorieItinerarioAttive.includes(it.categoria));
     if (pulitoMinuscolo.length < 2) return base;
     return base.filter(
       (it) => it.titolo?.toLowerCase().includes(pulitoMinuscolo) || it.regione?.toLowerCase().includes(pulitoMinuscolo)
     );
-  }, [itinerari, categorieItinerarioAttive, nessunaSelezione, pulitoMinuscolo, categoriaItinerarioCercata]);
+  }, [itinerari, categorieItinerarioAttive, nessunaSelezione, filtriServiziIA, pulitoMinuscolo, categoriaItinerarioCercata]);
 
   // Tutte le schede con coordinate (eventualmente filtrate per tipo/servizi),
   // non solo le "migliori" N per punteggio: a differenza di Esplora qui serve
@@ -409,41 +410,6 @@ function MappaVera({ navigation, route }) {
     }
   };
 
-  // Sentieri e percorsi 4x4 non sono strutture: la mappa non li mostra
-  // (stesso principio di EsploraScreen/EsploraHubScreen). Qui però non fanno
-  // parte di questo stack di navigazione (vedi App.js, MappaStackNavigator):
-  // si passa alla scheda Esplora, che li ha già.
-  const onRicercaIA = (risultato) => {
-    if (risultato.categoria === "sentiero") {
-      Alert.alert("Apro in Esplora", "I sentieri non si vedono sulla mappa: li apro nella scheda Esplora.", [
-        { text: "Ok", onPress: () => navigation.navigate("Esplora", { screen: "Sentieri", params: { regioneIniziale: risultato.regione, modalitaIniziale: risultato.modalita } }) },
-      ]);
-      return;
-    }
-    if (risultato.categoria === "percorso_4x4") {
-      Alert.alert("Apro in Esplora", "I percorsi 4x4 non si vedono sulla mappa: li apro nella scheda Esplora.", [
-        {
-          text: "Ok",
-          onPress: () =>
-            navigation.navigate("Esplora", {
-              screen: "Percorsi4x4",
-              params: {
-                regioneIniziale: risultato.regione,
-                difficoltaIniziale: risultato.difficolta,
-                tipoVeicoloIniziale: risultato.tipoVeicolo,
-              },
-            }),
-        },
-      ]);
-      return;
-    }
-    setCategorieCulturaAttive([]);
-    setCategorieItinerarioAttive([]);
-    if (risultato.filtriTipo.length > 0) setFiltriTipoIA(risultato.filtriTipo);
-    if (risultato.filtriServizi.length > 0) setFiltriServiziIA(risultato.filtriServizi);
-    setTermine(risultato.ricerca || "");
-  };
-
   const onRicercaIARichiedeAccesso = () => {
     Alert.alert("Accedi", "La ricerca con l'IA è gratuita per chi si registra. Accedi o registrati per usarla.", [
       { text: "Annulla", style: "cancel" },
@@ -451,9 +417,7 @@ function MappaVera({ navigation, route }) {
     ]);
   };
 
-  // Chip di filtro manuali (oltre a quelli impostabili con la Ricerca IA):
-  // stesso stato filtriTipoIA, così entrambe le vie finiscono nella stessa
-  // query sopra.
+  // Chip di filtro manuali: stesso stato filtriTipoIA, usato dalla query sopra.
   const alternaFiltroTipo = (f) => {
     if (f === "Tutti") {
       setFiltriTipoIA([]);
@@ -653,8 +617,6 @@ function MappaVera({ navigation, route }) {
           )}
         </View>
 
-        <RicercaIA onRisultato={onRicercaIA} loggato={!!session} onRichiedeAccesso={onRicercaIARichiedeAccesso} />
-
         <CreaPercorso
           loggato={!!session}
           attivo={!!routePercorso}
@@ -681,7 +643,7 @@ function MappaVera({ navigation, route }) {
         )}
 
         <View style={styles.rigaFiltri}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtri}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtri} style={{ flex: 1 }}>
             {FILTRI.map((f) => {
               const attivo = f === "Tutti" ? nessunaSelezione : filtriTipoIA.includes(f);
               return (
@@ -719,7 +681,23 @@ function MappaVera({ navigation, route }) {
               );
             })}
           </ScrollView>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={filtriServiziIA.length > 0 ? `Filtri servizi, ${filtriServiziIA.length} attivi` : "Filtri servizi"}
+            style={[styles.bottoneServizi, filtriServiziIA.length > 0 && styles.bottoneServiziAttivo]}
+            onPress={() => setServiziAperti(true)}
+          >
+            <Ionicons name="options-outline" size={18} color={filtriServiziIA.length > 0 ? colori.bianco : colori.blu} />
+            {filtriServiziIA.length > 0 && <Text style={styles.bottoneServiziNumero}>{filtriServiziIA.length}</Text>}
+          </Pressable>
         </View>
+
+        <ModaleServizi
+          visibile={serviziAperti}
+          selezionati={filtriServiziIA}
+          onCambia={setFiltriServiziIA}
+          onChiudi={() => setServiziAperti(false)}
+        />
 
         {senzaConnessione && (
           <View style={styles.bannerOffline}>
@@ -866,7 +844,23 @@ const styles = StyleSheet.create({
     color: colori.testoSecondario,
   },
   tendinaCancella: { fontSize: 11, fontWeight: "700", color: colori.blu },
-  rigaFiltri: { flexDirection: "row", alignItems: "center" },
+  rigaFiltri: { flexDirection: "row", alignItems: "center", gap: 8 },
+  bottoneServizi: {
+    height: 34,
+    minWidth: 34,
+    borderRadius: 17,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colori.bianco,
+    borderWidth: 1,
+    borderColor: colori.bordo,
+    ...ombraCard,
+  },
+  bottoneServiziAttivo: { backgroundColor: colori.blu, borderColor: colori.blu },
+  bottoneServiziNumero: { color: colori.bianco, fontWeight: "800", fontSize: 12 },
   filtri: { flexDirection: "row", gap: 8 },
   chip: {
     paddingHorizontal: 12,
