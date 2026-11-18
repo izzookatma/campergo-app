@@ -3,6 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "../lib/supabase";
+import { estraiTokenDaCallback } from "../lib/autenticazione";
 
 const AuthContext = createContext(null);
 
@@ -46,10 +47,7 @@ export function AuthProvider({ children }) {
     const risultato = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (risultato.type !== "success" || !risultato.url) return { error: null };
 
-    const indiceFrammento = risultato.url.indexOf("#");
-    const parametri = new URLSearchParams(indiceFrammento === -1 ? "" : risultato.url.slice(indiceFrammento + 1));
-    const access_token = parametri.get("access_token");
-    const refresh_token = parametri.get("refresh_token");
+    const { access_token, refresh_token } = estraiTokenDaCallback(risultato.url);
     if (!access_token || !refresh_token) return { error: { message: "Accesso non riuscito, riprova." } };
 
     return supabase.auth.setSession({ access_token, refresh_token });
