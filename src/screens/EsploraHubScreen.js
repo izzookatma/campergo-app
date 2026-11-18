@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ImageBackground } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ImageBackground, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
@@ -96,17 +96,20 @@ export default function EsploraHubScreen({ navigation }) {
     };
   }, [testoRicerca]);
 
-  // Ricerca/"vicino a te" raggiungibili da qui, senza dover prima toccare
-  // una tessera o "Vedi tutte le strutture": un tap in meno per arrivare
-  // alla lista vera, che ha già la ricerca completa (suggerimenti, ricerche
-  // recenti, filtri) — qui basta avviarla, con le stesse regole (ricerche
-  // recenti ricordate, suggerimenti mentre si scrive).
-  const cercaETermina = (termine) => {
-    const pulito = termine.trim();
-    if (!pulito) return;
-    salvaRicercaRecente(pulito).then(setRicercheRecenti);
+  // Percorso guidato: prima il luogo, poi le date, poi "Cerca". Digitare o
+  // scegliere un suggerimento NON avvia la ricerca: compila solo il campo e,
+  // se mancano le date, apre il calendario (si può saltare con "Senza date").
+  const apriDate = () => {
+    Keyboard.dismiss();
     setInputAFocus(false);
-    navigation.push("EsploraLista", { ricercaIniziale: pulito });
+    setDateAperte(true);
+  };
+
+  const scegliLuogo = (termine) => {
+    setTestoRicerca(termine);
+    Keyboard.dismiss();
+    setInputAFocus(false);
+    if (!(dateSoggiorno.checkIn && dateSoggiorno.checkOut)) setDateAperte(true);
   };
 
   // Ricerca con le date del soggiorno: toglie le strutture stagionali chiuse
@@ -193,16 +196,17 @@ export default function EsploraHubScreen({ navigation }) {
                   placeholderTextColor={colori.testoSecondario}
                   value={testoRicerca}
                   onChangeText={setTestoRicerca}
-                  onSubmitEditing={avviaRicerca}
+                  onSubmitEditing={() => (haDate ? Keyboard.dismiss() : apriDate())}
                   onFocus={() => setInputAFocus(true)}
                   onBlur={() => setTimeout(() => setInputAFocus(false), 150)}
-                  returnKeyType="search"
+                  returnKeyType="next"
+                  blurOnSubmit
                 />
               </View>
               <View style={styles.separatore} />
               <Pressable
                 style={styles.rigaDate}
-                onPress={() => setDateAperte(true)}
+                onPress={apriDate}
                 accessibilityRole="button"
                 accessibilityLabel="Scegli le date del soggiorno"
               >
@@ -230,7 +234,7 @@ export default function EsploraHubScreen({ navigation }) {
                       </Pressable>
                     </View>
                     {ricercheRecenti.map((termine) => (
-                      <Pressable key={`recente-${termine}`} style={styles.rigaTendina} onPress={() => cercaETermina(termine)}>
+                      <Pressable key={`recente-${termine}`} style={styles.rigaTendina} onPress={() => scegliLuogo(termine)}>
                         <Ionicons name="time-outline" size={15} color={colori.testoSecondario} />
                         <Text style={styles.rigaTendinaTesto}>{termine}</Text>
                       </Pressable>
@@ -238,7 +242,7 @@ export default function EsploraHubScreen({ navigation }) {
                   </>
                 )}
                 {regioniSuggerite.map((r) => (
-                  <Pressable key={`regione-${r}`} style={styles.rigaTendina} onPress={() => cercaETermina(r)}>
+                  <Pressable key={`regione-${r}`} style={styles.rigaTendina} onPress={() => scegliLuogo(r)}>
                     <Ionicons name="map-outline" size={15} color={colori.blu} />
                     <Text style={styles.rigaTendinaTesto}>{r}</Text>
                     <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
