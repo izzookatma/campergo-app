@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Linking, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert, Linking, Image, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +8,9 @@ import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
 import AccediScreen from "./AccediScreen";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import Testo from "../components/ui/Testo";
+import Pulsante from "../components/ui/Pulsante";
+import { Gruppo, Riga } from "../components/ui/Gruppo";
 import { caricaMiaStruttura } from "../lib/host";
 import { registraNotifichePush } from "../lib/notifichePush";
 
@@ -25,8 +28,7 @@ const VOCI_MENU = [
   {
     icona: "notifications-outline",
     testo: "Notifiche",
-    azione: "avviso",
-    messaggio: "Le notifiche push arriveranno in una prossima versione dell'app.",
+    azione: "impostazioni",
   },
   { icona: "shield-checkmark-outline", testo: "Privacy policy", azione: "apri", url: "https://www.naturago.it/privacy" },
   { icona: "document-text-outline", testo: "Termini e condizioni", azione: "apri", url: "https://www.naturago.it/termini" },
@@ -70,7 +72,7 @@ export default function ProfiloScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
-      <View style={styles.contenuto}>
+      <ScrollView contentContainerStyle={styles.contenuto} showsVerticalScrollIndicator={false}>
         <MarchioNaturaGo />
 
         <Pressable
@@ -87,9 +89,11 @@ export default function ProfiloScreen({ navigation }) {
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Text style={styles.nome}>{nomeUtente}</Text>
-            <Text style={styles.email}>{session.user.email}</Text>
-            <Text style={{ color: colori.blu, fontSize: 12, fontWeight: "600", marginTop: 2 }}>Modifica profilo</Text>
+            <Testo v="corpoForte">{nomeUtente}</Testo>
+            <Testo v="nota">{session.user.email}</Testo>
+            <Testo v="nota" tono="primario" style={{ fontWeight: "600", marginTop: 2 }}>
+              Modifica profilo
+            </Testo>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colori.testoSecondario} />
         </Pressable>
@@ -129,28 +133,28 @@ export default function ProfiloScreen({ navigation }) {
           </Pressable>
         )}
 
-        <View style={styles.menu}>
-          {VOCI_MENU.map((voce, i) => (
-            <Pressable
+        <Gruppo>
+          {VOCI_MENU.map((voce) => (
+            <Riga
               key={voce.testo}
-              style={[styles.vocemenu, i < VOCI_MENU.length - 1 && styles.vocemenuBordo]}
+              icona={voce.icona}
+              testo={voce.testo}
               onPress={() => {
                 if (voce.azione === "naviga") navigation.navigate(voce.schermo);
                 else if (voce.azione === "apri") Linking.openURL(voce.url);
+                else if (voce.azione === "impostazioni") Linking.openSettings();
                 else Alert.alert(voce.testo, voce.messaggio);
               }}
-            >
-              <Ionicons name={voce.icona} size={17} color={colori.blu} />
-              <Text style={styles.vocemenuTesto}>{voce.testo}</Text>
-              <Ionicons name="chevron-forward" size={14} color={colori.testoSecondario} />
-            </Pressable>
+            />
           ))}
-        </View>
+        </Gruppo>
 
         <View style={styles.sezione}>
-          <Text style={styles.sezioneTitolo}>Impostazioni</Text>
+          <Testo v="etichetta" style={{ textTransform: "uppercase", marginLeft: 16 }} accessibilityRole="header">
+            Impostazioni
+          </Testo>
           <View style={styles.impostazioneBox}>
-            <Text style={styles.impostazioneEtichetta}>Motore mappa</Text>
+            <Testo v="corpo">Motore mappa</Testo>
             <View style={styles.segmentato}>
               {MOTORI_MAPPA.map((m) => (
                 <Pressable
@@ -167,21 +171,24 @@ export default function ProfiloScreen({ navigation }) {
           </View>
         </View>
 
-        <Pressable style={styles.esci} onPress={esci}>
-          <Text style={styles.esciTesto}>Esci</Text>
-        </Pressable>
+        <Pulsante titolo="Esci" variante="pericolo" onPress={esci} />
 
-        <Pressable style={styles.eliminaAccount} onPress={() => navigation.navigate("EliminaAccount")}>
-          <Text style={styles.eliminaAccountTesto}>Elimina il mio account</Text>
+        <Pressable
+          style={styles.eliminaAccount}
+          onPress={() => navigation.navigate("EliminaAccount")}
+          accessibilityRole="button"
+          hitSlop={8}
+        >
+          <Testo v="nota">Elimina il mio account</Testo>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
-  contenuto: { flex: 1, padding: 20, gap: 18 },
+  contenuto: { padding: 20, gap: 20, paddingBottom: 32 },
   intestazione: { flexDirection: "row", alignItems: "center", gap: 12 },
   avatar: {
     width: 52,
@@ -211,8 +218,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   strutturaTesti: { flex: 1 },
-  strutturaTitolo: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
-  strutturaNome: { color: "rgba(255,255,255,.85)", fontSize: 11.5, marginTop: 1 },
+  strutturaTitolo: { color: colori.bianco, fontWeight: "700", fontSize: 16 },
+  strutturaNome: { color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 1 },
   menu: { backgroundColor: colori.bianco, borderRadius: raggioCard, ...ombraCard },
   vocemenu: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13 },
   vocemenuBordo: { borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
@@ -228,12 +235,12 @@ const styles = StyleSheet.create({
   impostazioneBox: { backgroundColor: colori.bianco, borderRadius: raggioCard, padding: 13, gap: 10, ...ombraCard },
   impostazioneEtichetta: { fontSize: 12.5, fontWeight: "600", color: colori.testo },
   segmentato: { flexDirection: "row", backgroundColor: "#f1f5f9", borderRadius: 10, padding: 3 },
-  segmento: { flex: 1, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  segmento: { flex: 1, height: 36, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   segmentoAttivo: { backgroundColor: colori.blu },
-  segmentoTesto: { fontSize: 11.5, fontWeight: "600", color: colori.testoSecondario },
-  segmentoTestoAttivo: { color: colori.bianco, fontWeight: "700" },
+  segmentoTesto: { fontSize: 14, fontWeight: "600", color: colori.testoSecondario },
+  segmentoTestoAttivo: { color: colori.bianco, fontWeight: "600" },
   esci: { marginTop: "auto", alignItems: "center", paddingVertical: 12 },
   esciTesto: { color: colori.rosso, fontWeight: "700", fontSize: 12.5 },
-  eliminaAccount: { alignItems: "center", paddingVertical: 4, paddingBottom: 10 },
+  eliminaAccount: { alignItems: "center", paddingVertical: 8 },
   eliminaAccountTesto: { color: colori.testoSecondario, fontWeight: "600", fontSize: 11 },
 });

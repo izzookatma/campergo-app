@@ -24,6 +24,7 @@ import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import ScheletroCard from "../components/ScheletroCard";
+import CuoreAnimato from "../components/ui/CuoreAnimato";
 import { vibraLeggera, vibraConferma } from "../lib/vibrazione";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
@@ -700,11 +701,7 @@ export default function EsploraScreen({ navigation, route }) {
                       accessibilityRole="button"
                       accessibilityLabel={preferitiIds.has(item.idOriginale) ? "Togli dai preferiti" : "Salva nei preferiti"}
                     >
-                      <Ionicons
-                        name={preferitiIds.has(item.idOriginale) ? "heart" : "heart-outline"}
-                        size={20}
-                        color={colori.rosso}
-                      />
+<CuoreAnimato attivo={preferitiIds.has(item.idOriginale)} size={20} colore={colori.rosso} />
                     </Pressable>
                   )}
                 </View>

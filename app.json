@@ -17,6 +17,11 @@
       "bundleIdentifier": "it.naturago.app",
       "appleTeamId": "S534G29VQB",
       "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:www.naturago.it",
+        "applinks:naturago.it"
+      ],
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usiamo la tua posizione per mostrarti le strutture più vicine a te.",
         "NSPhotoLibraryUsageDescription": "Per aggiungere foto ai tuoi annunci del mercatino e alla vetrina della tua struttura.",
@@ -35,7 +40,8 @@
       },
       "adaptiveIcon": {
         "backgroundColor": "#0e3a53",
-        "foregroundImage": "./assets/icon.png"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -63,13 +69,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/icon.png",
-          "imageWidth": 220,
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#0e3a53"
         }
       ],
       "expo-font",
+      "expo-apple-authentication",
       "expo-notifications",
       "expo-updates",
       [
@@ -80,7 +87,8 @@
         }
       ],
       "expo-web-browser",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-image"
     ],
     "extra": {
       "mappaAndroidAttiva": true,

@@ -2,18 +2,33 @@
 // src/voce.js del sito, ma con i moduli nativi (il sito nel browser non ha
 // queste API su iOS). Un solo punto da cui chiedere "si può?" e "fai X": chi
 // lo usa (RicercaIA, CreaPercorso) non deve sapere come è fatto sotto.
-import {
-  ExpoSpeechRecognitionModule,
-} from "expo-speech-recognition";
 import * as Speech from "expo-speech";
 
+// Il modulo di dettatura è nativo e Expo Go non lo contiene: se l'import
+// fallisce l'app non deve andare in schermata rossa, semplicemente la
+// dettatura risulta "non disponibile" (nell'app vera, la build, funziona).
+let ExpoSpeechRecognitionModule = null;
+try {
+  ExpoSpeechRecognitionModule = require("expo-speech-recognition").ExpoSpeechRecognitionModule;
+} catch {
+  ExpoSpeechRecognitionModule = null;
+}
+
 export function dettaturaDisponibile() {
-  return ExpoSpeechRecognitionModule.isRecognitionAvailable();
+  try {
+    return !!ExpoSpeechRecognitionModule && ExpoSpeechRecognitionModule.isRecognitionAvailable();
+  } catch {
+    return false;
+  }
 }
 
 // Ritorna null se non è riuscita a partire (onErrore è già stato chiamato),
 // altrimenti un oggetto con ferma() per fermarla a mano.
 export async function avviaDettatura({ lingua, onRisultato, onErrore, onFine }) {
+  if (!ExpoSpeechRecognitionModule) {
+    onErrore?.();
+    return null;
+  }
   try {
     const permesso = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!permesso.granted) {

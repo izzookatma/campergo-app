@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { caricaStrutturePreferite } from "../lib/preferiti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import ScheletroCard from "../components/ScheletroCard";
 
 export default function PreferitiScreen({ navigation }) {
   const { session } = useAuth();
@@ -63,7 +64,7 @@ export default function PreferitiScreen({ navigation }) {
       )}
 
       {caricamento ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+        <ScheletroCard righe={4} />
       ) : !session ? (
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={colori.testoSecondario} />
@@ -112,8 +113,8 @@ export default function PreferitiScreen({ navigation }) {
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 10 },
-  titolo: { fontSize: 21, fontWeight: "800", color: colori.testo },
-  sottotitolo: { fontSize: 11, color: colori.testoSecondario },
+  titolo: { textAlign: "center", fontSize: 21, fontWeight: "800", color: colori.testo },
+  sottotitolo: { textAlign: "center", fontSize: 11, color: colori.testoSecondario },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
   vuotoTesto: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario },
   pulsanteAccedi: {

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, Pressable, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, FlatList, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { caricaArticoli, etichettaRubrica } from "../lib/blog";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import ScheletroCard from "../components/ScheletroCard";
 
 function dataBreve(iso) {
   if (!iso) return null;
@@ -40,7 +41,7 @@ export default function BlogScreen({ navigation }) {
       </View>
 
       {articoli === null ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+        <ScheletroCard righe={4} />
       ) : articoli.length === 0 ? (
         <View style={styles.vuoto}>
           <Text style={styles.vuotoTesto}>Primi articoli in arrivo: torna a trovarci presto.</Text>

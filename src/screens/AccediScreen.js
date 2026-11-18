@@ -1,17 +1,24 @@
-import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Linking } from "react-native";
+import { useEffect, useState } from "react";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import Pulsante from "../components/ui/Pulsante";
+import LogoGoogle from "../components/LogoGoogle";
 
 // `navigation` esiste solo quando questa schermata è aperta da dentro
 // l'app (es. toccando il cuoricino senza account) — all'avvio, prima del
 // Tab.Navigator, la schermata non ha un `navigation` vero.
 export default function AccediScreen({ onSaltaAccesso, navigation }) {
-  const { accedi, registrati, recuperaPassword, accediConGoogle, accediConFacebook } = useAuth();
+  const { accedi, registrati, recuperaPassword, accediConGoogle, accediConFacebook, accediConApple } = useAuth();
+  const [appleDisponibile, setAppleDisponibile] = useState(false);
+  useEffect(() => {
+    if (Platform.OS === "ios") AppleAuthentication.isAvailableAsync().then(setAppleDisponibile).catch(() => {});
+  }, []);
   const [modalita, setModalita] = useState("accedi");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -25,9 +32,9 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
     setErrore(null);
     setMessaggio(null);
     setInviandoProvider(provider);
-    const { error } = await funzione();
+    const { error, annullato } = await funzione();
     if (error) setErrore(messaggioErroreComprensibile(error));
-    else navigation?.goBack();
+    else if (!annullato) navigation?.goBack();
     setInviandoProvider(null);
   };
 
@@ -78,28 +85,32 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
 
           {modalita !== "recupera" && (
             <View style={{ gap: 10, marginBottom: 4 }}>
-              <Pressable
-                style={[styles.pulsanteEsterno, { backgroundColor: colori.bianco, borderWidth: 1, borderColor: colori.bordo }]}
+              {appleDisponibile && (
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={12}
+                  style={{ height: 50 }}
+                  onPress={() => accediEsterno("apple", accediConApple)}
+                />
+              )}
+              <Pulsante
+                titolo="Continua con Google"
+                variante="secondario"
+                icona={<LogoGoogle size={20} />}
+                caricamento={inviandoProvider === "google"}
+                disabilitato={!!inviandoProvider}
                 onPress={() => accediEsterno("google", accediConGoogle)}
-                disabled={!!inviandoProvider}
-              >
-                {inviandoProvider === "google" ? (
-                  <ActivityIndicator color={colori.testo} />
-                ) : (
-                  <Text style={[styles.pulsanteEsternoTesto, { color: colori.testo }]}>Continua con Google</Text>
-                )}
-              </Pressable>
-              <Pressable
-                style={[styles.pulsanteEsterno, { backgroundColor: "#1877F2" }]}
+              />
+              <Pulsante
+                titolo="Continua con Facebook"
+                sfondoPersonalizzato="#1877F2"
+                coloreTestoPersonalizzato="#FFFFFF"
+                icona={<Ionicons name="logo-facebook" size={22} color="#FFFFFF" />}
+                caricamento={inviandoProvider === "facebook"}
+                disabilitato={!!inviandoProvider}
                 onPress={() => accediEsterno("facebook", accediConFacebook)}
-                disabled={!!inviandoProvider}
-              >
-                {inviandoProvider === "facebook" ? (
-                  <ActivityIndicator color={colori.bianco} />
-                ) : (
-                  <Text style={[styles.pulsanteEsternoTesto, { color: colori.bianco }]}>Continua con Facebook</Text>
-                )}
-              </Pressable>
+              />
               <Text style={styles.linkSecondario}>oppure</Text>
             </View>
           )}
@@ -130,15 +141,12 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           {errore ? <Text style={styles.errore}>{errore}</Text> : null}
           {messaggio ? <Text style={styles.messaggio}>{messaggio}</Text> : null}
 
-          <Pressable style={styles.pulsante} onPress={invia} disabled={inviando}>
-            {inviando ? (
-              <ActivityIndicator color={colori.bianco} />
-            ) : (
-              <Text style={styles.pulsanteTesto}>
-                {modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Registrati" : "Invia il link"}
-              </Text>
-            )}
-          </Pressable>
+          <Pulsante
+            titolo={modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Registrati" : "Invia il link"}
+            caricamento={inviando}
+            onPress={invia}
+            style={{ marginTop: 6 }}
+          />
 
           {modalita === "accedi" && (
             <Pressable onPress={() => setModalita("recupera")}>
@@ -186,35 +194,24 @@ const styles = StyleSheet.create({
   contenuto: { flex: 1, padding: 24, justifyContent: "center", gap: 12 },
   rigaMarchio: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   chiudi: { padding: 4 },
-  titolo: { fontSize: 22, fontWeight: "800", color: colori.testo },
-  sottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginBottom: 10 },
+  titolo: { textAlign: "center", fontSize: 34, lineHeight: 41, fontWeight: "700", letterSpacing: 0.3, color: colori.testo },
+  sottotitolo: { textAlign: "center", fontSize: 15, color: colori.testoSecondario, marginBottom: 10 },
   campo: {
-    height: 46,
-    borderRadius: 12,
+    height: 50,
+    borderRadius: 14,
     backgroundColor: colori.bianco,
     borderWidth: 1,
     borderColor: colori.bordo,
     paddingHorizontal: 14,
-    fontSize: 13,
+    fontSize: 17,
     color: colori.testo,
   },
-  errore: { color: colori.rosso, fontSize: 12, fontWeight: "600" },
-  messaggio: { color: colori.blu, fontSize: 12, fontWeight: "600" },
-  pulsante: {
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: colori.blu,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 6,
-  },
-  pulsanteTesto: { color: colori.bianco, fontWeight: "800", fontSize: 14 },
-  pulsanteEsterno: { height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  pulsanteEsternoTesto: { fontWeight: "700", fontSize: 13.5 },
-  cambiaModalita: { textAlign: "center", color: colori.blu, fontSize: 12, fontWeight: "600", marginTop: 6 },
-  linkSecondario: { textAlign: "center", color: colori.testoSecondario, fontSize: 11.5, fontWeight: "600", marginTop: 4 },
-  saltaAccesso: { textAlign: "center", color: colori.testoSecondario, fontSize: 12, fontWeight: "600" },
-  saltaAccessoNota: { textAlign: "center", color: colori.testoSecondario, fontSize: 10.5 },
-  legale: { textAlign: "center", color: colori.testoSecondario, fontSize: 10.5, marginTop: 14 },
+  errore: { color: colori.rosso, fontSize: 14, fontWeight: "600" },
+  messaggio: { color: colori.blu, fontSize: 14, fontWeight: "600" },
+  cambiaModalita: { textAlign: "center", color: colori.blu, fontSize: 15, fontWeight: "600", marginTop: 6 },
+  linkSecondario: { textAlign: "center", color: colori.testoSecondario, fontSize: 14, fontWeight: "600", marginTop: 4 },
+  saltaAccesso: { textAlign: "center", color: colori.testoSecondario, fontSize: 15, fontWeight: "600" },
+  saltaAccessoNota: { textAlign: "center", color: colori.testoSecondario, fontSize: 13 },
+  legale: { textAlign: "center", color: colori.testoSecondario, fontSize: 13, marginTop: 14 },
   legaleLink: { color: colori.blu, fontWeight: "600" },
 });

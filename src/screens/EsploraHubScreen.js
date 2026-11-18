@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, ImageBackground, Keyboard } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, Keyboard } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import Testo from "../components/ui/Testo";
+import Pulsante from "../components/ui/Pulsante";
+import { Gruppo, Riga } from "../components/ui/Gruppo";
 import SelettoreDate from "../components/SelettoreDate";
 import { etichettaData, numeroNotti } from "../lib/periodo";
 import { cercaStrutture } from "../lib/strutture";
@@ -184,6 +188,9 @@ export default function EsploraHubScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
       >
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
+        <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 2, textAlign: "center" }}>
+          Dove vai?
+        </Testo>
 
         <View style={styles.ricercaRapida}>
           <View style={styles.contenitoreRicerca}>
@@ -274,80 +281,83 @@ export default function EsploraHubScreen({ navigation }) {
             )}
           </View>
 
-          <Pressable
-            style={styles.vicinoAMeRapido}
+          <Pulsante
+            titolo="Vicino a te ora"
+            variante="secondario"
+            icona={<Ionicons name="navigate" size={18} color={colori.blu} />}
             onPress={vaiVicinoAMe}
-            accessibilityRole="button"
             accessibilityLabel="Mostra le strutture vicino a te"
-          >
-            <Ionicons name="navigate" size={18} color={colori.bianco} />
-            <Text style={styles.vicinoAMeRapidoTesto}>Vicino a te ora</Text>
-          </Pressable>
+          />
 
         </View>
 
-        <Pressable style={styles.bannerPianifica} onPress={() => navigation.push("PianificaViaggio")}>
+        <Pressable
+          style={styles.bannerPianifica}
+          onPress={() => navigation.push("PianificaViaggio")}
+          accessibilityRole="button"
+          accessibilityLabel="Pianifica il viaggio con l'IA"
+        >
           <View style={styles.bannerPianificaIcona}>
-            <Ionicons name="sparkles-outline" size={22} color={colori.bianco} />
+            <Ionicons name="sparkles" size={20} color={colori.blu} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerPianificaTitolo}>Pianifica il viaggio con l&apos;IA</Text>
-            <Text style={styles.bannerPianificaSottotitolo}>Dì dove vuoi andare e per quanti giorni: l&apos;IA ti propone tappe e soste</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colori.bianco} />
-        </Pressable>
-
-        <Text style={styles.sottotitolo}>Cosa stai cercando?</Text>
-
-        {SEZIONI.map((sezione) => (
-          <View key={sezione.titolo} style={[styles.sezione, { backgroundColor: sezione.tinta }]}>
-            <Pressable onPress={() => vaiASezione(sezione)} style={({ pressed }) => pressed && styles.sezionePremuta}>
-              <ImageBackground source={{ uri: sezione.immagine }} style={styles.sezioneBanner} imageStyle={styles.sezioneBannerImmagine}>
-                <View style={[styles.sezioneEtichetta, { backgroundColor: sezione.colore }]}>
-                  <Ionicons name={sezione.icona} size={14} color="#fff" />
-                  <Text style={styles.sezioneTitolo}>{sezione.titolo}</Text>
-                </View>
-                <View style={styles.sezioneFreccia}>
-                  <Ionicons name="chevron-forward" size={14} color="#fff" />
-                </View>
-              </ImageBackground>
-            </Pressable>
-            <View style={styles.griglia}>
-              {sezione.tessere.map((tessera) => (
-                <Pressable key={tessera.etichetta} style={styles.tessera} onPress={() => vaiA(tessera)}>
-                  <View style={[styles.tesseraIcona, { backgroundColor: colori.bianco }]}>
-                    <Ionicons name={tessera.icona} size={19} color={tessera.colore || sezione.colore} />
-                  </View>
-                  <Text style={styles.tesseraTesto}>{tessera.etichetta}</Text>
-                  {tessera.inArrivo && <Text style={styles.tesseraArrivo}>In arrivo</Text>}
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ))}
-
-        <Pressable style={styles.pulsanteTutte} onPress={() => navigation.push("EsploraLista")}>
-          <Text style={styles.pulsanteTutteTesto}>Vedi tutte le strutture</Text>
-          <Ionicons name="arrow-forward" size={15} color={colori.blu} />
-        </Pressable>
-
-        <Pressable style={styles.bannerBlog} onPress={() => navigation.push("Blog")}>
-          <View style={styles.bannerBlogIcona}>
-            <Ionicons name="book-outline" size={22} color={colori.blu} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bannerBlogTitolo}>Blog NaturaGo Explorer</Text>
-            <Text style={styles.bannerBlogSottotitolo}>Idee, itinerari e consigli per chi viaggia lento</Text>
+            <Testo v="corpoForte">Pianifica il viaggio con l&apos;IA</Testo>
+            <Testo v="nota">Dì dove e per quanti giorni: ti proponiamo tappe e soste</Testo>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colori.testoSecondario} />
         </Pressable>
 
-        <View style={styles.rigaInfo}>
-          <Pressable style={styles.pillInfo} onPress={() => navigation.push("Faq")}>
-            <Ionicons name="help-circle-outline" size={14} color={colori.testo} />
-            <Text style={styles.pillInfoTesto}>Domande frequenti</Text>
-          </Pressable>
-        </View>
+        <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 10, textAlign: "center" }}>
+          Cosa stai cercando?
+        </Testo>
+
+        {SEZIONI.map((sezione) => (
+          <View key={sezione.titolo} style={styles.sezione}>
+            <Pressable
+              onPress={() => vaiASezione(sezione)}
+              style={({ pressed }) => pressed && styles.sezionePremuta}
+              accessibilityRole="button"
+              accessibilityLabel={sezione.titolo}
+            >
+              <View style={styles.sezioneBanner}>
+                <Image
+                  source={{ uri: sezione.immagine }}
+                  style={StyleSheet.absoluteFillObject}
+                  contentFit="cover"
+                  transition={300}
+                  cachePolicy="memory-disk"
+                  accessibilityIgnoresInvertColors
+                />
+                <View style={styles.sezioneVelo} />
+                <View style={styles.sezioneTestiFoto}>
+                  <Ionicons name={sezione.icona} size={22} color="#fff" />
+                  <Text style={styles.sezioneTitolo}>{sezione.titolo}</Text>
+                </View>
+              </View>
+            </Pressable>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRiga}>
+              {sezione.tessere.map((tessera) => (
+                <Pressable
+                  key={tessera.etichetta}
+                  style={({ pressed }) => [styles.chip, pressed && { opacity: 0.7 }]}
+                  onPress={() => vaiA(tessera)}
+                  accessibilityRole="button"
+                  accessibilityLabel={tessera.etichetta}
+                >
+                  <Ionicons name={tessera.icona} size={18} color={tessera.colore || sezione.colore} />
+                  <Text style={styles.chipTesto}>{tessera.etichetta}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ))}
+
+        <Pulsante titolo="Vedi tutte le strutture" variante="secondario" onPress={() => navigation.push("EsploraLista")} style={{ marginTop: 6 }} />
+
+        <Gruppo style={{ marginTop: 10 }}>
+          <Riga icona="book-outline" testo="Blog NaturaGo Explorer" onPress={() => navigation.push("Blog")} />
+          <Riga icona="help-circle-outline" testo="Domande frequenti" onPress={() => navigation.push("Faq")} />
+        </Gruppo>
       </ScrollView>
       <SelettoreDate
         key={`${dateSoggiorno.checkIn}-${dateSoggiorno.checkOut}-${dateAperte}`}
@@ -367,7 +377,6 @@ export default function EsploraHubScreen({ navigation }) {
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
   contenuto: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24, gap: 10 },
-  sottotitolo: { fontSize: 22, fontWeight: "800", color: colori.testo, marginTop: 6, marginBottom: 2 },
   ricercaRapida: { gap: 8, marginBottom: 2 },
   contenitoreRicerca: { position: "relative", zIndex: 30 },
   tendina: {
@@ -434,127 +443,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   inputRicerca: { flex: 1, fontSize: 17, fontWeight: "600", color: colori.testo },
-  vicinoAMeRapido: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: colori.blu,
-    height: 48,
-    borderRadius: 14,
-  },
-  vicinoAMeRapidoTesto: { color: colori.bianco, fontWeight: "700", fontSize: 15 },
-  sezione: { borderRadius: 16, overflow: "hidden", paddingBottom: 8, gap: 4 },
-  sezioneBanner: { width: "100%", height: 150 },
-  sezioneBannerImmagine: { resizeMode: "cover" },
-  // Riquadro piccolo, non una fascia su tutta la larghezza/altezza: così
-  // non rischia di finire sopra al soggetto della foto (vedi commento sopra
-  // a SEZIONI per "Dove dormire", dov'è già successo con una fascia intera).
-  sezioneEtichetta: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  sezioneTitolo: { fontSize: 16, fontWeight: "800", color: "#fff" },
+  sezione: { gap: 10 },
+  sezioneBanner: { width: "100%", height: 150, borderRadius: 20, overflow: "hidden", justifyContent: "flex-end" },
+  sezioneVelo: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.28)" },
+  sezioneTestiFoto: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14 },
+  sezioneTitolo: { fontSize: 22, lineHeight: 27, fontWeight: "700", color: "#fff" },
   sezionePremuta: { opacity: 0.85 },
-  sezioneFreccia: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  griglia: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 10, paddingTop: 6 },
-  tessera: {
-    width: "31.5%",
-    minHeight: 78,
-    backgroundColor: "rgba(255,255,255,0.75)",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    padding: 3,
-  },
-  tesseraIcona: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colori.bianco,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tesseraTesto: { fontSize: 12.5, fontWeight: "700", color: colori.testo, textAlign: "center" },
-  tesseraArrivo: { fontSize: 8, fontWeight: "700", color: colori.arancio, textTransform: "uppercase" },
-  pulsanteTutte: {
+  chipRiga: { gap: 8, paddingRight: 8 },
+  chip: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 50,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: colori.blu,
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 14,
     backgroundColor: colori.bianco,
-  },
-  pulsanteTutteTesto: { fontSize: 15, fontWeight: "700", color: colori.blu },
-  bannerBlog: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: colori.bianco,
-    borderRadius: raggioCard,
-    padding: 14,
+    borderRadius: 999,
     ...ombraCard,
   },
-  bannerBlogIcona: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colori.bluChiaro,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bannerBlogTitolo: { fontSize: 14.5, fontWeight: "700", color: colori.testo },
-  bannerBlogSottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginTop: 2 },
+  chipTesto: { fontSize: 15, fontWeight: "600", color: colori.testo },
   bannerPianifica: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#7c3aed",
+    backgroundColor: colori.bluChiaro,
     borderRadius: raggioCard,
     padding: 14,
-    marginTop: 14,
-    ...ombraCard,
+    marginTop: 6,
   },
   bannerPianificaIcona: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: colori.bianco,
     alignItems: "center",
     justifyContent: "center",
   },
-  bannerPianificaTitolo: { fontSize: 14.5, fontWeight: "700", color: colori.bianco },
-  bannerPianificaSottotitolo: { fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 },
-  rigaInfo: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 2 },
-  pillInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colori.bianco,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  pillInfoTesto: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
 });

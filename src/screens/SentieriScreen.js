@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { caricaSentieri, MODALITA_SENTIERO_META } from "../lib/itinerari";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import ScheletroCard from "../components/ScheletroCard";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -86,7 +87,7 @@ export default function SentieriScreen({ navigation, route }) {
       </View>
 
       {caricamento ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+        <ScheletroCard righe={4} />
       ) : sentieriFiltrati.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="trail-sign-outline" size={28} color={colori.testoSecondario} />

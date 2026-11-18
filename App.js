@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
@@ -65,10 +65,8 @@ function segnaSchermataCorrente() {
   if (rotta) segnaSchermata(rotta.name, rotta.params);
 }
 
-// Copertina con logo e frase mentre l'app controlla la sessione: resta
-// visibile almeno un attimo anche se il controllo finisce subito, per non
-// far lampeggiare lo schermo.
-const DURATA_MINIMA_MS = 1800;
+// Copertina con logo e frase solo mentre l'app controlla la sessione: nessuna
+// attesa artificiale, appena la sessione è pronta si entra.
 
 const Tab = createBottomTabNavigator();
 const EsploraStack = createNativeStackNavigator();
@@ -172,15 +170,12 @@ const ICONE_TAB = {
 
 function ContenutoApp() {
   const { caricamento } = useAuth();
-  const [tempoMinimoPassato, setTempoMinimoPassato] = useState(false);
 
   useEffect(() => {
     segnaApertura();
-    const timer = setTimeout(() => setTempoMinimoPassato(true), DURATA_MINIMA_MS);
-    return () => clearTimeout(timer);
   }, []);
 
-  if (caricamento || !tempoMinimoPassato) {
+  if (caricamento) {
     return <SchermataAvvio />;
   }
 
@@ -199,8 +194,8 @@ function ContenutoApp() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colori.blu,
-          tabBarInactiveTintColor: "#9ca3af",
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
+          tabBarInactiveTintColor: "#8E97A3",
+          tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? ICONE_TAB[route.name] : `${ICONE_TAB[route.name]}-outline`}

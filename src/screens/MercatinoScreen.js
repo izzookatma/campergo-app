@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { caricaAnnunciApprovati, caricaMieiAnnunci, CATEGORIE_MERCATINO } from "../lib/mercatino";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import ScheletroCard from "../components/ScheletroCard";
 
 const FILTRI_CATEGORIA = [{ chiave: "", etichetta: "Tutte" }, ...Object.entries(CATEGORIE_MERCATINO).map(([chiave, etichetta]) => ({ chiave, etichetta }))];
 
@@ -113,7 +114,7 @@ export default function MercatinoScreen({ navigation }) {
       </View>
 
       {caricamento ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+        <ScheletroCard righe={4} />
       ) : !session && vista === "miei" ? (
         <View style={styles.vuoto}>
           <Ionicons name="pricetag-outline" size={28} color={colori.testoSecondario} />

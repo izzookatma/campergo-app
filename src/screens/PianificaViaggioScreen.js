@@ -428,8 +428,8 @@ export default function PianificaViaggioScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.bluChiaro },
   contenuto: { padding: 20, paddingBottom: 40, gap: 4 },
-  titolo: { fontSize: 20, fontWeight: "800", color: colori.testo, marginTop: 14 },
-  sottotitolo: { fontSize: 12.5, color: colori.testoSecondario, marginTop: 4, marginBottom: 14, lineHeight: 18 },
+  titolo: { textAlign: "center", fontSize: 20, fontWeight: "800", color: colori.testo, marginTop: 14 },
+  sottotitolo: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario, marginTop: 4, marginBottom: 14, lineHeight: 18 },
   card: {
     backgroundColor: colori.bianco,
     borderRadius: raggioCard,

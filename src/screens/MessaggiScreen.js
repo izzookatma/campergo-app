@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +7,7 @@ import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { caricaConversazioni } from "../lib/mercatino";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import ScheletroCard from "../components/ScheletroCard";
 
 function formattaData(iso) {
   const data = new Date(iso);
@@ -45,7 +46,7 @@ export default function MessaggiScreen({ navigation }) {
       </View>
 
       {caricamento ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colori.blu} />
+        <ScheletroCard righe={4} />
       ) : !session ? (
         <View style={styles.vuoto}>
           <Ionicons name="chatbubbles-outline" size={28} color={colori.testoSecondario} />
@@ -100,7 +101,7 @@ export default function MessaggiScreen({ navigation }) {
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 10 },
-  titolo: { fontSize: 21, fontWeight: "800", color: colori.testo },
+  titolo: { textAlign: "center", fontSize: 21, fontWeight: "800", color: colori.testo },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
   vuotoTesto: { textAlign: "center", fontSize: 12.5, color: colori.testoSecondario },
   card: {

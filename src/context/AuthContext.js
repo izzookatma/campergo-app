@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext(null);
@@ -54,6 +55,31 @@ export function AuthProvider({ children }) {
     return supabase.auth.setSession({ access_token, refresh_token });
   };
 
+  // Accedi con Apple (obbligatorio per l'App Store quando ci sono altri
+  // accessi social): finestra nativa di iOS, poi il token di identità
+  // Apple viene scambiato con una sessione Supabase. Apple fornisce nome
+  // ed email solo al primo accesso: li salviamo subito nel profilo.
+  const accediConApple = async () => {
+    try {
+      const credenziale = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credenziale.identityToken) return { error: { message: "Accesso non riuscito, riprova." } };
+      const risultato = await supabase.auth.signInWithIdToken({ provider: "apple", token: credenziale.identityToken });
+      if (!risultato.error && credenziale.fullName?.givenName) {
+        const nome = [credenziale.fullName.givenName, credenziale.fullName.familyName].filter(Boolean).join(" ");
+        await supabase.auth.updateUser({ data: { nome } }).catch(() => {});
+      }
+      return risultato;
+    } catch (e) {
+      if (e?.code === "ERR_REQUEST_CANCELED") return { error: null, annullato: true };
+      return { error: e };
+    }
+  };
+
   const accediConGoogle = () => accediConProvider("google");
   const accediConFacebook = () => accediConProvider("facebook");
 
@@ -75,7 +101,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, caricamento, accedi, registrati, esci, recuperaPassword, eliminaAccount, accediConGoogle, accediConFacebook }}
+      value={{ session, caricamento, accedi, registrati, esci, recuperaPassword, eliminaAccount, accediConGoogle, accediConFacebook, accediConApple }}
     >
       {children}
     </AuthContext.Provider>

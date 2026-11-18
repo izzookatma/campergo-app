@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
 import { caricaSchedeCulturali, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import ScheletroCard from "../components/ScheletroCard";
 
 const CATEGORIE = Object.keys(CATEGORIA_CULTURALE_META);
 
@@ -66,7 +67,7 @@ export default function CulturaScreen({ route, navigation }) {
       </View>
 
       {caricamento ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={meta.colore} />
+        <ScheletroCard righe={4} />
       ) : schede.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name={meta.icona} size={28} color={colori.testoSecondario} />
@@ -108,7 +109,7 @@ export default function CulturaScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   schermo: { flex: 1, backgroundColor: colori.grigioSfondo },
   intestazione: { paddingHorizontal: 20, paddingTop: 12, gap: 10 },
-  titolo: { fontSize: 19, fontWeight: "800", color: colori.testo },
+  titolo: { textAlign: "center", fontSize: 19, fontWeight: "800", color: colori.testo },
   filtri: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   chip: {
     paddingHorizontal: 12,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator, Share, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori } from "../theme/colors";
@@ -13,6 +13,8 @@ import { caricaDettaglioStruttura, caricaPiazzoleStruttura, ETICHETTA_TIPO_ALLOG
 import { ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
 import { caricaCulturaVicina, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import ModuloRecensione from "../components/ModuloRecensione";
+import Pulsante from "../components/ui/Pulsante";
+import CuoreAnimato from "../components/ui/CuoreAnimato";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 
 const MESI = [
@@ -165,6 +167,24 @@ export default function SchedaScreen({ route, navigation }) {
 
   const miaRecensione = session?.user?.id ? recensioni.find((r) => r.clienteId === session.user.id) : null;
 
+  // Link pubblico della scheda sul sito (stessi indirizzi della sitemap): su
+  // telefono con l'app installata si apre direttamente nell'app. I rifugi non
+  // hanno qui lo slug del sito, quindi si condivide la home.
+  const condividi = async () => {
+    const SITO = "https://www.naturago.it";
+    const url =
+      struttura.origine === "campeggi_pubblici"
+        ? `${SITO}/esplora?apri=${struttura.idOriginale}`
+        : struttura.origine === "camper_service"
+          ? `${SITO}/camper-service?id=${struttura.idOriginale}`
+          : SITO;
+    try {
+      await Share.share({ message: `${struttura.nome}${struttura.localita ? ` · ${struttura.localita}` : ""}\n${url}`, url });
+    } catch (e) {
+      console.error("Errore nella condivisione della scheda:", e);
+    }
+  };
+
   const onPreferito = async () => {
     if (!session?.user?.id) {
       Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.", [
@@ -218,9 +238,22 @@ export default function SchedaScreen({ route, navigation }) {
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={colori.testo} />
           </Pressable>
+          <Pressable
+            style={[styles.preferitoBottone, sipuoSalvare(struttura) && { right: 58 }]}
+            onPress={condividi}
+            accessibilityRole="button"
+            accessibilityLabel="Condividi"
+          >
+            <Ionicons name="share-outline" size={18} color={colori.blu} />
+          </Pressable>
           {sipuoSalvare(struttura) && (
-            <Pressable style={styles.preferitoBottone} onPress={onPreferito}>
-              <Ionicons name={preferito ? "heart" : "heart-outline"} size={18} color={colori.rosso} />
+            <Pressable
+              style={styles.preferitoBottone}
+              onPress={onPreferito}
+              accessibilityRole="button"
+              accessibilityLabel={preferito ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
+            >
+              <CuoreAnimato attivo={preferito} size={18} colore={colori.rosso} />
             </Pressable>
           )}
         </SafeAreaView>
@@ -593,14 +626,19 @@ export default function SchedaScreen({ route, navigation }) {
           </Text>
         ) : null}
         <View style={styles.pulsanti}>
-          <Pressable style={styles.pulsanteContorno} onPress={apriChiamata} accessibilityRole="button" accessibilityLabel="Chiama">
-            <Ionicons name="call-outline" size={18} color={colori.testo} />
-            <Text style={styles.pulsanteContornoTesto}>Chiama</Text>
-          </Pressable>
-          <Pressable style={styles.pulsanteContorno} onPress={apriMappa} accessibilityRole="button" accessibilityLabel="Indicazioni stradali">
-            <Ionicons name="navigate-outline" size={18} color={colori.testo} />
-            <Text style={styles.pulsanteContornoTesto}>Indicazioni</Text>
-          </Pressable>
+          <Pulsante
+            titolo="Chiama"
+            variante="secondario"
+            icona={<Ionicons name="call-outline" size={20} color={colori.testo} />}
+            onPress={apriChiamata}
+            style={{ flex: 1 }}
+          />
+          <Pulsante
+            titolo="Indicazioni"
+            icona={<Ionicons name="navigate" size={20} color="#fff" />}
+            onPress={apriMappa}
+            style={{ flex: 1 }}
+          />
           {PRENOTAZIONI_ATTIVE && (
             <Pressable style={styles.prenotaSubito}>
               <Text style={styles.prenotaSubitoTesto}>Prenota subito</Text>
@@ -650,7 +688,7 @@ const styles = StyleSheet.create({
   rigaBadge: { flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" },
   badgeTipo: {
     alignSelf: "flex-start",
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: "700",
     color: colori.blu,
     backgroundColor: "#e7eefc",
@@ -667,7 +705,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 999,
   },
-  badgeVerificatoTesto: { fontSize: 10, fontWeight: "700", color: "#16a34a" },
+  badgeVerificatoTesto: { fontSize: 13, fontWeight: "700", color: "#16a34a" },
   badgeCulturale: {
     flexDirection: "row",
     alignItems: "center",
@@ -677,13 +715,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 999,
   },
-  badgeCulturaleTesto: { fontSize: 10, fontWeight: "700", color: "#9333ea" },
-  titolo: { fontSize: 19, fontWeight: "800", color: colori.testo },
+  badgeCulturaleTesto: { fontSize: 13, fontWeight: "700", color: "#9333ea" },
+  titolo: { fontSize: 28, lineHeight: 34, fontWeight: "700", color: colori.testo },
   rigaInfo: { flexDirection: "row", alignItems: "center", gap: 10 },
-  localita: { fontSize: 12, color: colori.testoSecondario },
+  localita: { fontSize: 13, color: colori.testoSecondario },
   rigaRating: { flexDirection: "row", alignItems: "center", gap: 3 },
-  rating: { fontSize: 12, fontWeight: "700", color: colori.testo },
-  descrizione: { fontSize: 12.5, lineHeight: 19, color: "#4b5563" },
+  rating: { fontSize: 13, fontWeight: "700", color: colori.testo },
+  descrizione: { fontSize: 13, lineHeight: 19, color: "#4b5563" },
   avvisoRosso: {
     flexDirection: "row",
     alignItems: "center",
@@ -692,7 +730,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
   },
-  avvisoRossoTesto: { flex: 1, fontSize: 11.5, color: "#991b1b", fontWeight: "600" },
+  avvisoRossoTesto: { flex: 1, fontSize: 13, color: "#991b1b", fontWeight: "600" },
   avvisoArancio: {
     flexDirection: "row",
     alignItems: "center",
@@ -701,7 +739,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
   },
-  avvisoAranciotesto: { flex: 1, fontSize: 11.5, color: "#9a3412", fontWeight: "600" },
+  avvisoAranciotesto: { flex: 1, fontSize: 13, color: "#9a3412", fontWeight: "600" },
   avvisoRivendica: {
     alignItems: "center",
     backgroundColor: "#fff7ed",
@@ -709,8 +747,8 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 6,
   },
-  avvisoRivendicaTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo, textAlign: "center" },
-  avvisoRivendicaTesto: { fontSize: 11.5, color: colori.testoSecondario, textAlign: "center", lineHeight: 16 },
+  avvisoRivendicaTitolo: { fontSize: 15, fontWeight: "700", color: colori.testo, textAlign: "center" },
+  avvisoRivendicaTesto: { fontSize: 13, color: colori.testoSecondario, textAlign: "center", lineHeight: 16 },
   bottoneRivendica: {
     marginTop: 6,
     width: "100%",
@@ -719,11 +757,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ea580c",
     alignItems: "center",
   },
-  bottoneRivendicaTesto: { fontSize: 12.5, fontWeight: "700", color: "#fff" },
+  bottoneRivendicaTesto: { fontSize: 13, fontWeight: "700", color: "#fff" },
   sezione: { gap: 8, marginTop: 6 },
-  sezioneTitolo: { fontSize: 14, fontWeight: "800", color: colori.testo, marginBottom: 2 },
+  sezioneTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo, marginBottom: 2 },
   rigaDettaglio: { flexDirection: "row", alignItems: "center", gap: 8 },
-  rigaDettaglioTesto: { flex: 1, fontSize: 12, color: "#374151", lineHeight: 17 },
+  rigaDettaglioTesto: { flex: 1, fontSize: 13, color: "#374151", lineHeight: 17 },
   servizi: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   servizioPill: {
     backgroundColor: colori.grigioSfondo,
@@ -731,7 +769,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  servizioPillTesto: { fontSize: 11, fontWeight: "600", color: colori.testo },
+  servizioPillTesto: { fontSize: 13, fontWeight: "600", color: colori.testo },
   rigaCultura: {
     flexDirection: "row",
     alignItems: "center",
@@ -741,9 +779,9 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   rigaCulturaIcona: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  rigaCulturaTitolo: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  rigaCulturaTipo: { fontSize: 10.5, color: colori.testoSecondario },
-  rigaCulturaDistanza: { fontSize: 11, fontWeight: "600", color: colori.testoSecondario },
+  rigaCulturaTitolo: { fontSize: 13, fontWeight: "700", color: colori.testo },
+  rigaCulturaTipo: { fontSize: 13, color: colori.testoSecondario },
+  rigaCulturaDistanza: { fontSize: 13, fontWeight: "600", color: colori.testoSecondario },
   piazzoleGriglia: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   piazzolaCard: {
     width: "47%",
@@ -760,13 +798,13 @@ const styles = StyleSheet.create({
   },
   piazzolaInfo: { padding: 8, gap: 2 },
   piazzolaRigaTitolo: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 4 },
-  piazzolaTitolo: { flex: 1, fontSize: 11.5, fontWeight: "700", color: colori.testo },
-  piazzolaPrezzo: { fontSize: 11, fontWeight: "700", color: colori.testo },
-  piazzolaDettagli: { fontSize: 10, color: colori.testoSecondario },
-  piazzolaDescrizione: { fontSize: 10.5, color: "#4b5563", marginTop: 2 },
+  piazzolaTitolo: { flex: 1, fontSize: 13, fontWeight: "700", color: colori.testo },
+  piazzolaPrezzo: { fontSize: 13, fontWeight: "700", color: colori.testo },
+  piazzolaDettagli: { fontSize: 13, color: colori.testoSecondario },
+  piazzolaDescrizione: { fontSize: 13, color: "#4b5563", marginTop: 2 },
   sezioneRecensioni: { paddingHorizontal: 20, paddingTop: 4, gap: 10 },
   recensioniTitolo: { fontSize: 15, fontWeight: "800", color: colori.testo },
-  recensioniVuoto: { fontSize: 12, color: colori.testoSecondario },
+  recensioniVuoto: { fontSize: 13, color: colori.testoSecondario },
   recensioneCard: {
     backgroundColor: colori.grigioSfondo,
     borderRadius: 14,
@@ -774,13 +812,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   recensioneIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensioneNome: { fontSize: 12.5, fontWeight: "700", color: colori.testo },
-  recensioneData: { fontSize: 10.5, color: colori.testoSecondario },
-  recensioneTesto: { fontSize: 12, lineHeight: 18, color: "#374151", marginTop: 4 },
+  recensioneNome: { fontSize: 13, fontWeight: "700", color: colori.testo },
+  recensioneData: { fontSize: 13, color: colori.testoSecondario },
+  recensioneTesto: { fontSize: 13, lineHeight: 18, color: "#374151", marginTop: 4 },
   recensioneFoto: { width: 72, height: 72, borderRadius: 10, marginRight: 8, backgroundColor: colori.bluChiaro },
   recensioniIntestazione: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recensisciLink: { fontSize: 12, fontWeight: "700", color: colori.blu },
-  giaRecensito: { fontSize: 11.5, color: colori.blu, fontWeight: "600" },
+  recensisciLink: { fontSize: 13, fontWeight: "700", color: colori.blu },
+  giaRecensito: { fontSize: 13, color: colori.blu, fontWeight: "600" },
   barraAzioni: {
     borderTopWidth: 1,
     borderTopColor: colori.bordo,
@@ -789,20 +827,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   prezzo: { fontSize: 18, fontWeight: "800", color: colori.testo },
-  prezzoNotte: { fontSize: 11, fontWeight: "600", color: colori.testoSecondario },
+  prezzoNotte: { fontSize: 13, fontWeight: "600", color: colori.testoSecondario },
   pulsanti: { flexDirection: "row", gap: 8, paddingBottom: 6 },
-  pulsanteContorno: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 6,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colori.bordo,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pulsanteContornoTesto: { fontSize: 14, fontWeight: "700", color: colori.testo },
   prenotaSubito: {
     flexGrow: 1,
     height: 44,
@@ -811,5 +837,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  prenotaSubitoTesto: { color: colori.bianco, fontWeight: "800", fontSize: 13.5 },
+  prenotaSubitoTesto: { color: colori.bianco, fontWeight: "800", fontSize: 15 },
 });
