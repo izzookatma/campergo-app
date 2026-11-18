@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, Keyboard } from "react-native";
-import { Image } from "expo-image";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, Alert, Keyboard, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { colori, ombraCard, raggioCard } from "../theme/colors";
@@ -320,14 +319,7 @@ export default function EsploraHubScreen({ navigation }) {
               accessibilityLabel={sezione.titolo}
             >
               <View style={styles.sezioneBanner}>
-                <Image
-                  source={{ uri: sezione.immagine }}
-                  style={StyleSheet.absoluteFillObject}
-                  contentFit="cover"
-                  transition={300}
-                  cachePolicy="memory-disk"
-                  accessibilityIgnoresInvertColors
-                />
+                <Image source={{ uri: sezione.immagine }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
                 <View style={styles.sezioneVelo} />
                 <View style={styles.sezioneTestiFoto}>
                   <Ionicons name={sezione.icona} size={22} color="#fff" />
@@ -445,7 +437,7 @@ const styles = StyleSheet.create({
   inputRicerca: { flex: 1, fontSize: 17, fontWeight: "600", color: colori.testo },
   sezione: { gap: 10 },
   sezioneBanner: { width: "100%", height: 150, borderRadius: 20, overflow: "hidden", justifyContent: "flex-end" },
-  sezioneVelo: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.28)" },
+  sezioneVelo: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.28)" },
   sezioneTestiFoto: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14 },
   sezioneTitolo: { fontSize: 22, lineHeight: 27, fontWeight: "700", color: "#fff" },
   sezionePremuta: { opacity: 0.85 },

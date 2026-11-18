@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   },
   bollinoGenericaTesto: { color: colori.bianco, fontSize: 11, fontWeight: "600" },
   veloCaricamento: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,58,84,.6)",
     alignItems: "center",
     justifyContent: "center",

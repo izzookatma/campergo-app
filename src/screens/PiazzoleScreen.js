@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   fotoBox: { borderRadius: 12, overflow: "hidden" },
   foto: { width: "100%", aspectRatio: 16 / 10, backgroundColor: "#eef2f6" },
   fotoMancante: { alignItems: "center", justifyContent: "center", gap: 4 },
-  velo: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,58,84,.6)", alignItems: "center", justifyContent: "center" },
+  velo: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,58,84,.6)", alignItems: "center", justifyContent: "center" },
   cambia: { position: "absolute", right: 8, bottom: 8, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(17,24,39,.72)", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
   cambiaTesto: { color: colori.bianco, fontSize: 11, fontWeight: "700" },
   rigaCampi: { flexDirection: "row", gap: 8 },
