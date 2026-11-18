@@ -94,6 +94,26 @@ export default function ProfiloScreen({ navigation }) {
           </Pressable>
         )}
 
+        {!struttura && (
+          <Pressable
+            style={styles.struttura}
+            onPress={() => Linking.openURL("https://www.naturago.it/host?modo=registrati")}
+            accessibilityRole="link"
+            accessibilityLabel="Hai una struttura? Registrala su NaturaGo"
+          >
+            <View style={styles.strutturaIcona}>
+              <Ionicons name="business" size={18} color={colori.bianco} />
+            </View>
+            <View style={styles.strutturaTesti}>
+              <Text style={styles.strutturaTitolo}>Hai una struttura?</Text>
+              <Text style={styles.strutturaNome} numberOfLines={1}>
+                Registrala gratis su NaturaGo
+              </Text>
+            </View>
+            <Ionicons name="open-outline" size={16} color={colori.bianco} />
+          </Pressable>
+        )}
+
         <View style={styles.menu}>
           {VOCI_MENU.map((voce, i) => (
             <Pressable
