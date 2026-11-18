@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Linking } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert, Linking, Image } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -64,20 +64,35 @@ export default function ProfiloScreen({ navigation }) {
 
   if (!session) return <AccediScreen />;
 
+  const meta = session.user.user_metadata || {};
+  const nomeUtente = meta.nome || meta.full_name || "Il tuo profilo";
+  const avatarUrl = meta.avatar_url || meta.picture || null;
+
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <View style={styles.contenuto}>
         <MarchioNaturaGo />
 
-        <View style={styles.intestazione}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={24} color={colori.bianco} />
-          </View>
-          <View>
-            <Text style={styles.nome}>{session.user.user_metadata?.nome || "Il tuo profilo"}</Text>
+        <Pressable
+          style={styles.intestazione}
+          onPress={() => navigation.navigate("ModificaProfilo")}
+          accessibilityRole="button"
+          accessibilityLabel="Apri il tuo profilo"
+        >
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={24} color={colori.bianco} />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.nome}>{nomeUtente}</Text>
             <Text style={styles.email}>{session.user.email}</Text>
+            <Text style={{ color: colori.blu, fontSize: 12, fontWeight: "600", marginTop: 2 }}>Modifica profilo</Text>
           </View>
-        </View>
+          <Ionicons name="chevron-forward" size={16} color={colori.testoSecondario} />
+        </Pressable>
 
         {struttura && (
           <Pressable style={styles.struttura} onPress={() => navigation.navigate("MiaStruttura")}>

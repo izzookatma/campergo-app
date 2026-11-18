@@ -63,6 +63,12 @@ async function caricaFotoNelBucket(utenteId, prefisso, asset) {
   return supabase.storage.from("fotografie").getPublicUrl(percorso).data.publicUrl;
 }
 
+// Foto profilo di un utente qualsiasi (non solo gestori): stesso bucket e
+// stessa convenzione del sito (cartella = id utente, prefisso "avatar").
+export async function caricaFotoProfilo(utenteId, asset) {
+  return caricaFotoNelBucket(utenteId, "avatar", asset);
+}
+
 // Foto principale della scheda: sostituisce quella attuale (anche quella
 // illustrativa messa da noi, per questo foto_generica torna false).
 export async function sostituisciFotoPrincipale(struttura, asset) {
