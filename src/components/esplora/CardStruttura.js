@@ -5,6 +5,7 @@ import ImmagineConRiserva from "../ImmagineConRiserva";
 import BollinoPromo from "../BollinoPromo";
 import CuoreAnimato from "../ui/CuoreAnimato";
 import { sipuoSalvare } from "../../lib/preferiti";
+import { useT } from "../../i18n/i18n";
 
 // Servizi che un camperista cerca per primi: mostrati come icone nella card
 // (max 5, nell'ordine di importanza) così non serve aprire la scheda.
@@ -38,6 +39,7 @@ function iconeServizi(servizi) {
 // FlatList) perché non ha stato proprio: riceve tutto da fuori.
 export default function CardStruttura({ item, preferito, onPress, onToggleFavorito }) {
   const { c } = useTema();
+  const t = useT();
   const styles = useEstili(c);
   const servizi = iconeServizi(item.servizi);
   const visibili = servizi.slice(0, 4);
@@ -62,7 +64,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
             hitSlop={6}
             style={styles.cardCuore}
             accessibilityRole="button"
-            accessibilityLabel={preferito ? "Togli dai preferiti" : "Salva nei preferiti"}
+            accessibilityLabel={preferito ? t("comune.preferitoRimuovi") : t("comune.preferitoSalva")}
           >
             <CuoreAnimato attivo={preferito} size={20} colore={c.pericolo} />
           </Pressable>

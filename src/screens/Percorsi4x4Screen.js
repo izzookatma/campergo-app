@@ -10,6 +10,7 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
+import { useT } from "../i18n/i18n";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -28,6 +29,7 @@ const FILTRI_VEICOLO = [
 export default function Percorsi4x4Screen({ navigation, route }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [percorsi, setPercorsi] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -39,7 +41,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
 
   const creaPercorso = () => {
     if (!session) {
-      Alert.alert("Accedi", "Accedi al tuo account per creare un percorso 4x4.");
+      Alert.alert(t("accedi.titoloAccedi"), t("percorsi4x4.accediPerCreare"));
       return;
     }
     navigation.navigate("NuovoItinerario", { categoria: "percorso_4x4" });
@@ -68,10 +70,10 @@ export default function Percorsi4x4Screen({ navigation, route }) {
       <View style={styles.intestazione}>
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Percorsi 4x4</Text>
+          <Text style={styles.titolo}>{t("percorsi4x4.titolo")}</Text>
           <Pressable style={styles.creaBottone} onPress={creaPercorso}>
             <Ionicons name="add" size={14} color={c.primario} />
-            <Text style={styles.creaBottoneTesto}>Crea</Text>
+            <Text style={styles.creaBottoneTesto}>{t("comune.crea")}</Text>
           </Pressable>
         </View>
         <FlatList
@@ -98,7 +100,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
           <Ionicons name="search-outline" size={14} color={c.testoSecondario} />
           <TextInput
             style={styles.ricercaInput}
-            placeholder="Titolo o regione…"
+            placeholder={t("comune.placeholderTitoloORegione")}
             placeholderTextColor={c.testoSecondario}
             value={termine}
             onChangeText={setTermine}
@@ -111,14 +113,14 @@ export default function Percorsi4x4Screen({ navigation, route }) {
       ) : percorsiFiltrati.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="car-sport-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Nessun percorso trovato.</Text>
+          <Text style={styles.vuotoTesto}>{t("percorsi4x4.nessunoTrovato")}</Text>
         </View>
       ) : (
         <FlatList
           data={percorsiFiltrati}
           keyExtractor={(it) => String(it.id)}
           contentContainerStyle={{ padding: 20, gap: 10 }}
-          ListHeaderComponent={<Text style={styles.contatore}>{percorsiFiltrati.length} percorsi</Text>}
+          ListHeaderComponent={<Text style={styles.contatore}>{t("percorsi4x4.percorsiConteggio", { n: percorsiFiltrati.length })}</Text>}
           renderItem={({ item }) => {
             const metaDifficolta = DIFFICOLTA_META[item.difficolta];
             const metaVeicolo = TIPO_VEICOLO_META[item.tipoVeicolo];

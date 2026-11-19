@@ -8,12 +8,14 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
+import { useT } from "../i18n/i18n";
 
 const CATEGORIE = Object.keys(CATEGORIA_CULTURALE_META);
 
 export default function CulturaScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const [categoria, setCategoria] = useState(route.params?.categoria || CATEGORIE[0]);
   const [termine, setTermine] = useState("");
   const [schede, setSchede] = useState([]);
@@ -35,7 +37,7 @@ export default function CulturaScreen({ route, navigation }) {
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <View style={styles.intestazione}>
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
-        <Text style={styles.titolo}>Musei, borghi e attività</Text>
+        <Text style={styles.titolo}>{t("hub.museiBorghiAttivita")}</Text>
         <View style={styles.filtri}>
           {CATEGORIE.map((chiaveCategoria) => {
             const m = CATEGORIA_CULTURALE_META[chiaveCategoria];
@@ -59,7 +61,7 @@ export default function CulturaScreen({ route, navigation }) {
           <Ionicons name="search-outline" size={14} color={c.testoSecondario} />
           <TextInput
             style={styles.ricercaInput}
-            placeholder="Città, regione o nome…"
+            placeholder={t("cultura.placeholderRicerca")}
             placeholderTextColor={c.testoSecondario}
             value={termine}
             onChangeText={(t) => {
@@ -75,14 +77,14 @@ export default function CulturaScreen({ route, navigation }) {
       ) : schede.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name={meta.icona} size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Nessun risultato trovato.</Text>
+          <Text style={styles.vuotoTesto}>{t("comune.nessunRisultatoTrovato")}</Text>
         </View>
       ) : (
         <FlatList
           data={schede}
           keyExtractor={(it) => String(it.id)}
           contentContainerStyle={{ padding: 20, gap: 10 }}
-          ListHeaderComponent={<Text style={styles.contatore}>{schede.length} risultati</Text>}
+          ListHeaderComponent={<Text style={styles.contatore}>{t("comune.risultati", { n: schede.length })}</Text>}
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => navigation.navigate("SchedaCulturale", { id: item.id })}>
               <View style={[styles.cardFoto, { backgroundColor: meta.colore + "18" }]}>

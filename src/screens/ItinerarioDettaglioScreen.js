@@ -24,6 +24,7 @@ import MappaItinerario from "../components/MappaItinerario";
 import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import RigaStelle from "../components/ui/RigaStelle";
+import { useT } from "../i18n/i18n";
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -32,6 +33,7 @@ function formattaData(iso) {
 export default function ItinerarioDettaglioScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { itinerarioId } = route.params;
   const { session } = useAuth();
   const { motoreMappa } = usePreferenze();
@@ -136,7 +138,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
             style={styles.offlineBottone}
             onPress={toggleSalvaOffline}
             accessibilityRole="button"
-            accessibilityLabel={salvatoOffline ? "Rimuovi dai salvati per l'uso offline" : "Salva per l'uso offline"}
+            accessibilityLabel={salvatoOffline ? t("itinerario.rimuoviOffline") : t("itinerario.salvaOffline")}
           >
             <Ionicons name={salvatoOffline ? "cloud-done" : "cloud-download-outline"} size={18} color={salvatoOffline ? c.successo : c.testo} />
           </Pressable>
@@ -149,7 +151,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
           {daCacheOffline && (
             <View style={styles.avvisoOffline}>
               <Ionicons name="cloud-offline-outline" size={14} color={c.testoSecondario} />
-              <Text style={styles.avvisoOfflineTesto}>Versione salvata offline — nessuna connessione o dati non aggiornati.</Text>
+              <Text style={styles.avvisoOfflineTesto}>{t("itinerario.avvisoOffline")}</Text>
             </View>
           )}
 
@@ -157,7 +159,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
             <View style={[styles.avvisoStato, { backgroundColor: STATO_ITINERARIO_META[itinerario.stato].colore + "18" }]}>
               <Ionicons name="time-outline" size={14} color={STATO_ITINERARIO_META[itinerario.stato].colore} />
               <Text style={[styles.avvisoStatoTesto, { color: STATO_ITINERARIO_META[itinerario.stato].colore }]}>
-                {STATO_ITINERARIO_META[itinerario.stato].etichetta} — visibile solo a te finché non viene controllato
+                {STATO_ITINERARIO_META[itinerario.stato].etichetta} — {t("itinerario.visibileSoloTe")}
               </Text>
             </View>
           )}
@@ -204,36 +206,36 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
 
           {tappe.length > 0 && (
             <View style={styles.sezioneTappe}>
-              <Text style={styles.sezioneTitolo}>Tappe</Text>
-              {tappe.map((t, i) => (
-                <View key={t.id} style={styles.tappa}>
+              <Text style={styles.sezioneTitolo}>{t("itinerario.tappe")}</Text>
+              {tappe.map((tappa, i) => (
+                <View key={tappa.id} style={styles.tappa}>
                   <View style={[styles.tappaNumero, { backgroundColor: coloreAccento + "18" }]}>
                     <Text style={[styles.tappaNumeroTesto, { color: coloreAccento }]}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.tappaNome}>
-                      {t.nome || "Tappa"}
-                      {i === 0 ? "  ·  partenza" : i === tappe.length - 1 ? "  ·  arrivo" : ""}
+                      {tappa.nome || t("itinerario.tappaDefault")}
+                      {i === 0 ? `  ·  ${t("itinerario.partenza")}` : i === tappe.length - 1 ? `  ·  ${t("itinerario.arrivo")}` : ""}
                     </Text>
-                    {t.localitaStruttura ? <Text style={styles.tappaDescrizione}>{t.localitaStruttura}</Text> : null}
-                    {t.descrizione ? <Text style={styles.tappaDescrizione}>{t.descrizione}</Text> : null}
-                    {t.foto?.length > 0 && (
+                    {tappa.localitaStruttura ? <Text style={styles.tappaDescrizione}>{tappa.localitaStruttura}</Text> : null}
+                    {tappa.descrizione ? <Text style={styles.tappaDescrizione}>{tappa.descrizione}</Text> : null}
+                    {tappa.foto?.length > 0 && (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tappaFotoRiga}>
-                        {t.foto.map((url) => (
+                        {tappa.foto.map((url) => (
                           <Image key={url} source={{ uri: url }} style={styles.tappaFoto} contentFit="cover" transition={150} />
                         ))}
                       </ScrollView>
                     )}
-                    {t.lat != null && t.lng != null && (
+                    {tappa.lat != null && tappa.lng != null && (
                       <Pressable
                         style={styles.tappaMappaLink}
                         onPress={() => {
-                          const url = urlMappa(t, motoreMappa);
+                          const url = urlMappa(tappa, motoreMappa);
                           if (url) Linking.openURL(url);
                         }}
                       >
                         <Ionicons name="navigate-outline" size={12} color={coloreAccento} />
-                        <Text style={[styles.tappaMappaLinkTesto, { color: coloreAccento }]}>Apri in Mappe</Text>
+                        <Text style={[styles.tappaMappaLinkTesto, { color: coloreAccento }]}>{t("comune.apriInMappe")}</Text>
                       </Pressable>
                     )}
                   </View>
@@ -244,21 +246,21 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
 
           <View style={styles.sezioneRecensioni}>
             <View style={styles.recensioniIntestazione}>
-              <Text style={styles.sezioneTitolo}>Recensioni{recensioni.length > 0 ? ` (${recensioni.length})` : ""}</Text>
+              <Text style={styles.sezioneTitolo}>{t("recensioni.titolo")}{recensioni.length > 0 ? ` (${recensioni.length})` : ""}</Text>
               {session && !miaRecensione && !mostraModuloRecensione && (
                 <Pressable onPress={() => setMostraModuloRecensione(true)}>
-                  <Text style={[styles.recensisciLink, { color: coloreAccento }]}>Recensiscilo</Text>
+                  <Text style={[styles.recensisciLink, { color: coloreAccento }]}>{t("recensioni.scriviLink")}</Text>
                 </Pressable>
               )}
             </View>
 
             {!session && (
-              <Pressable onPress={() => Alert.alert("Accedi", "Accedi al tuo account per lasciare una recensione.")}>
-                <Text style={[styles.recensisciLink, { color: coloreAccento }]}>Accedi per recensire</Text>
+              <Pressable onPress={() => Alert.alert(t("accedi.titoloAccedi"), t("recensioni.accediMessaggio"))}>
+                <Text style={[styles.recensisciLink, { color: coloreAccento }]}>{t("recensioni.accediLink")}</Text>
               </Pressable>
             )}
 
-            {miaRecensione && <Text style={styles.giaRecensito}>✓ Hai già recensito questo percorso</Text>}
+            {miaRecensione && <Text style={styles.giaRecensito}>{t("recensioni.giaRecensito")}</Text>}
 
             {mostraModuloRecensione && !miaRecensione && (
               <ModuloRecensione
@@ -266,7 +268,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
                   inviaRecensioneItinerario({
                     itinerarioId: itinerario.id,
                     clienteId: session.user.id,
-                    nomeCliente: session.user.user_metadata?.nome || "Utente NaturaGo",
+                    nomeCliente: session.user.user_metadata?.nome || t("comune.utenteDefault"),
                     punteggio,
                     testo,
                   })
@@ -279,7 +281,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
             )}
 
             {recensioni.length === 0 ? (
-              <Text style={styles.recensioniVuoto}>Ancora nessuna recensione.</Text>
+              <Text style={styles.recensioniVuoto}>{t("recensioni.nessunaRecensione")}</Text>
             ) : (
               recensioni.map((r) => (
                 <View key={r.id} style={styles.recensioneCard}>

@@ -10,10 +10,12 @@ import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import { useT } from "../i18n/i18n";
 
 export default function PreferitiScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [preferiti, setPreferiti] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -54,14 +56,14 @@ export default function PreferitiScreen({ navigation }) {
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 10 }} />
-        <Text style={styles.titolo}>Preferiti</Text>
-        <Text style={styles.sottotitolo}>{preferiti.length} strutture salvate</Text>
+        <Text style={styles.titolo}>{t("tab.preferiti")}</Text>
+        <Text style={styles.sottotitolo}>{t("preferiti.struttureSalvate", { n: preferiti.length })}</Text>
       </View>
 
       {senzaConnessione && (
         <View style={styles.bannerOffline}>
           <Ionicons name="cloud-offline-outline" size={16} color={c.testoSecondario} />
-          <Text style={styles.bannerOfflineTesto}>Senza connessione: stai vedendo gli ultimi preferiti salvati.</Text>
+          <Text style={styles.bannerOfflineTesto}>{t("preferiti.senzaConnessione")}</Text>
         </View>
       )}
 
@@ -70,15 +72,15 @@ export default function PreferitiScreen({ navigation }) {
       ) : !session ? (
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Accedi al tuo account per salvare le strutture che ti interessano.</Text>
+          <Text style={styles.vuotoTesto}>{t("preferiti.accediMessaggio")}</Text>
           <Pressable style={styles.pulsanteAccedi} onPress={() => navigation.navigate("Accedi")}>
-            <Text style={styles.pulsanteAccediTesto}>Accedi</Text>
+            <Text style={styles.pulsanteAccediTesto}>{t("accedi.titoloAccedi")}</Text>
           </Pressable>
         </View>
       ) : preferiti.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Non hai ancora salvato nessuna struttura.</Text>
+          <Text style={styles.vuotoTesto}>{t("preferiti.nessunaStruttura")}</Text>
         </View>
       ) : (
         <FlatList

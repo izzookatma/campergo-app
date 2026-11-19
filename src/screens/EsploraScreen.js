@@ -33,6 +33,7 @@ import { caricaIdPreferiti, toggleFavorito } from "../lib/preferiti";
 import { distanzaKm } from "../lib/geo";
 import SelettoreDate from "../components/SelettoreDate";
 import { apertoNelPeriodo, etichettaData, numeroNotti } from "../lib/periodo";
+import { useT } from "../i18n/i18n";
 
 const FILTRI = ["Tutti", "Campeggi", "Agriturismi", "Agricampeggi", "Aree sosta", "Camper service", "Rifugi", "Bivacchi"];
 const STRUTTURE_PER_PAGINA = 60;
@@ -40,6 +41,7 @@ const STRUTTURE_PER_PAGINA = 60;
 export default function EsploraScreen({ navigation, route }) {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
   const { session } = useAuth();
   const [strutture, setStrutture] = useState([]);
   const [preferitiIds, setPreferitiIds] = useState(new Set());
@@ -130,10 +132,10 @@ export default function EsploraScreen({ navigation, route }) {
         setFineLista(true);
         setSenzaConnessione(true);
       } else {
-        setErrore("Non riesco a caricare le strutture. Controlla la connessione.");
+        setErrore(t("esplora.erroreCaricamento"));
       }
     }
-  }, [filtriServizi, filtriTipo]);
+  }, [filtriServizi, filtriTipo, t]);
 
   useEffect(() => {
     Promise.resolve()
@@ -233,12 +235,12 @@ export default function EsploraScreen({ navigation, route }) {
       permesso = await Location.requestForegroundPermissionsAsync();
     } catch (e) {
       console.error("Permesso posizione:", e);
-      Alert.alert("Posizione non disponibile", "Per vedere le strutture vicine a te, consenti l'accesso alla posizione.");
+      Alert.alert(t("esplora.posizioneTitolo"), t("esplora.posizioneMessaggio"));
       return;
     }
     if (permesso.status !== "granted") {
       console.log("Permesso posizione negato:", permesso.status);
-      Alert.alert("Posizione non disponibile", "Per vedere le strutture vicine a te, consenti l'accesso alla posizione.");
+      Alert.alert(t("esplora.posizioneTitolo"), t("esplora.posizioneMessaggio"));
       return;
     }
     setCercandoPosizione(true);
@@ -247,7 +249,7 @@ export default function EsploraScreen({ navigation, route }) {
       setPosizione({ lat: posiz.coords.latitude, lng: posiz.coords.longitude });
     } catch (e) {
       console.error("Errore nel trovare la posizione:", e);
-      Alert.alert("Non riesco a trovare la tua posizione", "Riprova tra poco.");
+      Alert.alert(t("esplora.posizioneErroreTitolo"), t("comune.riprovaTraPoco"));
     } finally {
       setCercandoPosizione(false);
     }
@@ -284,9 +286,9 @@ export default function EsploraScreen({ navigation, route }) {
   };
 
   const onRicercaIARichiedeAccesso = () => {
-    Alert.alert("Accedi", "La ricerca con l'IA è gratuita per chi si registra. Accedi o registrati per usarla.", [
-      { text: "Annulla", style: "cancel" },
-      { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+    Alert.alert(t("accedi.titoloAccedi"), t("esplora.iaAccediMessaggio"), [
+      { text: t("comune.annulla"), style: "cancel" },
+      { text: t("accedi.titoloAccedi"), onPress: () => navigation.navigate("Accedi") },
     ]);
   };
 
@@ -301,9 +303,9 @@ export default function EsploraScreen({ navigation, route }) {
   const onToggleFavorito = async (struttura) => {
     vibraConferma();
     if (!session?.user?.id) {
-      Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.", [
-        { text: "Annulla", style: "cancel" },
-        { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+      Alert.alert(t("accedi.titoloAccedi"), t("preferiti.accediMessaggio"), [
+        { text: t("comune.annulla"), style: "cancel" },
+        { text: t("accedi.titoloAccedi"), onPress: () => navigation.navigate("Accedi") },
       ]);
       return;
     }
@@ -369,13 +371,18 @@ export default function EsploraScreen({ navigation, route }) {
 
   const scegliOrdine = () => {
     const opzioni = [
-      { text: "Consigliati", onPress: () => setOrdine("consigliati") },
-      { text: "Prezzo più basso", onPress: () => setOrdine("prezzo") },
-      { text: "Valutazione migliore", onPress: () => setOrdine("valutazione") },
+      { text: t("esplora.ordineConsigliati"), onPress: () => setOrdine("consigliati") },
+      { text: t("esplora.ordinePrezzo"), onPress: () => setOrdine("prezzo") },
+      { text: t("esplora.ordineValutazioneMigliore"), onPress: () => setOrdine("valutazione") },
     ];
-    Alert.alert("Ordina per", undefined, [...opzioni, { text: "Annulla", style: "cancel" }]);
+    Alert.alert(t("esplora.ordinaPerTitolo"), undefined, [...opzioni, { text: t("comune.annulla"), style: "cancel" }]);
   };
-  const etichettaOrdine = { consigliati: "Consigliati", prezzo: "Prezzo più basso", valutazione: "Valutazione", distanza: "Distanza" }[ordine];
+  const etichettaOrdine = {
+    consigliati: t("esplora.ordineConsigliati"),
+    prezzo: t("esplora.ordinePrezzo"),
+    valutazione: t("esplora.ordineValutazione"),
+    distanza: t("esplora.ordineDistanza"),
+  }[ordine];
 
   const apriMappa = () => {
     navigation.getParent()?.navigate("Mappa", {
@@ -410,7 +417,7 @@ export default function EsploraScreen({ navigation, route }) {
           <Ionicons name="search" size={16} color={c.testoSecondario} />
           <TextInput
             style={styles.inputRicerca}
-            placeholder="Zona, regione, struttura…"
+            placeholder={t("esplora.placeholderRicerca")}
             placeholderTextColor={c.testoSecondario}
             value={ricerca}
             onChangeText={setRicerca}
@@ -418,13 +425,13 @@ export default function EsploraScreen({ navigation, route }) {
             onBlur={() => setTimeout(() => setInputAFocus(false), 150)}
             returnKeyType="search"
             clearButtonMode="while-editing"
-            accessibilityLabel="Cerca zona, regione o struttura"
+            accessibilityLabel={t("esplora.cercaAccessibilita")}
           />
           <Pressable
             onPress={vicinoAMe}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Strutture vicino a me"
+            accessibilityLabel={t("esplora.vicinoAMeLabel")}
             style={[styles.pillaVicino, posizione && styles.pillaVicinoAttivo]}
           >
             {cercandoPosizione ? (
@@ -440,14 +447,14 @@ export default function EsploraScreen({ navigation, route }) {
             {mostraRicercheRecenti && (
               <>
                 <View style={styles.tendinaIntestazione}>
-                  <Text style={styles.tendinaIntestazioneTesto}>Ricerche recenti</Text>
+                  <Text style={styles.tendinaIntestazioneTesto}>{t("esplora.ricercheRecenti")}</Text>
                   <Pressable
                     onPress={() => {
                       cancellaRicercheRecenti().then(setRicercheRecenti);
                     }}
                     hitSlop={8}
                   >
-                    <Text style={styles.tendinaCancella}>Cancella</Text>
+                    <Text style={styles.tendinaCancella}>{t("comune.cancella")}</Text>
                   </Pressable>
                 </View>
                 {ricercheRecenti.map((termine) => (
@@ -476,7 +483,7 @@ export default function EsploraScreen({ navigation, route }) {
               >
                 <Ionicons name="map-outline" size={15} color={c.primario} />
                 <Text style={styles.rigaTendinaTesto}>{r}</Text>
-                <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
+                <Text style={styles.rigaTendinaEtichetta}>{t("esplora.regione")}</Text>
               </Pressable>
             ))}
             {struttureSuggerite.map((s) => (
@@ -547,15 +554,15 @@ export default function EsploraScreen({ navigation, route }) {
             style={[styles.bottoneIA, iaAperta && styles.bottoneFiltriServiziAttivo]}
             onPress={() => setIaAperta((v) => !v)}
             accessibilityRole="button"
-            accessibilityLabel="Cerca con l'intelligenza artificiale"
+            accessibilityLabel={t("esplora.cercaIALabel")}
           >
             <Ionicons name="sparkles" size={15} color={iaAperta ? c.sulPrimario : c.pericolo} />
-            <Text style={[styles.bottoneIATesto, iaAperta && { color: c.sulPrimario }]}>IA</Text>
+            <Text style={[styles.bottoneIATesto, iaAperta && { color: c.sulPrimario }]}>{t("esplora.iaBreve")}</Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={filtriAttiviNumero > 0 ? `Filtri, ${filtriAttiviNumero} attivi` : "Filtri"}
+            accessibilityLabel={filtriAttiviNumero > 0 ? t("esplora.filtriAttiviLabel", { n: filtriAttiviNumero }) : t("esplora.filtriLabel")}
             style={[styles.bottoneFiltriServizi, filtriAttiviNumero > 0 && styles.bottoneFiltriServiziAttivo]}
             onPress={() => setModalFiltriAperto(true)}
           >
@@ -574,14 +581,14 @@ export default function EsploraScreen({ navigation, route }) {
         <View style={styles.bannerHost}>
           <Ionicons name="business-outline" size={20} color={c.primario} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.bannerHostTitolo}>Gestisci un campeggio o una struttura?</Text>
-            <Text style={styles.bannerHostTesto}>Registrala su NaturaGo.it, è gratis.</Text>
+            <Text style={styles.bannerHostTitolo}>{t("esplora.bannerHostTitolo")}</Text>
+            <Text style={styles.bannerHostTesto}>{t("esplora.bannerHostTesto")}</Text>
           </View>
           <Pressable
             style={styles.bannerHostPulsante}
             onPress={() => Linking.openURL("https://www.naturago.it/host?modo=registrati")}
           >
-            <Text style={styles.bannerHostPulsanteTesto}>Registrati</Text>
+            <Text style={styles.bannerHostPulsanteTesto}>{t("comune.registrati")}</Text>
           </Pressable>
           <Pressable onPress={() => setBannerHostVisibile(false)} hitSlop={8}>
             <Ionicons name="close" size={16} color={c.testoSecondario} />
@@ -592,7 +599,7 @@ export default function EsploraScreen({ navigation, route }) {
       {senzaConnessione && (
         <View style={styles.bannerOffline}>
           <Ionicons name="cloud-offline-outline" size={16} color={c.testoSecondario} />
-          <Text style={styles.bannerOfflineTesto}>Senza connessione: stai vedendo gli ultimi risultati salvati.</Text>
+          <Text style={styles.bannerOfflineTesto}>{t("esplora.senzaConnessione")}</Text>
         </View>
       )}
 
@@ -612,24 +619,24 @@ export default function EsploraScreen({ navigation, route }) {
               onPress={() => setDateAperte(true)}
               style={styles.pillDate}
               accessibilityRole="button"
-              accessibilityLabel="Scegli le date del soggiorno"
+              accessibilityLabel={t("esplora.sceglieDateLabel")}
             >
               <Ionicons name="calendar-outline" size={16} color={c.primario} />
               <Text style={styles.pillDateTesto}>
                 {dateSoggiorno.checkIn && dateSoggiorno.checkOut
-                  ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} notti`
-                  : "Aggiungi le date del soggiorno"}
+                  ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${t("esplora.notti", { n: numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut) })}`
+                  : t("esplora.aggiungiDate")}
               </Text>
               <Ionicons name="chevron-forward" size={14} color={c.testoSecondario} />
             </Pressable>
             <View style={styles.rigaContatore}>
-              <Text style={styles.contatore}>{testoConteggio} strutture</Text>
+              <Text style={styles.contatore}>{t("esplora.struttureConteggio", { testo: testoConteggio })}</Text>
               <Pressable
                 onPress={scegliOrdine}
                 hitSlop={10}
                 style={styles.pulsanteOrdina}
                 accessibilityRole="button"
-                accessibilityLabel={`Ordina per, ora: ${etichettaOrdine}`}
+                accessibilityLabel={t("esplora.ordinaLabel", { etichetta: etichettaOrdine })}
               >
                 <Ionicons name="swap-vertical" size={15} color={c.primario} />
                 <Text style={styles.pulsanteOrdinaTesto}>{etichettaOrdine}</Text>
@@ -640,8 +647,8 @@ export default function EsploraScreen({ navigation, route }) {
           ListEmptyComponent={
             <View style={styles.vuoto}>
               <Ionicons name="search-outline" size={34} color={c.testoSecondario} />
-              <Text style={styles.vuotoTitolo}>Nessuna struttura trovata</Text>
-              <Text style={styles.vuotoTesto}>Prova a togliere qualche filtro o a cercare un&apos;altra zona.</Text>
+              <Text style={styles.vuotoTitolo}>{t("esplora.nessunaStrutturaTrovata")}</Text>
+              <Text style={styles.vuotoTesto}>{t("esplora.provaTogliereFiltri")}</Text>
             </View>
           }
           onEndReached={caricaAltre}
@@ -672,9 +679,9 @@ export default function EsploraScreen({ navigation, route }) {
         }}
       />
       {!caricamento && !errore && (
-        <Pressable style={styles.bottoneMappa} onPress={apriMappa} accessibilityRole="button" accessibilityLabel="Mostra queste strutture sulla mappa">
+        <Pressable style={styles.bottoneMappa} onPress={apriMappa} accessibilityRole="button" accessibilityLabel={t("esplora.mostraSuMappaLabel")}>
           <Ionicons name="map" size={18} color={c.sulPrimario} />
-          <Text style={styles.bottoneMappaTesto}>Mappa</Text>
+          <Text style={styles.bottoneMappaTesto}>{t("tab.mappa")}</Text>
         </Pressable>
       )}
 
@@ -691,7 +698,7 @@ export default function EsploraScreen({ navigation, route }) {
         filtriServizi={filtriServizi}
         onToggleServizio={toggleServizio}
         filtriAttiviNumero={filtriAttiviNumero}
-        etichettaRisultati={`${testoConteggio} struttur${risultati.length === 1 && !altreDaCaricare ? "a" : "e"}`}
+        etichettaRisultati={t("esplora.struttureConteggio", { testo: testoConteggio })}
         onReset={() => {
           setFiltriServizi([]);
           setPrezzoMax(null);

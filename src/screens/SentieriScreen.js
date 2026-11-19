@@ -10,6 +10,7 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
+import { useT } from "../i18n/i18n";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -20,6 +21,7 @@ const FILTRI = [
 export default function SentieriScreen({ navigation, route }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [sentieri, setSentieri] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -31,7 +33,7 @@ export default function SentieriScreen({ navigation, route }) {
 
   const creaSentiero = () => {
     if (!session) {
-      Alert.alert("Accedi", "Accedi al tuo account per creare un sentiero.");
+      Alert.alert(t("accedi.titoloAccedi"), t("sentieri.accediPerCreare"));
       return;
     }
     navigation.navigate("NuovoItinerario", { categoria: "sentiero" });
@@ -60,10 +62,10 @@ export default function SentieriScreen({ navigation, route }) {
       <View style={styles.intestazione}>
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Sentieri e ciclabili</Text>
+          <Text style={styles.titolo}>{t("sentieri.titolo")}</Text>
           <Pressable style={styles.creaBottone} onPress={creaSentiero}>
             <Ionicons name="add" size={14} color="#2f6b3f" />
-            <Text style={styles.creaBottoneTesto}>Crea</Text>
+            <Text style={styles.creaBottoneTesto}>{t("comune.crea")}</Text>
           </Pressable>
         </View>
         <View style={styles.filtri}>
@@ -82,7 +84,7 @@ export default function SentieriScreen({ navigation, route }) {
           <Ionicons name="search-outline" size={14} color={c.testoSecondario} />
           <TextInput
             style={styles.ricercaInput}
-            placeholder="Titolo o regione…"
+            placeholder={t("comune.placeholderTitoloORegione")}
             placeholderTextColor={c.testoSecondario}
             value={termine}
             onChangeText={setTermine}
@@ -95,14 +97,14 @@ export default function SentieriScreen({ navigation, route }) {
       ) : sentieriFiltrati.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="trail-sign-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Nessun sentiero trovato.</Text>
+          <Text style={styles.vuotoTesto}>{t("sentieri.nessunoTrovato")}</Text>
         </View>
       ) : (
         <FlatList
           data={sentieriFiltrati}
           keyExtractor={(it) => String(it.id)}
           contentContainerStyle={{ padding: 20, gap: 10 }}
-          ListHeaderComponent={<Text style={styles.contatore}>{sentieriFiltrati.length} sentieri</Text>}
+          ListHeaderComponent={<Text style={styles.contatore}>{t("sentieri.sentieriConteggio", { n: sentieriFiltrati.length })}</Text>}
           renderItem={({ item }) => {
             const meta = MODALITA_SENTIERO_META[item.modalita];
             return (

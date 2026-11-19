@@ -6,10 +6,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { elencaItinerariOfflineSalvati, rimuoviItinerarioOfflineSalvato, CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import { useT } from "../i18n/i18n";
 
 export default function ItinerariOfflineScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const [salvati, setSalvati] = useState(null);
 
   const carica = useCallback(() => {
@@ -21,10 +23,10 @@ export default function ItinerariOfflineScreen({ navigation }) {
   useFocusEffect(carica);
 
   const rimuovi = (item) => {
-    Alert.alert("Rimuovere dai salvati?", `"${item.titolo}" non sarà più disponibile senza connessione.`, [
-      { text: "Annulla", style: "cancel" },
+    Alert.alert(t("itinerariOffline.rimuovereTitolo"), t("itinerariOffline.rimuovereMessaggio", { titolo: item.titolo }), [
+      { text: t("comune.annulla"), style: "cancel" },
       {
-        text: "Rimuovi",
+        text: t("comune.rimuovi"),
         style: "destructive",
         onPress: () => rimuoviItinerarioOfflineSalvato(item.id).then(carica),
       },
@@ -37,7 +39,7 @@ export default function ItinerariOfflineScreen({ navigation }) {
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titoloIntestazione}>Itinerari salvati offline</Text>
+        <Text style={styles.titoloIntestazione}>{t("profilo.itinerariOffline")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
@@ -45,19 +47,12 @@ export default function ItinerariOfflineScreen({ navigation }) {
         data={salvati || []}
         keyExtractor={(it) => it.id}
         contentContainerStyle={styles.lista}
-        ListHeaderComponent={
-          <Text style={styles.spiegazione}>
-            Sentieri, percorsi 4x4 e itinerari che hai salvato per consultarli anche senza connessione (tappe e
-            descrizioni: non la mappa, che richiede la rete).
-          </Text>
-        }
+        ListHeaderComponent={<Text style={styles.spiegazione}>{t("itinerariOffline.spiegazione")}</Text>}
         ListEmptyComponent={
           salvati === null ? (
             <ActivityIndicator color={c.primario} style={{ marginTop: 30 }} />
           ) : (
-            <Text style={styles.vuoto}>
-              {"Non hai ancora salvato nessun itinerario per l'uso offline. Apri un sentiero o un percorso 4x4 e tocca l'icona di download in alto a destra."}
-            </Text>
+            <Text style={styles.vuoto}>{t("itinerariOffline.nessunoSalvato")}</Text>
           )
         }
         renderItem={({ item }) => {
@@ -86,7 +81,7 @@ export default function ItinerariOfflineScreen({ navigation }) {
                 onPress={() => rimuovi(item)}
                 hitSlop={10}
                 accessibilityRole="button"
-                accessibilityLabel="Rimuovi dai salvati offline"
+                accessibilityLabel={t("itinerario.rimuoviOffline")}
               >
                 <Ionicons name="trash-outline" size={18} color={c.testoSecondario} />
               </Pressable>

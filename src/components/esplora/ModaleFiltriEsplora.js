@@ -2,20 +2,25 @@ import { View, Text, Pressable, ScrollView, StyleSheet, Modal } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../../theme/tema";
+import { useT } from "../../i18n/i18n";
 
-const OPZIONI_ORDINE = [
-  ["consigliati", "Consigliati"],
-  ["prezzo", "Prezzo più basso"],
-  ["valutazione", "Valutazione"],
-];
+function opzioniOrdine(t) {
+  return [
+    ["consigliati", t("esplora.ordineConsigliati")],
+    ["prezzo", t("esplora.ordinePrezzo")],
+    ["valutazione", t("esplora.ordineValutazione")],
+  ];
+}
 
-const OPZIONI_PREZZO = [
-  [null, "Qualsiasi"],
-  [20, "Fino a 20€"],
-  [35, "Fino a 35€"],
-  [50, "Fino a 50€"],
-  [80, "Fino a 80€"],
-];
+function opzioniPrezzo(t) {
+  return [
+    [null, t("esplora.qualsiasi")],
+    [20, t("esplora.finoA", { n: 20 })],
+    [35, t("esplora.finoA", { n: 35 })],
+    [50, t("esplora.finoA", { n: 50 })],
+    [80, t("esplora.finoA", { n: 80 })],
+  ];
+}
 
 // Il pannello "Filtri" di Esplora: ordinamento, prezzo massimo e le
 // categorie di servizi (CATEGORIE_FILTRI_SERVIZI). Estratto da
@@ -39,13 +44,14 @@ export default function ModaleFiltriEsplora({
 }) {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
 
   return (
     <Modal visible={visibile} animationType="slide" presentationStyle="pageSheet" onRequestClose={onChiudi}>
       <SafeAreaView style={styles.modaleSchermo} edges={["top", "bottom"]}>
         <View style={styles.modaleIntestazione}>
-          <Text style={styles.modaleTitolo}>Filtri</Text>
-          <Pressable onPress={onChiudi} hitSlop={10} accessibilityRole="button" accessibilityLabel="Chiudi">
+          <Text style={styles.modaleTitolo}>{t("esplora.filtriLabel")}</Text>
+          <Pressable onPress={onChiudi} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("comune.chiudi")}>
             <Ionicons name="close" size={22} color={c.testo} />
           </Pressable>
         </View>
@@ -54,10 +60,10 @@ export default function ModaleFiltriEsplora({
           <View style={styles.sezioneFiltro}>
             <View style={styles.sezioneIntestazione}>
               <Ionicons name="swap-vertical" size={17} color={c.primario} />
-              <Text style={styles.sezioneTitoloModale}>Ordina per</Text>
+              <Text style={styles.sezioneTitoloModale}>{t("esplora.ordinaPerTitolo")}</Text>
             </View>
             <View style={styles.gruppoChip}>
-              {OPZIONI_ORDINE.map(([chiave, etichetta]) => (
+              {opzioniOrdine(t).map(([chiave, etichetta]) => (
                 <Pressable
                   key={chiave}
                   onPress={() => onCambiaOrdine(chiave)}
@@ -72,10 +78,10 @@ export default function ModaleFiltriEsplora({
           <View style={styles.sezioneFiltro}>
             <View style={styles.sezioneIntestazione}>
               <Ionicons name="pricetag-outline" size={17} color={c.primario} />
-              <Text style={styles.sezioneTitoloModale}>Prezzo a notte</Text>
+              <Text style={styles.sezioneTitoloModale}>{t("esplora.prezzoANotte")}</Text>
             </View>
             <View style={styles.gruppoChip}>
-              {OPZIONI_PREZZO.map(([valore, etichetta]) => (
+              {opzioniPrezzo(t).map(([valore, etichetta]) => (
                 <Pressable
                   key={etichetta}
                   onPress={() => onCambiaPrezzoMax(valore)}
@@ -86,7 +92,7 @@ export default function ModaleFiltriEsplora({
               ))}
             </View>
             {prezzoMax != null && (
-              <Text style={styles.notaPrezzo}>Le strutture senza prezzo indicato (rifugi, aree sosta gratuite) non compaiono.</Text>
+              <Text style={styles.notaPrezzo}>{t("esplora.notaPrezzo")}</Text>
             )}
           </View>
 
@@ -130,12 +136,12 @@ export default function ModaleFiltriEsplora({
                 filtriAttiviNumero === 0 && ordine === "consigliati" && styles.pulsanteCancellaTestoDisattivo,
               ]}
             >
-              Cancella
+              {t("comune.cancella")}
             </Text>
           </Pressable>
           <Pressable style={styles.pulsanteMostra} onPress={onChiudi}>
             <Text style={styles.pulsanteMostraTesto}>
-              {filtriAttiviNumero === 0 ? "Chiudi" : `Mostra ${etichettaRisultati}`}
+              {filtriAttiviNumero === 0 ? t("comune.chiudi") : t("esplora.mostraRisultati", { etichetta: etichettaRisultati })}
             </Text>
           </Pressable>
         </View>

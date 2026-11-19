@@ -22,6 +22,7 @@ import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import GalleriaHero from "../components/scheda/GalleriaHero";
 import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
 import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
+import { useT } from "../i18n/i18n";
 
 const MESI = [
   "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -66,6 +67,7 @@ const PRENOTAZIONI_ATTIVE = false;
 export default function SchedaScreen({ route, navigation }) {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
   const { struttura } = route.params;
   const { session } = useAuth();
   const { motoreMappa } = usePreferenze();
@@ -148,9 +150,9 @@ export default function SchedaScreen({ route, navigation }) {
 
   const onPreferito = async () => {
     if (!session?.user?.id) {
-      Alert.alert("Accedi", "Accedi al tuo account per salvare le strutture nei preferiti.", [
-        { text: "Annulla", style: "cancel" },
-        { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+      Alert.alert(t("accedi.titoloAccedi"), t("preferiti.accediMessaggio"), [
+        { text: t("comune.annulla"), style: "cancel" },
+        { text: t("accedi.titoloAccedi"), onPress: () => navigation.navigate("Accedi") },
       ]);
       return;
     }
@@ -203,7 +205,7 @@ export default function SchedaScreen({ route, navigation }) {
             style={[styles.preferitoBottone, sipuoSalvare(struttura) && { right: 58 }]}
             onPress={condividi}
             accessibilityRole="button"
-            accessibilityLabel="Condividi"
+            accessibilityLabel={t("comune.condividi")}
           >
             <Ionicons name="share-outline" size={18} color={c.primario} />
           </Pressable>
@@ -212,7 +214,7 @@ export default function SchedaScreen({ route, navigation }) {
               style={styles.preferitoBottone}
               onPress={onPreferito}
               accessibilityRole="button"
-              accessibilityLabel={preferito ? "Rimuovi dai preferiti" : "Salva nei preferiti"}
+              accessibilityLabel={preferito ? t("comune.preferitoRimuovi") : t("comune.preferitoSalva")}
             >
               <CuoreAnimato attivo={preferito} size={18} colore={c.pericolo} />
             </Pressable>
@@ -222,9 +224,9 @@ export default function SchedaScreen({ route, navigation }) {
         <View style={styles.contenuto}>
           <View style={styles.rigaBadge}>
             <Badge testo={struttura.tipo} tono="neutro" />
-            {dettaglio?.verificato && <Badge testo="Verificata" icona="checkmark-circle" tono="successo" />}
+            {dettaglio?.verificato && <Badge testo={t("scheda.verificata")} icona="checkmark-circle" tono="successo" />}
             {dettaglio?.badgeCulturaleAnno && (
-              <Badge testo={`Bene culturale dal ${dettaglio.badgeCulturaleAnno}`} icona="ribbon-outline" tono="viola" />
+              <Badge testo={t("scheda.beneCulturaleDal", { anno: dettaglio.badgeCulturaleAnno })} icona="ribbon-outline" tono="viola" />
             )}
           </View>
 
@@ -245,21 +247,21 @@ export default function SchedaScreen({ route, navigation }) {
             <Avviso
               tono="pericolo"
               icona="alert-circle"
-              testo={`Chiusa temporaneamente${dettaglio.chiusaTemporaneamenteMotivo ? `: ${dettaglio.chiusaTemporaneamenteMotivo}` : ""}`}
+              testo={`${t("scheda.chiusaTemporaneamente")}${dettaglio.chiusaTemporaneamenteMotivo ? `: ${dettaglio.chiusaTemporaneamenteMotivo}` : ""}`}
             />
           )}
           {dettaglio?.divietoCamper && (
             <Avviso
               tono="attenzione"
               icona="warning-outline"
-              testo={`Divieto camper${dettaglio.divietoCamperMotivo ? `: ${dettaglio.divietoCamperMotivo}` : ""}`}
+              testo={`${t("scheda.divietoCamper")}${dettaglio.divietoCamperMotivo ? `: ${dettaglio.divietoCamperMotivo}` : ""}`}
             />
           )}
           {dettaglio?.avvisoVerifica && (
             <Avviso
               tono="attenzione"
               icona="information-circle-outline"
-              testo={dettaglio.notaVerifica || "Dati da verificare sul posto."}
+              testo={dettaglio.notaVerifica || t("scheda.datiDaVerificare")}
             />
           )}
           {struttura.descrizione ? <Text style={styles.descrizione}>{struttura.descrizione}</Text> : null}
@@ -270,12 +272,10 @@ export default function SchedaScreen({ route, navigation }) {
           {dettaglio?.verificato === false && (
             <View style={styles.avvisoRivendica}>
               <Ionicons name="shield-outline" size={20} color={c.testoSecondario} />
-              <Text style={styles.avvisoRivendicaTitolo}>Questa scheda non è ancora stata verificata</Text>
-              <Text style={styles.avvisoRivendicaTesto}>
-                Non è ancora possibile prenotare qui. Se gestisci tu questa struttura, rivendica gratis la scheda per completarla e iniziare a ricevere prenotazioni.
-              </Text>
+              <Text style={styles.avvisoRivendicaTitolo}>{t("scheda.rivendicaTitolo")}</Text>
+              <Text style={styles.avvisoRivendicaTesto}>{t("scheda.rivendicaTesto")}</Text>
               <Pulsante
-                titolo="Sei il gestore? Rivendica questa scheda gratis"
+                titolo={t("scheda.rivendicaBottone")}
                 onPress={apriRivendica}
                 sfondoPersonalizzato={c.attenzione}
                 coloreTestoPersonalizzato="#fff"
@@ -290,18 +290,22 @@ export default function SchedaScreen({ route, navigation }) {
             <RigaDettaglio styles={styles} c={c} icona="calendar-outline" testo={periodoApertura} />
             <RigaDettaglio styles={styles} c={c}
               icona="log-in-outline"
-              testo={dettaglio?.orarioCheckin ? `Check-in dalle ${dettaglio.orarioCheckin}` : null}
+              testo={dettaglio?.orarioCheckin ? t("scheda.checkinDalle", { orario: dettaglio.orarioCheckin }) : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="log-out-outline"
-              testo={dettaglio?.orarioCheckout ? `Check-out entro le ${dettaglio.orarioCheckout}` : null}
+              testo={dettaglio?.orarioCheckout ? t("scheda.checkoutEntro", { orario: dettaglio.orarioCheckout }) : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="time-outline"
               testo={
                 dettaglio?.lateCheckoutDisponibile
-                  ? `Late check-out disponibile${dettaglio.lateCheckoutOrario ? ` fino alle ${dettaglio.lateCheckoutOrario}` : ""}${
-                      dettaglio.lateCheckoutAPagamento ? ` (a pagamento${dettaglio.lateCheckoutPrezzo ? `, ${dettaglio.lateCheckoutPrezzo}€` : ""})` : ""
+                  ? `${t("scheda.lateCheckoutDisponibile")}${
+                      dettaglio.lateCheckoutOrario ? ` ${t("scheda.lateCheckoutFinoAlle", { orario: dettaglio.lateCheckoutOrario })}` : ""
+                    }${
+                      dettaglio.lateCheckoutAPagamento
+                        ? ` ${t("scheda.lateCheckoutAPagamento", { prezzo: dettaglio.lateCheckoutPrezzo ? `, ${dettaglio.lateCheckoutPrezzo}€` : "" })}`
+                        : ""
                     }`
                   : null
               }
@@ -310,29 +314,29 @@ export default function SchedaScreen({ route, navigation }) {
               icona="resize-outline"
               testo={
                 dettaglio?.piazzolaLunghezzaMax
-                  ? `Piazzole fino a ${dettaglio.piazzolaLunghezzaMax}×${dettaglio.piazzolaLarghezzaMax || "?"} m`
+                  ? t("scheda.piazzoleFinoA", { l: dettaglio.piazzolaLunghezzaMax, larg: dettaglio.piazzolaLarghezzaMax || "?" })
                   : null
               }
             />
             <RigaDettaglio styles={styles} c={c}
               icona="swap-vertical-outline"
-              testo={dettaglio?.altezzaMassimaM ? `Altezza massima consentita ${dettaglio.altezzaMassimaM} m` : null}
+              testo={dettaglio?.altezzaMassimaM ? t("scheda.altezzaMassima", { h: dettaglio.altezzaMassimaM }) : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="bus-outline"
-              testo={dettaglio?.fermataBusVicina ? "Fermata bus vicina" : null}
+              testo={dettaglio?.fermataBusVicina ? t("scheda.fermataBusVicina") : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="train-outline"
-              testo={dettaglio?.stazioneTrenoVicina ? "Stazione treno vicina" : null}
+              testo={dettaglio?.stazioneTrenoVicina ? t("scheda.stazioneTrenoVicina") : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="language-outline"
-              testo={dettaglio?.linguaParlate?.length > 0 ? `Lingue parlate: ${dettaglio.linguaParlate.join(", ")}` : null}
+              testo={dettaglio?.linguaParlate?.length > 0 ? t("scheda.linguaParlate", { lista: dettaglio.linguaParlate.join(", ") }) : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="footsteps-outline"
-              testo={dettaglio?.attivitaVicinanze?.length > 0 ? `Nelle vicinanze: ${dettaglio.attivitaVicinanze.join(", ")}` : null}
+              testo={dettaglio?.attivitaVicinanze?.length > 0 ? t("scheda.nelleVicinanze", { lista: dettaglio.attivitaVicinanze.join(", ") }) : null}
             />
             <RigaDettaglio styles={styles} c={c}
               icona="leaf-outline"
@@ -346,16 +350,16 @@ export default function SchedaScreen({ route, navigation }) {
               icona="heart-outline"
               testo={
                 dettaglio?.categorieInteresse?.length > 0
-                  ? `Adatta a chi cerca: ${dettaglio.categorieInteresse.map((c) => ETICHETTA_INTERESSE[c] || c).join(", ")}`
+                  ? t("scheda.adattaAChiCerca", { lista: dettaglio.categorieInteresse.map((ci) => ETICHETTA_INTERESSE[ci] || ci).join(", ") })
                   : null
               }
             />
-            <RigaDettaglio styles={styles} c={c} icona="home-outline" testo={dettaglio?.haAlloggiFissi ? "Offre anche alloggi fissi, oltre alle piazzole" : null} />
-            <RigaDettaglio styles={styles} c={c} icona="sparkles-outline" testo={dettaglio?.haEventiFuturi ? "Eventi culturali in programma" : null} />
+            <RigaDettaglio styles={styles} c={c} icona="home-outline" testo={dettaglio?.haAlloggiFissi ? t("scheda.alloggiFissi") : null} />
+            <RigaDettaglio styles={styles} c={c} icona="sparkles-outline" testo={dettaglio?.haEventiFuturi ? t("scheda.eventiInProgramma") : null} />
             {dettaglio?.sitoWeb && (
               <Pressable style={styles.rigaDettaglio} onPress={apriSito}>
                 <Ionicons name="globe-outline" size={15} color={c.primario} />
-                <Text style={[styles.rigaDettaglioTesto, { color: c.primario }]}>Visita il sito web</Text>
+                <Text style={[styles.rigaDettaglioTesto, { color: c.primario }]}>{t("comune.visitaSitoWeb")}</Text>
               </Pressable>
             )}
           </View>
@@ -363,19 +367,19 @@ export default function SchedaScreen({ route, navigation }) {
           {/* Rifugi: info specifiche */}
           {struttura.origine === "rifugi" && (
             <View style={styles.sezione}>
-              <RigaDettaglio styles={styles} c={c} icona="trending-up-outline" testo={dettaglio?.quotaM ? `${dettaglio.quotaM} m di quota` : null} />
-              <RigaDettaglio styles={styles} c={c} icona="person-outline" testo={dettaglio?.proprietario ? `Gestito da ${dettaglio.proprietario}` : null} />
-              <RigaDettaglio styles={styles} c={c} icona="bed-outline" testo={dettaglio?.postiLetto ? `${dettaglio.postiLetto} posti letto` : null} />
+              <RigaDettaglio styles={styles} c={c} icona="trending-up-outline" testo={dettaglio?.quotaM ? t("scheda.quotaM", { quota: dettaglio.quotaM }) : null} />
+              <RigaDettaglio styles={styles} c={c} icona="person-outline" testo={dettaglio?.proprietario ? t("scheda.gestitoDa", { nome: dettaglio.proprietario }) : null} />
+              <RigaDettaglio styles={styles} c={c} icona="bed-outline" testo={dettaglio?.postiLetto ? t("scheda.postiLetto", { n: dettaglio.postiLetto }) : null} />
               <RigaDettaglio styles={styles} c={c}
                 icona="restaurant-outline"
-                testo={dettaglio?.ristoro ? `Punto ristoro${dettaglio.ristoroNote ? `: ${dettaglio.ristoroNote}` : ""}` : null}
+                testo={dettaglio?.ristoro ? `${t("scheda.puntoRistoro")}${dettaglio.ristoroNote ? `: ${dettaglio.ristoroNote}` : ""}` : null}
               />
             </View>
           )}
 
           {serviziPresenti.length > 0 && (
             <View style={styles.sezione}>
-              <Text style={styles.sezioneTitolo}>Servizi</Text>
+              <Text style={styles.sezioneTitolo}>{t("scheda.servizi")}</Text>
               <View style={styles.servizi}>
                 {serviziPresenti.map((s) => (
                   <View key={s} style={styles.servizioPill}>
@@ -388,38 +392,38 @@ export default function SchedaScreen({ route, navigation }) {
 
           {struttura.tipo === "Camper service" && dettaglio && (dettaglio.parcheggioTariffa || dettaglio.parcheggioPosti) && (
             <View style={styles.sezione}>
-              <Text style={styles.sezioneTitolo}>Parcheggio</Text>
+              <Text style={styles.sezioneTitolo}>{t("scheda.parcheggio")}</Text>
               <RigaDettaglio styles={styles} c={c}
                 icona="cash-outline"
-                testo={dettaglio.parcheggioPrezzoTesto || (dettaglio.parcheggioTariffa === "gratuito" ? "Gratuito" : dettaglio.parcheggioTariffa === "a_pagamento" ? "A pagamento" : dettaglio.parcheggioTariffa === "misto" ? "Parzialmente a pagamento" : null)}
+                testo={dettaglio.parcheggioPrezzoTesto || (dettaglio.parcheggioTariffa === "gratuito" ? t("comune.gratuito") : dettaglio.parcheggioTariffa === "a_pagamento" ? t("comune.aPagamento") : dettaglio.parcheggioTariffa === "misto" ? t("scheda.parzialmentePagamento") : null)}
               />
-              <RigaDettaglio styles={styles} c={c} icona="car-outline" testo={dettaglio.parcheggioPosti ? `${dettaglio.parcheggioPosti} posti` : null} />
-              <RigaDettaglio styles={styles} c={c} icona="shield-checkmark-outline" testo={dettaglio.parcheggioSorvegliato ? "Sorvegliato" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="layers-outline" testo={dettaglio.parcheggioSuperficie ? `Fondo: ${dettaglio.parcheggioSuperficie}` : null} />
-              <RigaDettaglio styles={styles} c={c} icona="bulb-outline" testo={dettaglio.parcheggioIlluminato ? "Illuminato" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="car-outline" testo={dettaglio.parcheggioPosti ? t("scheda.postiParcheggio", { n: dettaglio.parcheggioPosti }) : null} />
+              <RigaDettaglio styles={styles} c={c} icona="shield-checkmark-outline" testo={dettaglio.parcheggioSorvegliato ? t("scheda.sorvegliato") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="layers-outline" testo={dettaglio.parcheggioSuperficie ? t("scheda.fondoSuperficie", { superficie: dettaglio.parcheggioSuperficie }) : null} />
+              <RigaDettaglio styles={styles} c={c} icona="bulb-outline" testo={dettaglio.parcheggioIlluminato ? t("scheda.illuminato") : null} />
             </View>
           )}
 
           {dettaglio?.camperServiceNonOspiti && (
             <View style={styles.sezione}>
-              <Text style={styles.sezioneTitolo}>Camper service (anche per chi non alloggia)</Text>
-              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.camperServiceScaricoNere ? "Scarico acque nere" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.camperServiceScaricoGrigie ? "Scarico acque grigie" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="flask-outline" testo={dettaglio.camperServiceCaricoAcqua ? "Carico acqua potabile" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="flash-outline" testo={dettaglio.camperServiceCorrente ? "Corrente elettrica" : null} />
+              <Text style={styles.sezioneTitolo}>{t("scheda.camperServiceNonOspitiTitolo")}</Text>
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.camperServiceScaricoNere ? t("comune.scaricoAcqueNere") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.camperServiceScaricoGrigie ? t("comune.scaricoAcqueGrigie") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flask-outline" testo={dettaglio.camperServiceCaricoAcqua ? t("comune.caricoAcquaPotabile") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flash-outline" testo={dettaglio.camperServiceCorrente ? t("comune.correnteElettrica") : null} />
               <RigaDettaglio styles={styles} c={c} icona="pricetag-outline" testo={dettaglio.camperServiceCosto || (dettaglio.camperServiceAltro ?? null)} />
             </View>
           )}
 
           {struttura.origine === "camper_service" && dettaglio && (
             <View style={styles.sezione}>
-              <Text style={styles.sezioneTitolo}>Servizi</Text>
-              <RigaDettaglio styles={styles} c={c} icona="key-outline" testo={dettaglio.accesso ? `Accesso ${dettaglio.accesso}` : null} />
+              <Text style={styles.sezioneTitolo}>{t("scheda.servizi")}</Text>
+              <RigaDettaglio styles={styles} c={c} icona="key-outline" testo={dettaglio.accesso ? t("scheda.accesso", { accesso: dettaglio.accesso }) : null} />
               <RigaDettaglio styles={styles} c={c} icona="pricetag-outline" testo={dettaglio.costoIndicativo || null} />
-              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.scaricoAcqueNere ? "Scarico acque nere" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.scaricoAcqueGrigie ? "Scarico acque grigie" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="flask-outline" testo={dettaglio.caricoAcquaPotabile ? "Carico acqua potabile" : null} />
-              <RigaDettaglio styles={styles} c={c} icona="flash-outline" testo={dettaglio.correnteElettrica ? "Corrente elettrica" : null} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.scaricoAcqueNere ? t("comune.scaricoAcqueNere") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="water-outline" testo={dettaglio.scaricoAcqueGrigie ? t("comune.scaricoAcqueGrigie") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flask-outline" testo={dettaglio.caricoAcquaPotabile ? t("comune.caricoAcquaPotabile") : null} />
+              <RigaDettaglio styles={styles} c={c} icona="flash-outline" testo={dettaglio.correnteElettrica ? t("comune.correnteElettrica") : null} />
               <RigaDettaglio styles={styles} c={c} icona="time-outline" testo={dettaglio.orari || null} />
               <RigaDettaglio styles={styles} c={c} icona="ellipsis-horizontal-outline" testo={dettaglio.altriServizi || null} />
             </View>
@@ -436,21 +440,21 @@ export default function SchedaScreen({ route, navigation }) {
         {struttura.origine === "campeggi_pubblici" && (
           <View style={styles.sezioneRecensioni}>
             <View style={styles.recensioniIntestazione}>
-              <Text style={styles.recensioniTitolo}>Recensioni{recensioni.length > 0 ? ` (${recensioni.length})` : ""}</Text>
+              <Text style={styles.recensioniTitolo}>{t("recensioni.titolo")}{recensioni.length > 0 ? ` (${recensioni.length})` : ""}</Text>
               {session && !miaRecensione && !mostraModuloRecensione && (
                 <Pressable onPress={() => setMostraModuloRecensione(true)}>
-                  <Text style={styles.recensisciLink}>Recensiscila</Text>
+                  <Text style={styles.recensisciLink}>{t("recensioni.scriviLink")}</Text>
                 </Pressable>
               )}
             </View>
 
             {!session && (
-              <Pressable onPress={() => Alert.alert("Accedi", "Accedi al tuo account per lasciare una recensione.")}>
-                <Text style={styles.recensisciLink}>Accedi per recensire</Text>
+              <Pressable onPress={() => Alert.alert(t("accedi.titoloAccedi"), t("recensioni.accediMessaggio"))}>
+                <Text style={styles.recensisciLink}>{t("recensioni.accediLink")}</Text>
               </Pressable>
             )}
 
-            {miaRecensione && <Text style={styles.giaRecensito}>✓ Hai già recensito questa struttura</Text>}
+            {miaRecensione && <Text style={styles.giaRecensito}>{t("recensioni.giaRecensito")}</Text>}
 
             {mostraModuloRecensione && !miaRecensione && (
               <ModuloRecensione
@@ -458,7 +462,7 @@ export default function SchedaScreen({ route, navigation }) {
                   inviaRecensioneStruttura({
                     campeggioId: struttura.idOriginale,
                     clienteId: session.user.id,
-                    nomeCliente: session.user.user_metadata?.nome || "Utente NaturaGo",
+                    nomeCliente: session.user.user_metadata?.nome || t("comune.utenteDefault"),
                     punteggio,
                     testo,
                   })
@@ -473,7 +477,7 @@ export default function SchedaScreen({ route, navigation }) {
             {caricandoRecensioni ? (
               <ActivityIndicator color={c.primario} style={{ marginTop: 8 }} />
             ) : recensioni.length === 0 ? (
-              <Text style={styles.recensioniVuoto}>Ancora nessuna recensione per questa struttura.</Text>
+              <Text style={styles.recensioniVuoto}>{t("recensioni.nessunaRecensione")}</Text>
             ) : (
               recensioni.map((r) => (
                 <View key={r.id} style={styles.recensioneCard}>
@@ -506,21 +510,21 @@ export default function SchedaScreen({ route, navigation }) {
         ) : null}
         <View style={styles.pulsanti}>
           <Pulsante
-            titolo="Chiama"
+            titolo={t("comune.chiama")}
             variante="secondario"
             icona={<Ionicons name="call-outline" size={20} color={c.testo} />}
             onPress={apriChiamata}
             style={{ flex: 1 }}
           />
           <Pulsante
-            titolo="Indicazioni"
+            titolo={t("comune.indicazioni")}
             icona={<Ionicons name="navigate" size={20} color="#fff" />}
             onPress={apriMappa}
             style={{ flex: 1 }}
           />
           {PRENOTAZIONI_ATTIVE && (
             <Pressable style={styles.prenotaSubito}>
-              <Text style={styles.prenotaSubitoTesto}>Prenota subito</Text>
+              <Text style={styles.prenotaSubitoTesto}>{t("comune.prenotaSubito")}</Text>
             </Pressable>
           )}
         </View>

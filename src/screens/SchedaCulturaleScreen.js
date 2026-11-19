@@ -11,6 +11,7 @@ import { distanzaKm } from "../lib/geo";
 import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import RigaStelle from "../components/ui/RigaStelle";
+import { useT } from "../i18n/i18n";
 
 function formattaDataEvento(iso) {
   const d = new Date(iso);
@@ -38,6 +39,7 @@ function RigaDettaglio({ icona, testo, colore }) {
 export default function SchedaCulturaleScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { id } = route.params;
   const { session } = useAuth();
   const [scheda, setScheda] = useState(null);
@@ -135,26 +137,26 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
             {scheda.sitoWeb && (
               <Pressable style={styles.rigaDettaglio} onPress={() => apriSito(scheda.sitoWeb)}>
                 <Ionicons name="globe-outline" size={15} color={meta.colore} />
-                <Text style={[styles.rigaDettaglioTesto, { color: meta.colore }]}>Visita il sito web</Text>
+                <Text style={[styles.rigaDettaglioTesto, { color: meta.colore }]}>{t("comune.visitaSitoWeb")}</Text>
               </Pressable>
             )}
             {scheda.linkBiglietti && (
               <Pressable style={styles.rigaDettaglio} onPress={() => apriSito(scheda.linkBiglietti)}>
                 <Ionicons name="ticket-outline" size={15} color={meta.colore} />
-                <Text style={[styles.rigaDettaglioTesto, { color: meta.colore }]}>Biglietti</Text>
+                <Text style={[styles.rigaDettaglioTesto, { color: meta.colore }]}>{t("comune.biglietti")}</Text>
               </Pressable>
             )}
             {scheda.lat && scheda.lng && (
               <Pressable style={styles.rigaDettaglio} onPress={apriMappa}>
                 <Ionicons name="navigate-outline" size={15} color={meta.colore} />
-                <Text style={[styles.rigaDettaglioTesto, { color: meta.colore }]}>Apri in Mappe</Text>
+                <Text style={[styles.rigaDettaglioTesto, { color: meta.colore }]}>{t("comune.apriInMappe")}</Text>
               </Pressable>
             )}
           </View>
 
           {struttureVicine.length > 0 && (
             <View style={styles.sezionePuoiAlloggiare}>
-              <Text style={styles.sezioneTitolo}>Puoi alloggiare qui</Text>
+              <Text style={styles.sezioneTitolo}>{t("cultura.puoiAlloggiareQui")}</Text>
               <View style={{ gap: 7 }}>
                 {struttureVicine.map((s) => (
                   <Pressable
@@ -179,7 +181,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
                         {s.distanzaKm < 1 ? "<1" : s.distanzaKm.toFixed(1)} km
                       </Text>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 1 }}>
-                        {s.prezzo != null && <Text style={styles.cardStrutturaPrezzo}>da {s.prezzo}€/notte</Text>}
+                        {s.prezzo != null && <Text style={styles.cardStrutturaPrezzo}>{t("comune.daPrezzoNotte", { prezzo: s.prezzo })}</Text>}
                         {s.rating ? (
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
                             <Ionicons name="star" size={10} color={c.voto} />
@@ -196,21 +198,21 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
 
           <View style={styles.sezioneRecensioni}>
             <View style={styles.recensioniIntestazione}>
-              <Text style={styles.sezioneTitolo}>Recensioni{recensioni.length > 0 ? ` (${recensioni.length})` : ""}</Text>
+              <Text style={styles.sezioneTitolo}>{t("recensioni.titolo")}{recensioni.length > 0 ? ` (${recensioni.length})` : ""}</Text>
               {session && !miaRecensione && !mostraModuloRecensione && (
                 <Pressable onPress={() => setMostraModuloRecensione(true)}>
-                  <Text style={[styles.recensisciLink, { color: meta.colore }]}>Recensiscila</Text>
+                  <Text style={[styles.recensisciLink, { color: meta.colore }]}>{t("recensioni.scriviLink")}</Text>
                 </Pressable>
               )}
             </View>
 
             {!session && (
-              <Pressable onPress={() => Alert.alert("Accedi", "Accedi al tuo account per lasciare una recensione.")}>
-                <Text style={[styles.recensisciLink, { color: meta.colore }]}>Accedi per recensire</Text>
+              <Pressable onPress={() => Alert.alert(t("accedi.titoloAccedi"), t("recensioni.accediMessaggio"))}>
+                <Text style={[styles.recensisciLink, { color: meta.colore }]}>{t("recensioni.accediLink")}</Text>
               </Pressable>
             )}
 
-            {miaRecensione && <Text style={styles.giaRecensito}>✓ Hai già recensito questa scheda</Text>}
+            {miaRecensione && <Text style={styles.giaRecensito}>{t("recensioni.giaRecensito")}</Text>}
 
             {mostraModuloRecensione && !miaRecensione && (
               <ModuloRecensione
@@ -218,7 +220,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
                   inviaRecensioneEvento({
                     eventoId: scheda.id,
                     clienteId: session.user.id,
-                    nomeCliente: session.user.user_metadata?.nome || "Utente NaturaGo",
+                    nomeCliente: session.user.user_metadata?.nome || t("comune.utenteDefault"),
                     punteggio,
                     testo,
                   })
@@ -231,7 +233,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
             )}
 
             {recensioni.length === 0 ? (
-              <Text style={styles.recensioniVuoto}>Ancora nessuna recensione.</Text>
+              <Text style={styles.recensioniVuoto}>{t("recensioni.nessunaRecensione")}</Text>
             ) : (
               recensioni.map((r) => (
                 <View key={r.id} style={styles.recensioneCard}>
