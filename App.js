@@ -20,6 +20,7 @@ import ItinerarioDettaglioScreen from "./src/screens/ItinerarioDettaglioScreen";
 import CulturaScreen from "./src/screens/CulturaScreen";
 import SchedaCulturaleScreen from "./src/screens/SchedaCulturaleScreen";
 import MieSegnalazioniScreen from "./src/screens/MieSegnalazioniScreen";
+import ItinerariOfflineScreen from "./src/screens/ItinerariOfflineScreen";
 import NuovaSegnalazioneScreen from "./src/screens/NuovaSegnalazioneScreen";
 import NuovoItinerarioScreen from "./src/screens/NuovoItinerarioScreen";
 import EliminaAccountScreen from "./src/screens/EliminaAccountScreen";
@@ -50,6 +51,7 @@ import { colori } from "./src/theme/colors";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { PreferenzeProvider } from "./src/context/PreferenzeContext";
 import { segnaApertura, segnaSchermata, attivaSegnalazioneErrori } from "./src/lib/telemetria";
+import { useT } from "./src/i18n/i18n";
 
 // Conteggio anonimo dell'uso (vedi src/lib/telemetria.js).
 attivaSegnalazioneErrori();
@@ -131,6 +133,7 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="PianiSalvati" component={PianiSalvatiScreen} />
       <ProfiloStack.Screen name="PianificaViaggio" component={PianificaViaggioScreen} />
       <ProfiloStack.Screen name="MieSegnalazioni" component={MieSegnalazioniScreen} />
+      <ProfiloStack.Screen name="ItinerariOffline" component={ItinerariOfflineScreen} />
       <ProfiloStack.Screen name="NuovaSegnalazione" component={NuovaSegnalazioneScreen} />
       <ProfiloStack.Screen name="MiaStruttura" component={MiaStrutturaScreen} />
       <ProfiloStack.Screen name="ModificaProfilo" component={ModificaProfiloScreen} />
@@ -168,8 +171,17 @@ const ICONE_TAB = {
   Profilo: "person",
 };
 
+const CHIAVE_TAB = {
+  Esplora: "tab.esplora",
+  Mappa: "tab.mappa",
+  Preferiti: "tab.preferiti",
+  Mercatino: "tab.mercatino",
+  Profilo: "tab.profilo",
+};
+
 function ContenutoApp() {
   const { caricamento } = useAuth();
+  const t = useT();
 
   useEffect(() => {
     segnaApertura();
@@ -203,6 +215,7 @@ function ContenutoApp() {
               color={color}
             />
           ),
+          tabBarLabel: t(CHIAVE_TAB[route.name]),
         })}
       >
         <Tab.Screen name="Esplora" component={EsploraStackNavigator} />

@@ -75,7 +75,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
           </Text>
           {item.rating ? (
             <View style={styles.cardRatingRiga}>
-              <Ionicons name="star" size={13} color="#f59e0b" />
+              <Ionicons name="star" size={13} color={c.voto} />
               <Text style={styles.cardRatingTesto}>
                 {item.rating}
                 {item.recensioni ? ` (${item.recensioni})` : ""}

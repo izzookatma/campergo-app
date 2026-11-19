@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import IconaBussolaLogo from "../components/IconaBussolaLogo";
+import { useT } from "../i18n/i18n";
 
 // Stesso marchio dell'hero del sito (vedi MarchioHeroConSlogan in
 // src/App.jsx): bussola trasparente + "NATURAGO" + slogan a pillola.
 export default function SchermataAvvio() {
+  const t = useT();
   return (
     <View style={styles.schermo}>
       <View style={styles.marchio}>
@@ -13,7 +15,7 @@ export default function SchermataAvvio() {
         </Text>
       </View>
       <View style={styles.pillola}>
-        <Text style={styles.frase}>Spegni il motore, accendi la natura</Text>
+        <Text style={styles.frase}>{t("avvio.slogan")}</Text>
       </View>
       <ActivityIndicator style={styles.indicatore} color="#ffffff" />
     </View>
@@ -23,7 +25,7 @@ export default function SchermataAvvio() {
 const styles = StyleSheet.create({
   schermo: {
     flex: 1,
-    backgroundColor: "#0e3a53",
+    backgroundColor: "#00587C",
     alignItems: "center",
     justifyContent: "center",
   },

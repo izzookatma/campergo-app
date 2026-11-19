@@ -10,22 +10,13 @@ import { caricaStruttureVicine } from "../lib/strutture";
 import { distanzaKm } from "../lib/geo";
 import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import RigaStelle from "../components/ui/RigaStelle";
 
 function formattaDataEvento(iso) {
   const d = new Date(iso);
   const testo = d.toLocaleDateString("it-IT", { weekday: "short", day: "2-digit", month: "short" });
   const ora = d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
   return `${testo} · ${ora}`;
-}
-
-function RigaStelle({ punteggio, size = 12 }) {
-  return (
-    <View style={{ flexDirection: "row", gap: 1 }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Ionicons key={n} name={n <= punteggio ? "star" : "star-outline"} size={size} color="#f59e0b" />
-      ))}
-    </View>
-  );
 }
 
 function formattaData(iso) {
@@ -191,7 +182,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
                         {s.prezzo != null && <Text style={styles.cardStrutturaPrezzo}>da {s.prezzo}€/notte</Text>}
                         {s.rating ? (
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                            <Ionicons name="star" size={10} color="#f59e0b" />
+                            <Ionicons name="star" size={10} color={c.voto} />
                             <Text style={styles.cardStrutturaPrezzo}>{s.rating}</Text>
                           </View>
                         ) : null}

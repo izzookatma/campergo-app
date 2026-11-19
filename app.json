@@ -39,7 +39,7 @@
         }
       },
       "adaptiveIcon": {
-        "backgroundColor": "#0e3a53",
+        "backgroundColor": "#00587C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -72,7 +72,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0e3a53"
+          "backgroundColor": "#00587C"
         }
       ],
       "expo-font",
@@ -88,7 +88,8 @@
       ],
       "expo-web-browser",
       "expo-status-bar",
-      "expo-image"
+      "expo-image",
+      "expo-localization"
     ],
     "extra": {
       "mappaAndroidAttiva": true,

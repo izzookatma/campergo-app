@@ -5,7 +5,13 @@
 jest.mock("../supabase", () => ({ supabase: {} }));
 
 // eslint-disable-next-line import/first -- jest.mock deve precedere l'import che mocka
-import { normalizzaCampeggio, ETICHETTE_TIPO, ETICHETTA_RIFUGIO } from "../strutture";
+import {
+  normalizzaCampeggio,
+  ETICHETTE_TIPO,
+  ETICHETTA_RIFUGIO,
+  risolviSelezioneTipi,
+  risolviSaltoServizi,
+} from "../strutture";
 
 describe("normalizzaCampeggio", () => {
   const rigaBase = {
@@ -67,5 +73,52 @@ describe("ETICHETTA_RIFUGIO", () => {
     expect(ETICHETTA_RIFUGIO.capanna).toBe("Rifugio");
     expect(ETICHETTA_RIFUGIO.rifugio).toBe("Rifugio");
     expect(ETICHETTA_RIFUGIO.bivacco).toBe("Bivacco");
+  });
+});
+
+// Usata da caricaStrutture/cercaStrutture/caricaStruttureVicine/
+// caricaTutteLePosizioni: una regressione qui rompe il filtro tipo in tutte
+// e quattro insieme (bug reale già capitato, vedi commento in strutture.js).
+describe("risolviSelezioneTipi", () => {
+  test("nessun tipo scelto: nessuna tabella si salta", () => {
+    const r = risolviSelezioneTipi([]);
+    expect(r.saltaCampeggi).toBe(false);
+    expect(r.saltaRifugi).toBe(false);
+    expect(r.saltaCamperServiceTipo).toBe(false);
+  });
+
+  test("solo 'Bivacchi': interroga solo i rifugi, con tutto il limite a loro", () => {
+    const r = risolviSelezioneTipi(["Bivacchi"]);
+    expect(r.tipiRifugioScelti).toEqual(["bivacco"]);
+    expect(r.saltaCampeggi).toBe(true);
+    expect(r.saltaCamperServiceTipo).toBe(true);
+    expect(r.soloRifugi).toBe(true);
+  });
+
+  test("selezione mista 'Campeggi' + 'Bivacchi': nessuna tabella si salta", () => {
+    const r = risolviSelezioneTipi(["Campeggi", "Bivacchi"]);
+    expect(r.saltaCampeggi).toBe(false);
+    expect(r.saltaRifugi).toBe(false);
+    expect(r.soloRifugi).toBe(false);
+  });
+});
+
+describe("risolviSaltoServizi", () => {
+  test("un filtro servizi attivo esclude sempre i rifugi (non hanno amenities)", () => {
+    const selezione = risolviSelezioneTipi([]);
+    const r = risolviSaltoServizi(["piscina"], selezione);
+    expect(r.saltaRifugiDelTutto).toBe(true);
+  });
+
+  test("un servizio non legato al camper esclude il camper service indipendente", () => {
+    const selezione = risolviSelezioneTipi([]);
+    const r = risolviSaltoServizi(["piscina"], selezione);
+    expect(r.saltaCamperServiceDelTutto).toBe(true);
+  });
+
+  test("un servizio legato al camper (es. caricoAcqua) non esclude il camper service indipendente", () => {
+    const selezione = risolviSelezioneTipi([]);
+    const r = risolviSaltoServizi(["caricoAcqua"], selezione);
+    expect(r.saltaCamperServiceDelTutto).toBe(false);
   });
 });

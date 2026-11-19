@@ -13,6 +13,7 @@ import { etichettaData, numeroNotti } from "../lib/periodo";
 import { cercaStrutture } from "../lib/strutture";
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
+import { useT } from "../i18n/i18n";
 
 // Foto Unsplash: "Montagna e sentieri" e "Musei, borghi e attività" riusano
 // quelle già in uso sul sito per lo stesso tema (CATEGORIE_INTERESSE in
@@ -22,10 +23,17 @@ import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } f
 // Le tre sezioni hanno un colore di categoria proprio ("Dove dormire" usa il
 // blu del marchio, le altre due un verde/arancio dedicato): colori fissi
 // apposta, non presi dal tema — distinguono le categorie anche in scuro.
-function useSezioni(c) {
+// Le etichette delle singole tessere (Campeggi, Rifugi, Sentieri...) e il
+// loro `filtro` restano in italiano di proposito: `filtro`/`schermo` sono
+// anche le chiavi dati vere, usate tali e quali da EsploraScreen.js
+// (FILTRI) e da TIPO_STRUTTURA_CAMPEGGIO/TIPO_RIFUGIO in src/lib/
+// strutture.js — tradurre solo l'etichetta visibile richiede prima di
+// separare testo ed etichetta-chiave in quei punti, lavoro a parte.
+function useSezioni(c, t) {
   return [
   {
-    titolo: "Dove dormire",
+    chiave: "dormire",
+    titolo: t("hub.doveDormire"),
     icona: "bonfire-outline",
     colore: c.primario,
     tinta: "rgba(0,88,124,0.08)",
@@ -39,7 +47,8 @@ function useSezioni(c) {
     ],
   },
   {
-    titolo: "Montagna e sentieri",
+    chiave: "montagna",
+    titolo: t("hub.montagnaSentieri"),
     icona: "trail-sign-outline",
     colore: "#15803d",
     tinta: "rgba(21,128,61,0.08)",
@@ -57,7 +66,8 @@ function useSezioni(c) {
   {
     // Stessa tabella del sito `eventi_campeggio` ("schede culturali"),
     // distinta dalla colonna categoria: 'musei' / 'borghi' / 'attivita'.
-    titolo: "Musei, borghi e attività",
+    chiave: "cultura",
+    titolo: t("hub.museiBorghiAttivita"),
     icona: "color-palette-outline",
     colore: "#c2410c",
     tinta: "rgba(194,65,12,0.08)",
@@ -74,7 +84,8 @@ function useSezioni(c) {
 export default function EsploraHubScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
-  const SEZIONI = useSezioni(c);
+  const t = useT();
+  const SEZIONI = useSezioni(c, t);
   const [testoRicerca, setTestoRicerca] = useState("");
   const [inputAFocus, setInputAFocus] = useState(false);
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
@@ -170,7 +181,7 @@ export default function EsploraHubScreen({ navigation }) {
   // sezioni mescolano destinazioni diverse (schermi propri, categorie
   // culturali): il tocco apre la prima tessera, la più rappresentativa.
   const vaiASezione = (sezione) => {
-    if (sezione.titolo === "Dove dormire") {
+    if (sezione.chiave === "dormire") {
       navigation.push("EsploraLista", {
         filtriIniziali: sezione.tessere.filter((t) => t.filtro).map((t) => t.filtro),
       });
@@ -320,7 +331,7 @@ export default function EsploraHubScreen({ navigation }) {
         </Testo>
 
         {SEZIONI.map((sezione) => (
-          <View key={sezione.titolo} style={styles.sezione}>
+          <View key={sezione.chiave} style={styles.sezione}>
             <Pressable
               onPress={() => vaiASezione(sezione)}
               style={({ pressed }) => pressed && styles.sezionePremuta}
@@ -359,7 +370,7 @@ export default function EsploraHubScreen({ navigation }) {
           </View>
         ))}
 
-        <Pulsante titolo="Vedi tutte le strutture" variante="secondario" onPress={() => navigation.push("EsploraLista")} style={{ marginTop: 6 }} />
+        <Pulsante titolo={t("hub.vediTutteLeStrutture")} variante="secondario" onPress={() => navigation.push("EsploraLista")} style={{ marginTop: 6 }} />
 
         <Gruppo style={{ marginTop: 10 }}>
           <Riga icona="book-outline" testo="Blog NaturaGo Explorer" onPress={() => navigation.push("Blog")} />

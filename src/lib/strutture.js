@@ -264,44 +264,94 @@ const TIPO_RIFUGIO = {
   Bivacchi: ["bivacco"],
 };
 
-// Ricerca unificata su tutte le tipologie di struttura (campeggi, agriturismi,
-// agricampeggi, rifugi), come richiesto per la ricerca dell'app - stessa
-// logica dietro /esplora sul sito (campeggi_pubblici + rifugi).
+// Risolve quali tabelle interrogare e con quale filtro/proporzione, a
+// partire dalle chip scelte in Esplora (es. ["Bivacchi"]): usato da tutte
+// le funzioni di ricerca qui sotto, che si differenziano solo per COME
+// restringono la query (paginazione, testo libero, bounding box), non per
+// questa logica — prima era ripetuta (e poteva disallinearsi) in ognuna
+// delle tre.
 //
-// `tipi` (le chip scelte, es. ["Bivacchi"]) restringe la query alla tabella
-// giusta con un filtro vero: senza, scegliere "Bivacchi" filtrava lato app
-// lo stesso campione generico (poche decine di rifugi, di ogni tipo) usato
-// per "Tutti" — bastava che il campione contenesse solo 1-2 bivacchi per
-// farli sembrare gli unici che esistono (51 in realtà, verificato dal
-// vivo). Bug reale, segnalato dall'utente ("perché ci sono solo due
-// bivacchi?").
-export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], tipi = [] } = {}) {
-  const conServiziAttivi = servizi.length > 0;
-
+// `tipi` restringe la query alla tabella giusta con un filtro vero: senza,
+// scegliere "Bivacchi" filtrava lato app lo stesso campione generico (poche
+// decine di rifugi, di ogni tipo) usato per "Tutti" — bastava che il
+// campione contenesse solo 1-2 bivacchi per farli sembrare gli unici che
+// esistono (51 in realtà, verificato dal vivo). Bug reale, segnalato
+// dall'utente ("perché ci sono solo due bivacchi?").
+// Una tabella si salta del tutto solo se sono stati scelti SOLO tipi
+// dell'altra tabella: se la scelta mescola le due tabelle (es. "Campeggi" +
+// "Bivacchi" insieme) vanno interrogate entrambe, ciascuna col proprio
+// filtro — altrimenti si ricadrebbe nello stesso bug per quella combinazione.
+export function risolviSelezioneTipi(tipi) {
   const tipiCampeggioScelti = tipi.map((t) => TIPO_STRUTTURA_CAMPEGGIO[t]).filter(Boolean);
   const tipiRifugioScelti = tipi.flatMap((t) => TIPO_RIFUGIO[t] || []);
   const camperServiceScelto = tipi.includes("Camper service");
-  // Una tabella si salta del tutto solo se sono stati scelti SOLO tipi
-  // dell'altra tabella (es. solo "Bivacchi"): se la scelta mescola le due
-  // tabelle (es. "Campeggi" + "Bivacchi" insieme) vanno interrogate
-  // entrambe, ciascuna col proprio filtro — altrimenti si ricadrebbe nello
-  // stesso bug (campione generico non filtrato) per questa combinazione.
   const saltaCampeggi = tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length > 0;
   const saltaRifugi = tipiRifugioScelti.length === 0 && tipiCampeggioScelti.length > 0;
   const saltaCamperServiceTipo = tipi.length > 0 && !camperServiceScelto;
-  // Tutto il `limite` ai rifugi solo quando sono l'unica tabella scelta;
-  // altrimenti resta la proporzione 1:4 di sempre (caso raro, scelta
-  // mista tra le due tabelle).
+  // Tutto il `limite` a rifugi/camper service solo quando sono l'unica
+  // tabella scelta; altrimenti resta la proporzione 1:4 di sempre (caso
+  // raro, scelta mista tra le due tabelle).
   const soloRifugi = tipiRifugioScelti.length > 0 && tipiCampeggioScelti.length === 0 && !camperServiceScelto;
   const soloCamperService = camperServiceScelto && tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length === 0;
-  // I rifugi non hanno mai `amenities`: con un filtro servizi attivo non
-  // potrebbero comunque mai comparire, a prescindere dal tipo scelto.
-  const saltaRifugiDelTutto = saltaRifugi || conServiziAttivi;
-  // Il camper service indipendente non ha `amenities`: un filtro servizi
-  // che non sia tra i 4 legati al camper (vedi SERVIZIO_COLONNA_CAMPER_SERVICE)
-  // non può mai essere vero per lui.
+  return {
+    tipiCampeggioScelti,
+    tipiRifugioScelti,
+    camperServiceScelto,
+    saltaCampeggi,
+    saltaRifugi,
+    saltaCamperServiceTipo,
+    soloRifugi,
+    soloCamperService,
+  };
+}
+
+// I rifugi non hanno mai `amenities`: con un filtro servizi attivo non
+// potrebbero comunque mai comparire, a prescindere dal tipo scelto. Il
+// camper service indipendente non ha `amenities`: un filtro servizi che non
+// sia tra i 4 legati al camper (SERVIZIO_COLONNA_CAMPER_SERVICE) non può mai
+// essere vero per lui.
+export function risolviSaltoServizi(servizi, selezione) {
+  const saltaRifugiDelTutto = selezione.saltaRifugi || servizi.length > 0;
   const servizioIncompatibileCamperService = servizi.some((s) => !(s in SERVIZIO_COLONNA_CAMPER_SERVICE));
-  const saltaCamperServiceDelTutto = saltaCamperServiceTipo || servizioIncompatibileCamperService;
+  const saltaCamperServiceDelTutto = selezione.saltaCamperServiceTipo || servizioIncompatibileCamperService;
+  return { saltaRifugiDelTutto, saltaCamperServiceDelTutto };
+}
+
+// Esegue in parallelo le tre query (o le salta, se così deciso sopra) e
+// torna un unico elenco già normalizzato: stessa forma per tutte le
+// funzioni di ricerca sotto, che cambiano solo come costruiscono le query.
+async function eseguiRicercaStrutture({
+  queryCampeggi,
+  queryRifugi,
+  queryCamperService,
+  saltaCampeggi,
+  saltaRifugiDelTutto,
+  saltaCamperServiceDelTutto,
+}) {
+  const [campeggiRes, rifugiRes, camperServiceRes] = await Promise.all([
+    saltaCampeggi ? Promise.resolve({ data: [], error: null }) : queryCampeggi,
+    saltaRifugiDelTutto ? Promise.resolve({ data: [], error: null }) : queryRifugi,
+    saltaCamperServiceDelTutto ? Promise.resolve({ data: [], error: null }) : queryCamperService,
+  ]);
+
+  if (campeggiRes.error) throw campeggiRes.error;
+  if (rifugiRes.error) throw rifugiRes.error;
+  if (camperServiceRes.error) throw camperServiceRes.error;
+
+  return [
+    ...(campeggiRes.data || []).map(normalizzaCampeggio),
+    ...(rifugiRes.data || []).map(normalizzaRifugio),
+    ...(camperServiceRes.data || []).map(normalizzaCamperServiceIndipendente),
+  ];
+}
+
+// Ricerca unificata su tutte le tipologie di struttura (campeggi, agriturismi,
+// agricampeggi, rifugi), come richiesto per la ricerca dell'app - stessa
+// logica dietro /esplora sul sito (campeggi_pubblici + rifugi).
+export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], tipi = [] } = {}) {
+  const selezione = risolviSelezioneTipi(tipi);
+  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi, soloRifugi, soloCamperService } = selezione;
 
   const daCampeggi = pagina * limite;
   const limiteRifugi = soloRifugi ? limite : Math.round(limite / 4);
@@ -362,21 +412,14 @@ export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], t
     daCamperService + limiteCamperService - 1
   );
 
-  const [campeggiRes, rifugiRes, camperServiceRes] = await Promise.all([
-    saltaCampeggi ? Promise.resolve({ data: [], error: null }) : queryCampeggi,
-    saltaRifugiDelTutto ? Promise.resolve({ data: [], error: null }) : queryRifugi,
-    saltaCamperServiceDelTutto ? Promise.resolve({ data: [], error: null }) : queryCamperService,
-  ]);
-
-  if (campeggiRes.error) throw campeggiRes.error;
-  if (rifugiRes.error) throw rifugiRes.error;
-  if (camperServiceRes.error) throw camperServiceRes.error;
-
-  const campeggi = (campeggiRes.data || []).map(normalizzaCampeggio);
-  const rifugi = (rifugiRes.data || []).map(normalizzaRifugio);
-  const camperService = (camperServiceRes.data || []).map(normalizzaCamperServiceIndipendente);
-
-  return [...campeggi, ...rifugi, ...camperService];
+  return eseguiRicercaStrutture({
+    queryCampeggi,
+    queryRifugi,
+    queryCamperService,
+    saltaCampeggi,
+    saltaRifugiDelTutto,
+    saltaCamperServiceDelTutto,
+  });
 }
 
 // Parole che indicano un ambiente (tile mare/collina/montagna/valle di
@@ -428,26 +471,12 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   if (!pulito) return [];
   const parole = paroleRicercaStruttura(pulito);
   const ambiente = PAROLE_AMBIENTE[pulito.toLowerCase()];
-  const conServiziAttivi = servizi.length > 0;
 
-  const tipiCampeggioScelti = tipi.map((t) => TIPO_STRUTTURA_CAMPEGGIO[t]).filter(Boolean);
-  const tipiRifugioScelti = tipi.flatMap((t) => TIPO_RIFUGIO[t] || []);
-  const camperServiceScelto = tipi.includes("Camper service");
-  // Una tabella si salta solo se sono scelti SOLO tipi dell'altra (una
-  // selezione mista tra le due tabelle va interrogata su entrambe, non
-  // saltata: altrimenti si ricade nello stesso bug per quella combinazione).
-  const saltaCampeggi = tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length > 0;
-  const saltaRifugi = tipiRifugioScelti.length === 0 && tipiCampeggioScelti.length > 0;
-  const saltaCamperServiceTipo = tipi.length > 0 && !camperServiceScelto;
-  const soloRifugi = tipiRifugioScelti.length > 0 && tipiCampeggioScelti.length === 0 && !camperServiceScelto;
+  const selezione = risolviSelezioneTipi(tipi);
+  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi, soloRifugi, soloCamperService } = selezione;
   const limiteRifugi = soloRifugi ? limite : Math.round(limite / 4);
-  const soloCamperService = camperServiceScelto && tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length === 0;
   const limiteCamperService = soloCamperService ? limite : Math.round(limite / 4);
-  // I rifugi non hanno mai `amenities`: con un filtro servizi attivo non
-  // potrebbero comunque mai comparire, a prescindere dal tipo scelto.
-  const saltaRifugiDelTutto = saltaRifugi || conServiziAttivi;
-  const servizioIncompatibileCamperService = servizi.some((s) => !(s in SERVIZIO_COLONNA_CAMPER_SERVICE));
-  const saltaCamperServiceDelTutto = saltaCamperServiceTipo || servizioIncompatibileCamperService;
 
   // Stesso ordinamento di caricaStrutture sopra (vedi il commento lì),
   // stessa fonte: le colonne calcolate punteggio_ordinamento/ha_servizi/
@@ -497,21 +526,14 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   });
   queryCamperService = conServiziCamperServiceIndipendente(queryCamperService, servizi)?.limit(limiteCamperService);
 
-  const [campeggiRes, rifugiRes, camperServiceRes] = await Promise.all([
-    saltaCampeggi ? Promise.resolve({ data: [], error: null }) : queryCampeggi,
-    saltaRifugiDelTutto ? Promise.resolve({ data: [], error: null }) : queryRifugi,
-    saltaCamperServiceDelTutto ? Promise.resolve({ data: [], error: null }) : queryCamperService,
-  ]);
-
-  if (campeggiRes.error) throw campeggiRes.error;
-  if (rifugiRes.error) throw rifugiRes.error;
-  if (camperServiceRes.error) throw camperServiceRes.error;
-
-  const campeggi = (campeggiRes.data || []).map(normalizzaCampeggio);
-  const rifugi = (rifugiRes.data || []).map(normalizzaRifugio);
-  const camperService = (camperServiceRes.data || []).map(normalizzaCamperServiceIndipendente);
-
-  return [...campeggi, ...rifugi, ...camperService];
+  return eseguiRicercaStrutture({
+    queryCampeggi,
+    queryRifugi,
+    queryCamperService,
+    saltaCampeggi,
+    saltaRifugiDelTutto,
+    saltaCamperServiceDelTutto,
+  });
 }
 
 // "Vicino a me ora" deve guardare TUTTE le strutture in un raggio dalla
@@ -527,26 +549,12 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
 export async function caricaStruttureVicine({ lat, lng, raggioKm = 80, limite = 150, servizi = [], tipi = [] } = {}) {
   const deltaLat = raggioKm / 111;
   const deltaLng = raggioKm / (111 * Math.cos((lat * Math.PI) / 180) || 1);
-  const conServiziAttivi = servizi.length > 0;
 
-  const tipiCampeggioScelti = tipi.map((t) => TIPO_STRUTTURA_CAMPEGGIO[t]).filter(Boolean);
-  const tipiRifugioScelti = tipi.flatMap((t) => TIPO_RIFUGIO[t] || []);
-  const camperServiceScelto = tipi.includes("Camper service");
-  // Una tabella si salta solo se sono scelti SOLO tipi dell'altra (una
-  // selezione mista tra le due tabelle va interrogata su entrambe, non
-  // saltata: altrimenti si ricade nello stesso bug per quella combinazione).
-  const saltaCampeggi = tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length > 0;
-  const saltaRifugi = tipiRifugioScelti.length === 0 && tipiCampeggioScelti.length > 0;
-  const saltaCamperServiceTipo = tipi.length > 0 && !camperServiceScelto;
-  const soloRifugi = tipiRifugioScelti.length > 0 && tipiCampeggioScelti.length === 0 && !camperServiceScelto;
+  const selezione = risolviSelezioneTipi(tipi);
+  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi, soloRifugi, soloCamperService } = selezione;
   const limiteRifugi = soloRifugi ? limite : Math.round(limite / 4);
-  const soloCamperService = camperServiceScelto && tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length === 0;
   const limiteCamperService = soloCamperService ? limite : Math.round(limite / 4);
-  // I rifugi non hanno mai `amenities`: con un filtro servizi attivo non
-  // potrebbero comunque mai comparire, a prescindere dal tipo scelto.
-  const saltaRifugiDelTutto = saltaRifugi || conServiziAttivi;
-  const servizioIncompatibileCamperService = servizi.some((s) => !(s in SERVIZIO_COLONNA_CAMPER_SERVICE));
-  const saltaCamperServiceDelTutto = saltaCamperServiceTipo || servizioIncompatibileCamperService;
 
   let queryCampeggi = supabase
     .from("campeggi_pubblici")
@@ -578,21 +586,14 @@ export async function caricaStruttureVicine({ lat, lng, raggioKm = 80, limite = 
     .lte("lng", lng + deltaLng);
   queryCamperService = conServiziCamperServiceIndipendente(queryCamperService, servizi)?.limit(limiteCamperService);
 
-  const [campeggiRes, rifugiRes, camperServiceRes] = await Promise.all([
-    saltaCampeggi ? Promise.resolve({ data: [], error: null }) : queryCampeggi,
-    saltaRifugiDelTutto ? Promise.resolve({ data: [], error: null }) : queryRifugi,
-    saltaCamperServiceDelTutto ? Promise.resolve({ data: [], error: null }) : queryCamperService,
-  ]);
-
-  if (campeggiRes.error) throw campeggiRes.error;
-  if (rifugiRes.error) throw rifugiRes.error;
-  if (camperServiceRes.error) throw camperServiceRes.error;
-
-  const campeggi = (campeggiRes.data || []).map(normalizzaCampeggio);
-  const rifugi = (rifugiRes.data || []).map(normalizzaRifugio);
-  const camperService = (camperServiceRes.data || []).map(normalizzaCamperServiceIndipendente);
-
-  return [...campeggi, ...rifugi, ...camperService];
+  return eseguiRicercaStrutture({
+    queryCampeggi,
+    queryRifugi,
+    queryCamperService,
+    saltaCampeggi,
+    saltaRifugiDelTutto,
+    saltaCamperServiceDelTutto,
+  });
 }
 
 // Colonne ridotte (niente descrizione/amenities/prezzo) per la Mappa, che
@@ -628,17 +629,9 @@ async function paginaTutto(costruisciQuery, dimensionePagina = 1000) {
 // raggruppano poi in cluster sulla mappa (MappaScreen) quando sono tanti e
 // vicini, altrimenti migliaia di segnaposto sovrapposti sarebbero illeggibili.
 export async function caricaTutteLePosizioni({ tipi = [], servizi = [] } = {}) {
-  const tipiCampeggioScelti = tipi.map((t) => TIPO_STRUTTURA_CAMPEGGIO[t]).filter(Boolean);
-  const tipiRifugioScelti = tipi.flatMap((t) => TIPO_RIFUGIO[t] || []);
-  const camperServiceScelto = tipi.includes("Camper service");
-  const saltaCampeggi = tipiCampeggioScelti.length === 0 && tipiRifugioScelti.length > 0;
-  const saltaRifugi = tipiRifugioScelti.length === 0 && tipiCampeggioScelti.length > 0;
-  const saltaCamperServiceTipo = tipi.length > 0 && !camperServiceScelto;
-  // I rifugi non hanno mai `amenities`: con un filtro servizi attivo non
-  // potrebbero comunque mai comparire.
-  const saltaRifugiDelTutto = saltaRifugi || servizi.length > 0;
-  const servizioIncompatibileCamperService = servizi.some((s) => !(s in SERVIZIO_COLONNA_CAMPER_SERVICE));
-  const saltaCamperServiceDelTutto = saltaCamperServiceTipo || servizioIncompatibileCamperService;
+  const selezione = risolviSelezioneTipi(tipi);
+  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi } = selezione;
 
   const costruisciQueryCampeggi = () => {
     let q = supabase.from("campeggi_pubblici").select(COLONNE_CAMPEGGIO_MAPPA).not("lat", "is", null).not("lng", "is", null);

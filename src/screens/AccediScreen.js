@@ -10,6 +10,7 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import Pulsante from "../components/ui/Pulsante";
 import Testo from "../components/ui/Testo";
 import LogoGoogle from "../components/LogoGoogle";
+import { useT } from "../i18n/i18n";
 
 // `navigation` esiste solo quando questa schermata è aperta da dentro
 // l'app (es. toccando il cuoricino senza account) — all'avvio, prima del
@@ -17,6 +18,7 @@ import LogoGoogle from "../components/LogoGoogle";
 export default function AccediScreen({ onSaltaAccesso, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { accedi, registrati, recuperaPassword, accediConGoogle, accediConFacebook, accediConApple } = useAuth();
   const [appleDisponibile, setAppleDisponibile] = useState(false);
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
       await recuperaPassword(email.trim());
       // Non si rivela se l'email esiste o no (stessa scelta del sito):
       // lo stesso messaggio compare sempre, successo o no.
-      setMessaggio("Se l'indirizzo è registrato, ti abbiamo inviato un'email con il link per reimpostare la password.");
+      setMessaggio(t("accedi.messaggioRecuperaInviato"));
     } else if (modalita === "accedi") {
       const { error } = await accedi(email.trim(), password);
       if (error) setErrore(messaggioErroreComprensibile(error));
@@ -57,7 +59,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
     } else {
       const { data, error } = await registrati(email.trim(), password, nome.trim());
       if (error) setErrore(messaggioErroreComprensibile(error));
-      else if (!data.session) setMessaggio("Controlla la tua email per confermare l'account, poi accedi qui.");
+      else if (!data.session) setMessaggio(t("accedi.messaggioConfermaEmail"));
       else navigation?.goBack();
     }
     setInviando(false);
@@ -75,21 +77,25 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
                 hitSlop={10}
                 style={styles.chiudi}
                 accessibilityRole="button"
-                accessibilityLabel="Chiudi"
+                accessibilityLabel={t("comune.chiudi")}
               >
                 <Ionicons name="close" size={20} color={c.testoSecondario} />
               </Pressable>
             )}
           </View>
           <Testo v="titoloGrande" style={styles.testoCentrato}>
-            {modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Crea account" : "Recupera password"}
+            {modalita === "accedi"
+              ? t("accedi.titoloAccedi")
+              : modalita === "registrati"
+                ? t("accedi.titoloRegistrati")
+                : t("accedi.titoloRecupera")}
           </Testo>
           <Testo v="secondario" tono="secondario" style={[styles.testoCentrato, { marginBottom: 10 }]}>
             {modalita === "accedi"
-              ? "Per salvare i preferiti e le prenotazioni."
+              ? t("accedi.sottotitoloAccedi")
               : modalita === "registrati"
-                ? "Bastano email e password."
-                : "Ti mandiamo un link per impostarne una nuova."}
+                ? t("accedi.sottotitoloRegistrati")
+                : t("accedi.sottotitoloRecupera")}
           </Testo>
 
           {modalita !== "recupera" && (
@@ -104,7 +110,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
                 />
               )}
               <Pulsante
-                titolo="Continua con Google"
+                titolo={t("accedi.continuaConGoogle")}
                 variante="secondario"
                 icona={<LogoGoogle size={20} />}
                 caricamento={inviandoProvider === "google"}
@@ -112,7 +118,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
                 onPress={() => accediEsterno("google", accediConGoogle)}
               />
               <Pulsante
-                titolo="Continua con Facebook"
+                titolo={t("accedi.continuaConFacebook")}
                 sfondoPersonalizzato="#1877F2"
                 coloreTestoPersonalizzato="#FFFFFF"
                 icona={<Ionicons name="logo-facebook" size={22} color="#FFFFFF" />}
@@ -120,16 +126,16 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
                 disabilitato={!!inviandoProvider}
                 onPress={() => accediEsterno("facebook", accediConFacebook)}
               />
-              <Text style={styles.linkSecondario}>oppure</Text>
+              <Text style={styles.linkSecondario}>{t("accedi.oppure")}</Text>
             </View>
           )}
 
           {modalita === "registrati" && (
-            <TextInput style={styles.campo} placeholder="Nome" placeholderTextColor={c.testoSecondario} value={nome} onChangeText={setNome} />
+            <TextInput style={styles.campo} placeholder={t("accedi.nome")} placeholderTextColor={c.testoSecondario} value={nome} onChangeText={setNome} />
           )}
           <TextInput
             style={styles.campo}
-            placeholder="Email"
+            placeholder={t("accedi.email")}
             placeholderTextColor={c.testoSecondario}
             autoCapitalize="none"
             keyboardType="email-address"
@@ -139,7 +145,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           {modalita !== "recupera" && (
             <TextInput
               style={styles.campo}
-              placeholder="Password"
+              placeholder={t("accedi.password")}
               placeholderTextColor={c.testoSecondario}
               secureTextEntry
               value={password}
@@ -159,7 +165,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           ) : null}
 
           <Pulsante
-            titolo={modalita === "accedi" ? "Accedi" : modalita === "registrati" ? "Registrati" : "Invia il link"}
+            titolo={modalita === "accedi" ? t("accedi.bottoneAccedi") : modalita === "registrati" ? t("accedi.bottoneRegistrati") : t("accedi.bottoneRecupera")}
             caricamento={inviando}
             onPress={invia}
             style={{ marginTop: 6 }}
@@ -168,7 +174,7 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           {modalita === "accedi" && (
             <Pressable onPress={() => setModalita("recupera")} accessibilityRole="button">
               <Testo v="secondario" tono="secondario" style={styles.linkTesto}>
-                Password dimenticata?
+                {t("accedi.passwordDimenticata")}
               </Testo>
             </Pressable>
           )}
@@ -178,14 +184,14 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
             accessibilityRole="button"
           >
             <Testo v="secondario" tono="primario" style={[styles.testoCentrato, { fontWeight: "600", marginTop: 6 }]}>
-              {modalita === "registrati" ? "Hai già un account? Accedi" : "Non hai un account? Registrati"}
+              {modalita === "registrati" ? t("accedi.haiGiaAccount") : t("accedi.nonHaiAccount")}
             </Testo>
           </Pressable>
 
           {modalita === "recupera" && (
             <Pressable onPress={() => setModalita("accedi")} accessibilityRole="button">
               <Testo v="secondario" tono="secondario" style={styles.linkTesto}>
-                Torna ad accedere
+                {t("accedi.tornaAdAccedere")}
               </Testo>
             </Pressable>
           )}
@@ -193,22 +199,22 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
           {onSaltaAccesso && (
             <Pressable onPress={onSaltaAccesso} style={{ marginTop: 10, gap: 3 }} accessibilityRole="button">
               <Testo v="secondario" tono="secondario" style={[styles.testoCentrato, { fontWeight: "600" }]}>
-                Continua senza account
+                {t("accedi.continuaSenzaAccount")}
               </Testo>
               <Testo v="nota" tono="secondario" style={styles.testoCentrato}>
-                Ti chiederemo di accedere solo al momento di prenotare.
+                {t("accedi.avvisoAccessoAlMomento")}
               </Testo>
             </Pressable>
           )}
 
           <Text style={styles.legale}>
-            Continuando accetti la{" "}
+            {t("accedi.legaleContinuando")}{" "}
             <Text style={styles.legaleLink} onPress={() => Linking.openURL("https://www.naturago.it/privacy")}>
-              Privacy policy
+              {t("profilo.privacyPolicy")}
             </Text>{" "}
-            e i{" "}
+            {t("accedi.legaleE")}{" "}
             <Text style={styles.legaleLink} onPress={() => Linking.openURL("https://www.naturago.it/termini")}>
-              Termini e condizioni
+              {t("profilo.termini")}
             </Text>
           </Text>
         </View>

@@ -2,6 +2,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 import { geocodificaOCoordinate } from "./geocodifica";
+import { salvaInCache, leggiDaCache, rimuoviDallaCache, elencaChiaviCache } from "./cacheOffline";
 
 // Stesse etichette del sito (DIFFICOLTA_4X4_META, TIPO_VEICOLO_4X4_META,
 // MODALITA_SENTIERO_META in src/App.jsx) — sentieri e percorsi 4x4 sono
@@ -216,6 +217,52 @@ export async function caricaItinerarioDettaglio(id) {
   itinerario.lng = primaConPosizione?.lng ?? null;
 
   return { itinerario, tappe };
+}
+
+// --- Salvataggio offline di sentieri/percorsi/itinerari (solo i dati:
+// titolo, tappe, coordinate, foto per URL — non la mappa vera, che richiede
+// una build di sviluppo e tile scaricabili, fuori scopo qui) -------------
+
+const PREFISSO_OFFLINE = "itinerario_offline_";
+
+export async function salvaItinerarioOffline({ itinerario, tappe }) {
+  await salvaInCache(`${PREFISSO_OFFLINE}${itinerario.id}`, { itinerario, tappe });
+}
+
+export async function leggiItinerarioOffline(id) {
+  const voce = await leggiDaCache(`${PREFISSO_OFFLINE}${id}`);
+  return voce?.dati || null;
+}
+
+export async function rimuoviItinerarioOfflineSalvato(id) {
+  await rimuoviDallaCache(`${PREFISSO_OFFLINE}${id}`);
+}
+
+export async function itinerarioSalvatoOffline(id) {
+  return (await leggiItinerarioOffline(id)) != null;
+}
+
+// Elenco per la schermata "Itinerari salvati offline" (Profilo): solo i
+// dati essenziali per una card, non le tappe intere.
+export async function elencaItinerariOfflineSalvati() {
+  const chiavi = await elencaChiaviCache(PREFISSO_OFFLINE);
+  const voci = await Promise.all(
+    chiavi.map(async (chiave) => {
+      const id = chiave.slice(PREFISSO_OFFLINE.length);
+      const voce = await leggiDaCache(chiave);
+      if (!voce?.dati?.itinerario) return null;
+      const { itinerario } = voce.dati;
+      return {
+        id,
+        titolo: itinerario.titolo,
+        categoria: itinerario.categoria,
+        regione: itinerario.regione,
+        fotoUrl: itinerario.fotoUrl,
+        salvatoIl: voce.salvatoIl,
+      };
+    })
+  );
+  return voci.filter(Boolean).sort((a, b) => b.salvatoIl - a.salvatoIl);
 }
 
 // --- Creazione di un itinerario/sentiero/percorso 4x4 (stessa logica di

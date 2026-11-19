@@ -22,3 +22,23 @@ export async function leggiDaCache(chiave) {
     return null;
   }
 }
+
+export async function rimuoviDallaCache(chiave) {
+  try {
+    await AsyncStorage.removeItem(PREFISSO + chiave);
+  } catch (e) {
+    console.error("Errore nel rimuovere dalla cache offline:", e);
+  }
+}
+
+// Tutte le chiavi salvate che iniziano con un dato prefisso (es.
+// "itinerario_offline_"), senza dover tenere un indice a parte da
+// mantenere sincronizzato: AsyncStorage.getAllKeys() basta.
+export async function elencaChiaviCache(prefissoChiave) {
+  try {
+    const tutte = await AsyncStorage.getAllKeys();
+    return tutte.filter((k) => k.startsWith(PREFISSO + prefissoChiave)).map((k) => k.slice(PREFISSO.length));
+  } catch {
+    return [];
+  }
+}

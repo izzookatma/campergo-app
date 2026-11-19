@@ -41,7 +41,7 @@ export default function ModuloRecensione({ onInvia, onInviata }) {
       <View style={styles.stelle}>
         {[1, 2, 3, 4, 5].map((n) => (
           <Pressable key={n} onPress={() => setPunteggio(n)} hitSlop={6}>
-            <Ionicons name={n <= punteggio ? "star" : "star-outline"} size={24} color="#f59e0b" />
+            <Ionicons name={n <= punteggio ? "star" : "star-outline"} size={24} color={c.voto} />
           </Pressable>
         ))}
       </View>

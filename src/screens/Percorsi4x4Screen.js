@@ -9,6 +9,7 @@ import { caricaPercorsi4x4, DIFFICOLTA_META, TIPO_VEICOLO_META } from "../lib/it
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import Chip from "../components/ui/Chip";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -80,12 +81,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
           keyExtractor={(f) => f.etichetta}
           contentContainerStyle={{ gap: 8 }}
           renderItem={({ item: f }) => (
-            <Pressable
-              style={[styles.chip, difficolta === f.chiave && styles.chipAttivo]}
-              onPress={() => setDifficolta(f.chiave)}
-            >
-              <Text style={[styles.chipTesto, difficolta === f.chiave && styles.chipTestoAttivo]}>{f.etichetta}</Text>
-            </Pressable>
+            <Chip etichetta={f.etichetta} attivo={difficolta === f.chiave} compatto onPress={() => setDifficolta(f.chiave)} />
           )}
         />
         <FlatList
@@ -95,12 +91,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
           keyExtractor={(f) => f.etichetta}
           contentContainerStyle={{ gap: 8 }}
           renderItem={({ item: f }) => (
-            <Pressable
-              style={[styles.chip, tipoVeicolo === f.chiave && styles.chipAttivo]}
-              onPress={() => setTipoVeicolo(f.chiave)}
-            >
-              <Text style={[styles.chipTesto, tipoVeicolo === f.chiave && styles.chipTestoAttivo]}>{f.etichetta}</Text>
-            </Pressable>
+            <Chip etichetta={f.etichetta} attivo={tipoVeicolo === f.chiave} compatto onPress={() => setTipoVeicolo(f.chiave)} />
           )}
         />
         <View style={styles.ricerca}>
@@ -186,18 +177,6 @@ function useEstili(c, spazio, raggio) {
     paddingVertical: 6,
   },
   creaBottoneTesto: { fontSize: 11.5, fontWeight: "700", color: c.primario },
-  chip: {
-    paddingHorizontal: 12,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: c.sfondoGruppo,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: c.separatore,
-  },
-  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
-  chipTestoAttivo: { color: c.sulPrimario },
   ricerca: {
     height: 38,
     borderRadius: 12,

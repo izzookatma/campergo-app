@@ -9,6 +9,7 @@ import { caricaSentieri, MODALITA_SENTIERO_META } from "../lib/itinerari";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import Chip from "../components/ui/Chip";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -67,13 +68,14 @@ export default function SentieriScreen({ navigation, route }) {
         </View>
         <View style={styles.filtri}>
           {FILTRI.map((f) => (
-            <Pressable
+            <Chip
               key={f.etichetta}
-              style={[styles.chip, modalita === f.chiave && styles.chipAttivo]}
+              etichetta={f.etichetta}
+              attivo={modalita === f.chiave}
+              compatto
+              coloreAttivo="#2f6b3f"
               onPress={() => setModalita(f.chiave)}
-            >
-              <Text style={[styles.chipTesto, modalita === f.chiave && styles.chipTestoAttivo]}>{f.etichetta}</Text>
-            </Pressable>
+            />
           ))}
         </View>
         <View style={styles.ricerca}>
@@ -158,18 +160,6 @@ function useEstili(c, spazio, raggio) {
   },
   creaBottoneTesto: { fontSize: 11.5, fontWeight: "700", color: "#2f6b3f" },
   filtri: { flexDirection: "row", gap: 8 },
-  chip: {
-    paddingHorizontal: 12,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: c.sfondoGruppo,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: c.separatore,
-  },
-  chipAttivo: { backgroundColor: "#2f6b3f", borderColor: "#2f6b3f" },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
-  chipTestoAttivo: { color: "#fff" },
   ricerca: {
     height: 38,
     borderRadius: 12,

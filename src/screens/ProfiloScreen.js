@@ -11,9 +11,12 @@ import AccediScreen from "./AccediScreen";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import Testo from "../components/ui/Testo";
 import Pulsante from "../components/ui/Pulsante";
+import Chip from "../components/ui/Chip";
 import { Gruppo, Riga } from "../components/ui/Gruppo";
 import { caricaMiaStruttura } from "../lib/host";
 import { registraNotifichePush } from "../lib/notifichePush";
+import { useT, useLingua, impostaLingua } from "../i18n/i18n";
+import { LINGUE } from "../i18n/lingue";
 
 const MOTORI_MAPPA = [
   { chiave: "google", etichetta: "Google" },
@@ -21,22 +24,27 @@ const MOTORI_MAPPA = [
   { chiave: "waze", etichetta: "Waze" },
 ];
 
-const VOCI_MENU = [
-  { icona: "calendar-outline", testo: "Le mie prenotazioni", azione: "naviga", schermo: "Prenotazioni" },
-  { icona: "map-outline", testo: "I miei piani di viaggio", azione: "naviga", schermo: "PianiSalvati" },
-  { icona: "flag-outline", testo: "Segnala una struttura mancante", azione: "naviga", schermo: "MieSegnalazioni" },
-  {
-    icona: "notifications-outline",
-    testo: "Notifiche",
-    azione: "impostazioni",
-  },
-  { icona: "shield-checkmark-outline", testo: "Privacy policy", azione: "apri", url: "https://www.naturago.it/privacy" },
-  { icona: "document-text-outline", testo: "Termini e condizioni", azione: "apri", url: "https://www.naturago.it/termini" },
-];
+function vociMenu(t) {
+  return [
+    { icona: "calendar-outline", testo: t("profilo.leMiePrenotazioni"), azione: "naviga", schermo: "Prenotazioni" },
+    { icona: "map-outline", testo: t("profilo.iMieiPianiViaggio"), azione: "naviga", schermo: "PianiSalvati" },
+    { icona: "flag-outline", testo: t("profilo.segnalaStruttura"), azione: "naviga", schermo: "MieSegnalazioni" },
+    { icona: "cloud-download-outline", testo: t("profilo.itinerariOffline"), azione: "naviga", schermo: "ItinerariOffline" },
+    {
+      icona: "notifications-outline",
+      testo: t("profilo.notifiche"),
+      azione: "impostazioni",
+    },
+    { icona: "shield-checkmark-outline", testo: t("profilo.privacyPolicy"), azione: "apri", url: "https://www.naturago.it/privacy" },
+    { icona: "document-text-outline", testo: t("profilo.termini"), azione: "apri", url: "https://www.naturago.it/termini" },
+  ];
+}
 
 export default function ProfiloScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
+  const linguaAttuale = useLingua();
   const { session, esci } = useAuth();
   const { motoreMappa, setMotoreMappa } = usePreferenze();
 
@@ -94,7 +102,7 @@ export default function ProfiloScreen({ navigation }) {
             <Testo v="corpoForte">{nomeUtente}</Testo>
             <Testo v="nota">{session.user.email}</Testo>
             <Testo v="nota" tono="primario" style={{ fontWeight: "600", marginTop: 2 }}>
-              Modifica profilo
+              {t("profilo.modificaProfilo")}
             </Testo>
           </View>
           <Ionicons name="chevron-forward" size={16} color={c.testoSecondario} />
@@ -140,7 +148,7 @@ export default function ProfiloScreen({ navigation }) {
         )}
 
         <Gruppo>
-          {VOCI_MENU.map((voce) => (
+          {vociMenu(t).map((voce) => (
             <Riga
               key={voce.testo}
               icona={voce.icona}
@@ -157,10 +165,10 @@ export default function ProfiloScreen({ navigation }) {
 
         <View style={styles.sezione}>
           <Testo v="etichetta" style={{ textTransform: "uppercase", marginLeft: 16 }} accessibilityRole="header">
-            Impostazioni
+            {t("profilo.impostazioni")}
           </Testo>
           <View style={styles.impostazioneBox}>
-            <Testo v="corpo">Motore mappa</Testo>
+            <Testo v="corpo">{t("profilo.motoreMappa")}</Testo>
             <View style={styles.segmentato}>
               {MOTORI_MAPPA.map((m) => (
                 <Pressable
@@ -168,7 +176,7 @@ export default function ProfiloScreen({ navigation }) {
                   style={[styles.segmento, motoreMappa === m.chiave && styles.segmentoAttivo]}
                   onPress={() => setMotoreMappa(m.chiave)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Usa ${m.etichetta} come motore mappa`}
+                  accessibilityLabel={`${m.etichetta} ${t("profilo.motoreMappa")}`}
                   accessibilityState={{ selected: motoreMappa === m.chiave }}
                 >
                   <Testo
@@ -181,6 +189,14 @@ export default function ProfiloScreen({ navigation }) {
               ))}
             </View>
           </View>
+          <View style={[styles.impostazioneBox, { marginTop: 10 }]}>
+            <Testo v="corpo">{t("profilo.lingua")}</Testo>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingTop: 10 }}>
+              {LINGUE.map((l) => (
+                <Chip key={l.codice} etichetta={l.nome} compatto attivo={linguaAttuale === l.codice} onPress={() => impostaLingua(l.codice)} />
+              ))}
+            </ScrollView>
+          </View>
         </View>
 
         {/* Voce volutamente defilata (niente ombra/sfondo pieno come il
@@ -191,16 +207,16 @@ export default function ProfiloScreen({ navigation }) {
           style={styles.giochiRiga}
           onPress={() => navigation.navigate("GiochiHub")}
           accessibilityRole="button"
-          accessibilityLabel="Giochi da viaggio, un extra per i tempi morti"
+          accessibilityLabel={t("profilo.giochiDaViaggio")}
         >
           <Ionicons name="game-controller-outline" size={18} color={c.testoSecondario} />
           <Testo v="secondario" tono="secondario" style={{ flex: 1 }}>
-            Giochi da viaggio
+            {t("profilo.giochiDaViaggio")}
           </Testo>
           <Ionicons name="chevron-forward" size={15} color={c.testoSecondario} />
         </Pressable>
 
-        <Pulsante titolo="Esci" variante="pericolo" onPress={esci} />
+        <Pulsante titolo={t("profilo.esci")} variante="pericolo" onPress={esci} />
 
         <Pressable
           style={styles.eliminaAccount}
@@ -208,7 +224,7 @@ export default function ProfiloScreen({ navigation }) {
           accessibilityRole="button"
           hitSlop={8}
         >
-          <Testo v="nota">Elimina il mio account</Testo>
+          <Testo v="nota">{t("profilo.eliminaAccount")}</Testo>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

@@ -6,22 +6,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { usePreferenze } from "../context/PreferenzeContext";
-import { caricaItinerarioDettaglio, DIFFICOLTA_META, TIPO_VEICOLO_META, MODALITA_SENTIERO_META, STATO_ITINERARIO_META } from "../lib/itinerari";
+import {
+  caricaItinerarioDettaglio,
+  DIFFICOLTA_META,
+  TIPO_VEICOLO_META,
+  MODALITA_SENTIERO_META,
+  STATO_ITINERARIO_META,
+  salvaItinerarioOffline,
+  leggiItinerarioOffline,
+  rimuoviItinerarioOfflineSalvato,
+  itinerarioSalvatoOffline,
+} from "../lib/itinerari";
+import { vibraLeggera, vibraConferma } from "../lib/vibrazione";
 import { caricaRecensioniItinerario, inviaRecensioneItinerario } from "../lib/recensioni";
 import { urlMappa } from "../lib/mappa";
 import MappaItinerario from "../components/MappaItinerario";
 import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
-
-function RigaStelle({ punteggio, size = 12 }) {
-  return (
-    <View style={{ flexDirection: "row", gap: 1 }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Ionicons key={n} name={n <= punteggio ? "star" : "star-outline"} size={size} color="#f59e0b" />
-      ))}
-    </View>
-  );
-}
+import RigaStelle from "../components/ui/RigaStelle";
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -36,18 +38,59 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
   const [itinerario, setItinerario] = useState(null);
   const [tappe, setTappe] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
+  const [daCacheOffline, setDaCacheOffline] = useState(false);
+  const [salvatoOffline, setSalvatoOffline] = useState(false);
   const [recensioni, setRecensioni] = useState([]);
   const [mostraModuloRecensione, setMostraModuloRecensione] = useState(false);
 
   useEffect(() => {
+    let attivo = true;
     caricaItinerarioDettaglio(itinerarioId)
-      .then(({ itinerario, tappe }) => {
+      .then(async ({ itinerario, tappe }) => {
+        if (!attivo) return;
         setItinerario(itinerario);
         setTappe(tappe);
+        setDaCacheOffline(false);
+        // Se l'utente l'aveva già salvato per l'uso offline, la copia resta
+        // aggiornata ai dati appena arrivati dal server — non si salva da
+        // sola la prima volta che si apre, solo quando scelto col bottone.
+        if (await itinerarioSalvatoOffline(itinerarioId)) {
+          await salvaItinerarioOffline({ itinerario, tappe });
+          if (attivo) setSalvatoOffline(true);
+        }
       })
-      .catch((e) => console.error("Errore nel caricare l'itinerario:", e))
-      .finally(() => setCaricamento(false));
+      .catch(async (e) => {
+        console.error("Errore nel caricare l'itinerario:", e);
+        // Senza connessione (o un errore di rete): si prova con l'ultima
+        // copia salvata per l'uso offline, invece di mostrare solo un
+        // errore — lo stesso principio di salvaInCache/leggiDaCache già
+        // usato per l'elenco strutture in Esplora.
+        const offline = await leggiItinerarioOffline(itinerarioId);
+        if (!attivo) return;
+        if (offline) {
+          setItinerario(offline.itinerario);
+          setTappe(offline.tappe);
+          setDaCacheOffline(true);
+          setSalvatoOffline(true);
+        }
+      })
+      .finally(() => attivo && setCaricamento(false));
+    return () => {
+      attivo = false;
+    };
   }, [itinerarioId]);
+
+  const toggleSalvaOffline = async () => {
+    vibraLeggera();
+    if (salvatoOffline) {
+      await rimuoviItinerarioOfflineSalvato(itinerarioId);
+      setSalvatoOffline(false);
+    } else if (itinerario) {
+      await salvaItinerarioOffline({ itinerario, tappe });
+      setSalvatoOffline(true);
+      vibraConferma();
+    }
+  };
 
   const caricaRecensioniItin = () => {
     caricaRecensioniItinerario(itinerarioId)
@@ -89,11 +132,26 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
           <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
+          <Pressable
+            style={styles.offlineBottone}
+            onPress={toggleSalvaOffline}
+            accessibilityRole="button"
+            accessibilityLabel={salvatoOffline ? "Rimuovi dai salvati per l'uso offline" : "Salva per l'uso offline"}
+          >
+            <Ionicons name={salvatoOffline ? "cloud-done" : "cloud-download-outline"} size={18} color={salvatoOffline ? c.successo : c.testo} />
+          </Pressable>
         </SafeAreaView>
 
         <View style={styles.contenuto}>
           <Text style={styles.titolo}>{itinerario.titolo}</Text>
           {itinerario.regione ? <Text style={styles.regione}>{itinerario.regione}</Text> : null}
+
+          {daCacheOffline && (
+            <View style={styles.avvisoOffline}>
+              <Ionicons name="cloud-offline-outline" size={14} color={c.testoSecondario} />
+              <Text style={styles.avvisoOfflineTesto}>Versione salvata offline — nessuna connessione o dati non aggiornati.</Text>
+            </View>
+          )}
 
           {itinerario.stato && itinerario.stato !== "approvato" && (
             <View style={[styles.avvisoStato, { backgroundColor: STATO_ITINERARIO_META[itinerario.stato].colore + "18" }]}>
@@ -257,8 +315,21 @@ function useEstili(c, spazio, raggio) {
     alignItems: "center",
     justifyContent: "center",
   },
+  offlineBottone: {
+    position: "absolute",
+    top: 52,
+    right: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   contenuto: { padding: 20, gap: 10 },
   titolo: { fontSize: 19, fontWeight: "800", color: c.testo },
+  avvisoOffline: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  avvisoOfflineTesto: { flex: 1, fontSize: 11, color: c.testoSecondario, lineHeight: 15 },
   regione: { fontSize: 12.5, color: c.testoSecondario },
   avvisoStato: { flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 10, padding: 9, marginTop: 8 },
   avvisoStatoTesto: { flex: 1, fontSize: 11, fontWeight: "600", lineHeight: 15 },

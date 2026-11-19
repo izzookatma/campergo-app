@@ -7,6 +7,7 @@ import { caricaSchedeCulturali, CATEGORIA_CULTURALE_META } from "../lib/cultura"
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import Chip from "../components/ui/Chip";
 
 const CATEGORIE = Object.keys(CATEGORIA_CULTURALE_META);
 
@@ -40,16 +41,17 @@ export default function CulturaScreen({ route, navigation }) {
             const m = CATEGORIA_CULTURALE_META[chiaveCategoria];
             const attivo = categoria === chiaveCategoria;
             return (
-              <Pressable
+              <Chip
                 key={chiaveCategoria}
-                style={[styles.chip, attivo && { backgroundColor: m.colore, borderColor: m.colore }]}
+                etichetta={m.etichetta}
+                attivo={attivo}
+                compatto
+                coloreAttivo={m.colore}
                 onPress={() => {
                   setCategoria(chiaveCategoria);
                   setCaricamento(true);
                 }}
-              >
-                <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{m.etichetta}</Text>
-              </Pressable>
+              />
             );
           })}
         </View>
@@ -114,17 +116,6 @@ function useEstili(c, spazio, raggio) {
   intestazione: { paddingHorizontal: 20, paddingTop: 12, gap: 10 },
   titolo: { textAlign: "center", fontSize: 19, fontWeight: "800", color: c.testo },
   filtri: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: {
-    paddingHorizontal: 12,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: c.sfondoGruppo,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: c.separatore,
-  },
-  chipTesto: { fontSize: 11.5, fontWeight: "600", color: c.testoSecondario },
-  chipTestoAttivo: { color: "#FFFFFF" },
   ricerca: {
     height: 38,
     borderRadius: 12,

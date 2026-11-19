@@ -42,6 +42,18 @@ const chiaro = {
   accentoChiaro: "#FBF2E8",
   sulAccento: "#FFFFFF",
   pericolo: "#D92D20",
+  pericoloChiaro: "#FEF2F2",
+  // Toni semantici in più, oltre a primario/accento/pericolo: badge e
+  // avvisi delle schermate (Scheda struttura, Cultura, Itinerari) li
+  // usavano prima come colori scritti a mano, ognuno un po' diverso
+  // (verde/arancio/viola leggermente diversi da una schermata all'altra).
+  successo: "#16A34A",
+  successoChiaro: "#DCFCE7",
+  attenzione: "#EA580C",
+  attenzioneChiaro: "#FFF7ED",
+  viola: "#9333EA",
+  violaChiaro: "#F3E8FF",
+  voto: "#F59E0B",
   inattivo: "#8E97A3",
   ombra: "#0F172A",
 };
@@ -60,6 +72,14 @@ const scuro = {
   accentoChiaro: "#2E2416",
   sulAccento: "#06202D",
   pericolo: "#FF6B5E",
+  pericoloChiaro: "#2E1512",
+  successo: "#4ADE80",
+  successoChiaro: "#153226",
+  attenzione: "#FB923C",
+  attenzioneChiaro: "#2E2012",
+  viola: "#C084FC",
+  violaChiaro: "#2B1D3D",
+  voto: "#FBBF24",
   inattivo: "#6F8394",
   ombra: "#000000",
 };

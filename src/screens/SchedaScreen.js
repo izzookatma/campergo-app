@@ -14,6 +14,9 @@ import { ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
 import { caricaCulturaVicina } from "../lib/cultura";
 import ModuloRecensione from "../components/ModuloRecensione";
 import Pulsante from "../components/ui/Pulsante";
+import Badge from "../components/ui/Badge";
+import Avviso from "../components/ui/Avviso";
+import RigaStelle from "../components/ui/RigaStelle";
 import CuoreAnimato from "../components/ui/CuoreAnimato";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import GalleriaHero from "../components/scheda/GalleriaHero";
@@ -41,16 +44,6 @@ const ETICHETTA_INTERESSE = {
   relax: "Relax",
   natura: "Natura",
 };
-
-function RigaStelle({ punteggio, size = 12 }) {
-  return (
-    <View style={{ flexDirection: "row", gap: 1 }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Ionicons key={n} name={n <= punteggio ? "star" : "star-outline"} size={size} color="#f59e0b" />
-      ))}
-    </View>
-  );
-}
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -228,18 +221,10 @@ export default function SchedaScreen({ route, navigation }) {
 
         <View style={styles.contenuto}>
           <View style={styles.rigaBadge}>
-            <Text style={styles.badgeTipo}>{struttura.tipo}</Text>
-            {dettaglio?.verificato && (
-              <View style={styles.badgeVerificato}>
-                <Ionicons name="checkmark-circle" size={12} color="#16a34a" />
-                <Text style={styles.badgeVerificatoTesto}>Verificata</Text>
-              </View>
-            )}
+            <Badge testo={struttura.tipo} tono="neutro" />
+            {dettaglio?.verificato && <Badge testo="Verificata" icona="checkmark-circle" tono="successo" />}
             {dettaglio?.badgeCulturaleAnno && (
-              <View style={styles.badgeCulturale}>
-                <Ionicons name="ribbon-outline" size={12} color="#9333ea" />
-                <Text style={styles.badgeCulturaleTesto}>Bene culturale dal {dettaglio.badgeCulturaleAnno}</Text>
-              </View>
+              <Badge testo={`Bene culturale dal ${dettaglio.badgeCulturaleAnno}`} icona="ribbon-outline" tono="viola" />
             )}
           </View>
 
@@ -248,7 +233,7 @@ export default function SchedaScreen({ route, navigation }) {
             <Text style={styles.localita}>{struttura.localita}</Text>
             {struttura.rating ? (
               <View style={styles.rigaRating}>
-                <Ionicons name="star" size={12} color="#f59e0b" />
+                <Ionicons name="star" size={12} color={c.voto} />
                 <Text style={styles.rating}>
                   {struttura.rating} ({struttura.recensioni || 0})
                 </Text>
@@ -257,26 +242,25 @@ export default function SchedaScreen({ route, navigation }) {
           </View>
 
           {dettaglio?.chiusaTemporaneamente && (
-            <View style={styles.avvisoRosso}>
-              <Ionicons name="alert-circle" size={16} color="#dc2626" />
-              <Text style={styles.avvisoRossoTesto}>
-                Chiusa temporaneamente{dettaglio.chiusaTemporaneamenteMotivo ? `: ${dettaglio.chiusaTemporaneamenteMotivo}` : ""}
-              </Text>
-            </View>
+            <Avviso
+              tono="pericolo"
+              icona="alert-circle"
+              testo={`Chiusa temporaneamente${dettaglio.chiusaTemporaneamenteMotivo ? `: ${dettaglio.chiusaTemporaneamenteMotivo}` : ""}`}
+            />
           )}
           {dettaglio?.divietoCamper && (
-            <View style={styles.avvisoArancio}>
-              <Ionicons name="warning-outline" size={16} color="#ea580c" />
-              <Text style={styles.avvisoAranciotesto}>
-                Divieto camper{dettaglio.divietoCamperMotivo ? `: ${dettaglio.divietoCamperMotivo}` : ""}
-              </Text>
-            </View>
+            <Avviso
+              tono="attenzione"
+              icona="warning-outline"
+              testo={`Divieto camper${dettaglio.divietoCamperMotivo ? `: ${dettaglio.divietoCamperMotivo}` : ""}`}
+            />
           )}
           {dettaglio?.avvisoVerifica && (
-            <View style={styles.avvisoArancio}>
-              <Ionicons name="information-circle-outline" size={16} color="#ea580c" />
-              <Text style={styles.avvisoAranciotesto}>{dettaglio.notaVerifica || "Dati da verificare sul posto."}</Text>
-            </View>
+            <Avviso
+              tono="attenzione"
+              icona="information-circle-outline"
+              testo={dettaglio.notaVerifica || "Dati da verificare sul posto."}
+            />
           )}
           {struttura.descrizione ? <Text style={styles.descrizione}>{struttura.descrizione}</Text> : null}
           {dettaglio?.descrizioneEstesa && dettaglio.descrizioneEstesa !== struttura.descrizione ? (
@@ -290,9 +274,13 @@ export default function SchedaScreen({ route, navigation }) {
               <Text style={styles.avvisoRivendicaTesto}>
                 Non è ancora possibile prenotare qui. Se gestisci tu questa struttura, rivendica gratis la scheda per completarla e iniziare a ricevere prenotazioni.
               </Text>
-              <Pressable style={styles.bottoneRivendica} onPress={apriRivendica}>
-                <Text style={styles.bottoneRivendicaTesto}>Sei il gestore? Rivendica questa scheda gratis</Text>
-              </Pressable>
+              <Pulsante
+                titolo="Sei il gestore? Rivendica questa scheda gratis"
+                onPress={apriRivendica}
+                sfondoPersonalizzato={c.attenzione}
+                coloreTestoPersonalizzato="#fff"
+                style={{ marginTop: 6, width: "100%" }}
+              />
             </View>
           )}
 
@@ -574,78 +562,21 @@ function useEstili(c) {
   },
   contenuto: { padding: 20, gap: 10 },
   rigaBadge: { flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  badgeTipo: {
-    alignSelf: "flex-start",
-    fontSize: 13,
-    fontWeight: "700",
-    color: c.primario,
-    backgroundColor: "#e7eefc",
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  badgeVerificato: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: "#dcfce7",
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  badgeVerificatoTesto: { fontSize: 13, fontWeight: "700", color: "#16a34a" },
-  badgeCulturale: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: "#f3e8ff",
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  badgeCulturaleTesto: { fontSize: 13, fontWeight: "700", color: "#9333ea" },
   titolo: { fontSize: 28, lineHeight: 34, fontWeight: "700", color: c.testo },
   rigaInfo: { flexDirection: "row", alignItems: "center", gap: 10 },
   localita: { fontSize: 13, color: c.testoSecondario },
   rigaRating: { flexDirection: "row", alignItems: "center", gap: 3 },
   rating: { fontSize: 13, fontWeight: "700", color: c.testo },
   descrizione: { fontSize: 13, lineHeight: 19, color: "#4b5563" },
-  avvisoRosso: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#fef2f2",
-    borderRadius: 12,
-    padding: 10,
-  },
-  avvisoRossoTesto: { flex: 1, fontSize: 13, color: "#991b1b", fontWeight: "600" },
-  avvisoArancio: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#fff7ed",
-    borderRadius: 12,
-    padding: 10,
-  },
-  avvisoAranciotesto: { flex: 1, fontSize: 13, color: "#9a3412", fontWeight: "600" },
   avvisoRivendica: {
     alignItems: "center",
-    backgroundColor: "#fff7ed",
+    backgroundColor: c.attenzioneChiaro,
     borderRadius: 14,
     padding: 16,
     gap: 6,
   },
   avvisoRivendicaTitolo: { fontSize: 15, fontWeight: "700", color: c.testo, textAlign: "center" },
   avvisoRivendicaTesto: { fontSize: 13, color: c.testoSecondario, textAlign: "center", lineHeight: 16 },
-  bottoneRivendica: {
-    marginTop: 6,
-    width: "100%",
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "#ea580c",
-    alignItems: "center",
-  },
-  bottoneRivendicaTesto: { fontSize: 13, fontWeight: "700", color: "#fff" },
   sezione: { gap: 8, marginTop: 6 },
   sezioneTitolo: { fontSize: 15, fontWeight: "800", color: c.testo, marginBottom: 2 },
   rigaDettaglio: { flexDirection: "row", alignItems: "center", gap: 8 },

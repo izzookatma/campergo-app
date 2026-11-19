@@ -9,6 +9,7 @@ import { caricaAnnunciApprovati, caricaMieiAnnunci, CATEGORIE_MERCATINO } from "
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import Chip from "../components/ui/Chip";
 
 const FILTRI_CATEGORIA = [{ chiave: "", etichetta: "Tutte" }, ...Object.entries(CATEGORIE_MERCATINO).map(([chiave, etichetta]) => ({ chiave, etichetta }))];
 
@@ -103,12 +104,7 @@ export default function MercatinoScreen({ navigation }) {
               keyExtractor={(f) => f.chiave}
               contentContainerStyle={{ gap: 8 }}
               renderItem={({ item }) => (
-                <Pressable
-                  style={[styles.chip, categoria === item.chiave && styles.chipAttivo]}
-                  onPress={() => setCategoria(item.chiave)}
-                >
-                  <Text style={[styles.chipTesto, categoria === item.chiave && styles.chipTestoAttivo]}>{item.etichetta}</Text>
-                </Pressable>
+                <Chip etichetta={item.etichetta} attivo={categoria === item.chiave} compatto onPress={() => setCategoria(item.chiave)} />
               )}
             />
           </>
@@ -205,18 +201,6 @@ function useEstili(c, spazio, raggio) {
     paddingHorizontal: 14,
   },
   inputRicerca: { flex: 1, fontSize: 12.5, color: c.testo },
-  chip: {
-    paddingHorizontal: 12,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: c.sfondoGruppo,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: c.separatore,
-  },
-  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
-  chipTesto: { fontSize: 11, fontWeight: "600", color: c.testoSecondario },
-  chipTestoAttivo: { color: c.sulPrimario },
   vuoto: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 40 },
   vuotoTesto: { textAlign: "center", fontSize: 12.5, color: c.testoSecondario },
   card: {

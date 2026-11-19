@@ -22,7 +22,8 @@ import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import ScheletroCard from "../components/ScheletroCard";
-import { vibraLeggera, vibraConferma } from "../lib/vibrazione";
+import Chip from "../components/ui/Chip";
+import { vibraConferma } from "../lib/vibrazione";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import RicercaIA from "../components/RicercaIA";
 import CardStruttura from "../components/esplora/CardStruttura";
@@ -524,22 +525,20 @@ export default function EsploraScreen({ navigation, route }) {
             {FILTRI.map((f) => {
               const attivo = f === "Tutti" ? filtriTipo.length === 0 : filtriTipo.includes(f);
               return (
-                <Pressable
+                <Chip
                   key={f}
+                  etichetta={f}
+                  attivo={attivo}
                   onLayout={(e) => {
                     posizioniChip.current[f] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
                     if (filtriTipo.length > 0 && filtriTipo[filtriTipo.length - 1] === f) mostraChipAttivo(f);
                   }}
-                  onPress={() => {
-                    vibraLeggera();
-                    return f === "Tutti"
+                  onPress={() =>
+                    f === "Tutti"
                       ? setFiltriTipo([])
-                      : setFiltriTipo((prev) => (prev.includes(f) ? prev.filter((t) => t !== f) : [...prev, f]));
-                  }}
-                  style={[styles.chip, attivo && styles.chipAttivo]}
-                >
-                  <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{f}</Text>
-                </Pressable>
+                      : setFiltriTipo((prev) => (prev.includes(f) ? prev.filter((t) => t !== f) : [...prev, f]))
+                  }
+                />
               );
             })}
           </ScrollView>
@@ -802,18 +801,6 @@ function useEstili(c) {
     paddingHorizontal: 3,
   },
   badgeFiltriTesto: { color: c.sulAccento, fontSize: 9, fontWeight: "800" },
-  chip: {
-    paddingHorizontal: 12,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: c.sfondoGruppo,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: c.separatore,
-  },
-  chipAttivo: { backgroundColor: c.primario, borderColor: c.primario },
-  chipTesto: { fontSize: 14, fontWeight: "600", color: c.testoSecondario },
-  chipTestoAttivo: { color: c.sulPrimario },
   contatore: { fontSize: 13.5, fontWeight: "600", color: c.testoSecondario },
   rigaContatore: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4, minHeight: 36 },
   pillDate: {
