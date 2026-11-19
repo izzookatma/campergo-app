@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "400010924163",
+    "project_id": "naturago-c6095",
+    "storage_bucket": "naturago-c6095.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400010924163:android:d3ee36772dd1d68a7b4bb6",
+        "android_client_info": {
+          "package_name": "it.naturago.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByKGpmVuja8ONlPxxIcMg4ek-qH7VEgqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

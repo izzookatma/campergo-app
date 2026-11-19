@@ -495,8 +495,10 @@ function MappaVera({ navigation, route }) {
                 coordinate={{ latitude: lat, longitude: lng }}
                 onPress={() => vaiAlCluster(c)}
               >
-                <View style={styles.cluster}>
-                  <Text style={styles.clusterTesto}>{c.properties.point_count}</Text>
+                <View style={[styles.cluster, misuraCluster(c.properties.point_count)]}>
+                  <Text style={styles.clusterTesto} numberOfLines={1} adjustsFontSizeToFit>
+                    {c.properties.point_count}
+                  </Text>
                 </View>
               </Marker>
             );
@@ -738,6 +740,14 @@ function MappaVera({ navigation, route }) {
   );
 }
 
+// Il cerchio dei raggruppamenti cresce con le cifre: 4 cifre (migliaia) non
+// entrano in un cerchio da 36.
+function misuraCluster(n) {
+  const d = String(n).length;
+  const l = d <= 1 ? 38 : d === 2 ? 42 : d === 3 ? 50 : 58;
+  return { width: l, height: l, borderRadius: l / 2, paddingHorizontal: 4 };
+}
+
 export default function MappaScreen({ navigation, route }) {
   if (DENTRO_EXPO_GO) {
     return <MappaPlaceholder />;
@@ -810,9 +820,6 @@ function useEstili(c) {
     ...ombra(c),
   },
   cluster: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: c.primario,
@@ -820,7 +827,7 @@ function useEstili(c) {
     borderColor: "#FFFFFF",
     ...ombra(c),
   },
-  clusterTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 12.5 },
+  clusterTesto: { color: c.sulPrimario, fontWeight: "700", fontSize: 14, textAlign: "center" },
   bannerOffline: {
     flexDirection: "row",
     alignItems: "center",
