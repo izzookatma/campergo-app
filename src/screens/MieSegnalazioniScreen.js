@@ -6,10 +6,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaMieSegnalazioni, TIPO_STRUTTURA_SEGNALABILE_META, STATO_SEGNALAZIONE_META } from "../lib/segnalazioni";
+import { useT } from "../i18n/i18n";
 
 export default function MieSegnalazioniScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [segnalazioni, setSegnalazioni] = useState(null);
 
@@ -27,7 +29,7 @@ export default function MieSegnalazioniScreen({ navigation }) {
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titoloIntestazione}>Le mie segnalazioni</Text>
+        <Text style={styles.titoloIntestazione}>{t("segnalazioni.titolo")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
@@ -38,14 +40,14 @@ export default function MieSegnalazioniScreen({ navigation }) {
         ListHeaderComponent={
           <Pressable style={styles.nuova} onPress={() => navigation.navigate("NuovaSegnalazione")}>
             <Ionicons name="add-circle-outline" size={17} color={c.primario} />
-            <Text style={styles.nuovaTesto}>Nuova segnalazione</Text>
+            <Text style={styles.nuovaTesto}>{t("segnalazioni.nuovaSegnalazione")}</Text>
           </Pressable>
         }
         ListEmptyComponent={
           segnalazioni === null ? (
             <ActivityIndicator color={c.primario} style={{ marginTop: 30 }} />
           ) : (
-            <Text style={styles.vuoto}>Non hai ancora segnalato nessuna struttura.</Text>
+            <Text style={styles.vuoto}>{t("segnalazioni.nessunaSegnalazione")}</Text>
           )
         }
         renderItem={({ item }) => {

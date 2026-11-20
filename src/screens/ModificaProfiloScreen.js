@@ -20,12 +20,14 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { caricaFotoProfilo } from "../lib/host";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
+import { useT } from "../i18n/i18n";
 
 // Profilo vero e proprio: foto, nome e password, come nel sito
 // (AccountArea.jsx): stessi campi in user_metadata (nome, avatar_url).
 export default function ModificaProfiloScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session, accedi } = useAuth();
   const utente = session.user;
   const [nome, setNome] = useState(utente.user_metadata?.nome || utente.user_metadata?.full_name || "");
@@ -46,7 +48,7 @@ export default function ModificaProfiloScreen({ navigation }) {
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permesso.granted) {
-        Alert.alert("Permesso negato", "Consenti l'accesso alle foto dalle impostazioni del telefono.");
+        Alert.alert(t("modificaProfilo.permessoNegatoTitolo"), t("modificaProfilo.permessoNegatoMessaggio"));
         return;
       }
       const opzioni = { mediaTypes: ["images"], quality: 0.9, allowsEditing: true, aspect: [1, 1] };
@@ -61,22 +63,22 @@ export default function ModificaProfiloScreen({ navigation }) {
       setAvatarUrl(url);
     } catch (e) {
       console.error("[NaturaGo app] foto profilo", e);
-      Alert.alert("Foto non salvata", messaggioErroreComprensibile(e, "Non è stato possibile salvare la foto."));
+      Alert.alert(t("modificaProfilo.fotoNonSalvataTitolo"), messaggioErroreComprensibile(e, t("modificaProfilo.fotoNonSalvataFallback")));
     } finally {
       setCaricandoFoto(false);
     }
   };
 
   const menuFoto = () =>
-    Alert.alert("Foto del profilo", undefined, [
-      { text: "Scatta una foto", onPress: () => scegliFoto(true) },
-      { text: "Scegli dalla libreria", onPress: () => scegliFoto(false) },
-      { text: "Annulla", style: "cancel" },
+    Alert.alert(t("modificaProfilo.fotoDelProfiloTitolo"), undefined, [
+      { text: t("modificaProfilo.scattaFoto"), onPress: () => scegliFoto(true) },
+      { text: t("modificaProfilo.scegliDallaLibreria"), onPress: () => scegliFoto(false) },
+      { text: t("comune.annulla"), style: "cancel" },
     ]);
 
   const salvaNome = async () => {
     if (!nome.trim()) {
-      Alert.alert("Nome mancante", "Scrivi il tuo nome.");
+      Alert.alert(t("modificaProfilo.nomeMancanteTitolo"), t("modificaProfilo.nomeMancanteMessaggio"));
       return;
     }
     setSalvandoNome(true);
@@ -84,54 +86,54 @@ export default function ModificaProfiloScreen({ navigation }) {
     setSalvandoNome(false);
     if (error) {
       console.error("[NaturaGo app] salva nome", error);
-      Alert.alert("Nome non salvato", messaggioErroreComprensibile(error, "Non è stato possibile salvare il nome."));
+      Alert.alert(t("modificaProfilo.nomeNonSalvatoTitolo"), messaggioErroreComprensibile(error, t("modificaProfilo.nomeNonSalvatoFallback")));
       return;
     }
-    Alert.alert("Fatto", "Nome aggiornato.");
+    Alert.alert(t("comune.fatto"), t("modificaProfilo.nomeAggiornato"));
   };
 
   const cambiaPassword = async () => {
     if (nuovaPassword.length < 10) {
-      Alert.alert("Password troppo corta", "Usa almeno 10 caratteri.");
+      Alert.alert(t("modificaProfilo.passwordCorteTitolo"), t("modificaProfilo.passwordCorteMessaggio"));
       return;
     }
     if (nuovaPassword !== confermaPassword) {
-      Alert.alert("Password diverse", "Le due password non coincidono.");
+      Alert.alert(t("modificaProfilo.passwordDiverseTitolo"), t("modificaProfilo.passwordDiverseMessaggio"));
       return;
     }
     setSalvandoPassword(true);
     const { error: erroreLogin } = await accedi(utente.email, passwordAttuale);
     if (erroreLogin) {
       setSalvandoPassword(false);
-      Alert.alert("Password attuale errata", "Controlla la password attuale e riprova.");
+      Alert.alert(t("modificaProfilo.passwordErrataTitolo"), t("modificaProfilo.passwordErrataMessaggio"));
       return;
     }
     const { error } = await supabase.auth.updateUser({ password: nuovaPassword });
     setSalvandoPassword(false);
     if (error) {
       console.error("[NaturaGo app] cambia password", error);
-      Alert.alert("Password non cambiata", messaggioErroreComprensibile(error, "Non è stato possibile cambiare la password."));
+      Alert.alert(t("modificaProfilo.passwordNonCambiataTitolo"), messaggioErroreComprensibile(error, t("modificaProfilo.passwordNonCambiataFallback")));
       return;
     }
     setPasswordAttuale("");
     setNuovaPassword("");
     setConfermaPassword("");
-    Alert.alert("Fatto", "Password cambiata.");
+    Alert.alert(t("comune.fatto"), t("modificaProfilo.passwordCambiata"));
   };
 
   return (
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
-        <Pressable style={styles.indietro} onPress={() => navigation.goBack()} accessibilityLabel="Indietro">
+        <Pressable style={styles.indietro} onPress={() => navigation.goBack()} accessibilityLabel={t("comune.indietro")}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titolo}>Il mio profilo</Text>
+        <Text style={styles.titolo}>{t("modificaProfilo.titolo")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
-          <Pressable style={styles.avatarBox} onPress={menuFoto} accessibilityLabel="Cambia la foto del profilo">
+          <Pressable style={styles.avatarBox} onPress={menuFoto} accessibilityLabel={t("modificaProfilo.cambiaFotoLabel")}>
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
             ) : (
@@ -149,34 +151,32 @@ export default function ModificaProfiloScreen({ navigation }) {
             </View>
           </Pressable>
           <Text style={styles.cambiaFoto} onPress={menuFoto}>
-            {avatarUrl ? "Cambia foto" : "Aggiungi una foto"}
+            {avatarUrl ? t("modificaProfilo.cambiaFoto") : t("modificaProfilo.aggiungiFoto")}
           </Text>
 
           <View style={styles.box}>
-            <Text style={styles.etichetta}>Nome</Text>
-            <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Il tuo nome" placeholderTextColor={c.testoSecondario} />
-            <Text style={styles.etichetta}>Email</Text>
+            <Text style={styles.etichetta}>{t("modificaProfilo.nome")}</Text>
+            <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder={t("modificaProfilo.placeholderNome")} placeholderTextColor={c.testoSecondario} />
+            <Text style={styles.etichetta}>{t("modificaProfilo.email")}</Text>
             <Text style={styles.emailFissa}>{utente.email}</Text>
             <Pressable style={styles.bottone} onPress={salvaNome} disabled={salvandoNome}>
-              {salvandoNome ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>Salva nome</Text>}
+              {salvandoNome ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>{t("modificaProfilo.salvaNome")}</Text>}
             </Pressable>
           </View>
 
           <View style={styles.box}>
-            <Text style={styles.sezione}>Password</Text>
+            <Text style={styles.sezione}>{t("modificaProfilo.password")}</Text>
             {conPassword ? (
               <>
-                <TextInput style={styles.input} value={passwordAttuale} onChangeText={setPasswordAttuale} placeholder="Password attuale" placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
-                <TextInput style={styles.input} value={nuovaPassword} onChangeText={setNuovaPassword} placeholder="Nuova password (almeno 10 caratteri)" placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
-                <TextInput style={styles.input} value={confermaPassword} onChangeText={setConfermaPassword} placeholder="Ripeti la nuova password" placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
+                <TextInput style={styles.input} value={passwordAttuale} onChangeText={setPasswordAttuale} placeholder={t("modificaProfilo.placeholderPasswordAttuale")} placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
+                <TextInput style={styles.input} value={nuovaPassword} onChangeText={setNuovaPassword} placeholder={t("modificaProfilo.placeholderNuovaPassword")} placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
+                <TextInput style={styles.input} value={confermaPassword} onChangeText={setConfermaPassword} placeholder={t("modificaProfilo.placeholderRipetiPassword")} placeholderTextColor={c.testoSecondario} secureTextEntry autoCapitalize="none" />
                 <Pressable style={styles.bottone} onPress={cambiaPassword} disabled={salvandoPassword}>
-                  {salvandoPassword ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>Cambia password</Text>}
+                  {salvandoPassword ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottoneTesto}>{t("modificaProfilo.cambiaPassword")}</Text>}
                 </Pressable>
               </>
             ) : (
-              <Text style={styles.nota}>
-                Hai effettuato l&apos;accesso con Google o Facebook: la password è quella del tuo account lì, qui non c&apos;è nulla da cambiare.
-              </Text>
+              <Text style={styles.nota}>{t("modificaProfilo.notaAccessoSocial")}</Text>
             )}
           </View>
         </ScrollView>

@@ -5,18 +5,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
-
-const TESTO_RICHIESTO = "CANCELLA";
+import { useT } from "../i18n/i18n";
 
 // Stessa logica del sito (ZonaEliminazioneAccount in AccountArea.jsx):
 // si riverifica la password (serve per essere sicuri che non sia
-// qualcun altro col telefono sbloccato) e si digita "CANCELLA" per
-// confermare, poi la stessa RPC `elimina_mio_account`. Obbligo di Apple
-// per pubblicare su App Store: un'app che permette di registrarsi deve
-// permettere di cancellarsi anche dall'app, non solo dal sito.
+// qualcun altro col telefono sbloccato) e si digita la parola di conferma
+// (tradotta: "CANCELLA" in italiano, "DELETE" in inglese...) per confermare,
+// poi la stessa RPC `elimina_mio_account`. Obbligo di Apple per pubblicare
+// su App Store: un'app che permette di registrarsi deve permettere di
+// cancellarsi anche dall'app, non solo dal sito.
 export default function EliminaAccountScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
+  const TESTO_RICHIESTO = t("eliminaAccount.testoConferma");
   const { session, accedi, eliminaAccount, esci } = useAuth();
   const [password, setPassword] = useState("");
   const [testoConferma, setTestoConferma] = useState("");
@@ -26,7 +28,7 @@ export default function EliminaAccountScreen({ navigation }) {
   const elimina = async () => {
     setErrore(null);
     if (testoConferma !== TESTO_RICHIESTO) {
-      setErrore(`Digita esattamente "${TESTO_RICHIESTO}" per confermare.`);
+      setErrore(t("eliminaAccount.digitaEsattamente", { testo: TESTO_RICHIESTO }));
       return;
     }
     setEliminando(true);
@@ -34,14 +36,14 @@ export default function EliminaAccountScreen({ navigation }) {
     const { error: erroreLogin } = await accedi(session.user.email, password);
     if (erroreLogin) {
       setEliminando(false);
-      setErrore("Password errata.");
+      setErrore(t("eliminaAccount.passwordErrata"));
       return;
     }
 
     const { error } = await eliminaAccount(testoConferma);
     if (error) {
       setEliminando(false);
-      setErrore(messaggioErroreComprensibile(error, "Non è stato possibile eliminare l'account."));
+      setErrore(messaggioErroreComprensibile(error, t("eliminaAccount.erroreEliminazione")));
       return;
     }
 
@@ -56,28 +58,22 @@ export default function EliminaAccountScreen({ navigation }) {
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titoloIntestazione}>Elimina account</Text>
+        <Text style={styles.titoloIntestazione}>{t("eliminaAccount.titolo")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
         <View style={styles.avviso}>
           <Ionicons name="warning-outline" size={18} color={c.pericolo} />
-          <Text style={styles.avvisoTesto}>Questa azione è irreversibile.</Text>
+          <Text style={styles.avvisoTesto}>{t("eliminaAccount.irreversibile")}</Text>
         </View>
 
-        <Text style={styles.descrizione}>
-          Verranno cancellati: account di accesso, dati del profilo, itinerari, segnalazioni e messaggi. Se gestisci
-          una struttura, sparirà da ricerca e mappa. Le recensioni scritte restano visibili ma con autore anonimo. Le
-          prenotazioni concluse vengono mantenute in forma anonima per obblighi fiscali.{"\n\n"}
-          Se hai prenotazioni future attive (come cliente o sulle tue strutture come host), cancellale prima di
-          procedere: l&apos;eliminazione verrebbe altrimenti rifiutata.
-        </Text>
+        <Text style={styles.descrizione}>{t("eliminaAccount.descrizione")}</Text>
 
-        <Text style={styles.etichetta}>Conferma la tua password attuale</Text>
+        <Text style={styles.etichetta}>{t("eliminaAccount.confermaPassword")}</Text>
         <TextInput style={styles.campo} value={password} onChangeText={setPassword} secureTextEntry />
 
-        <Text style={styles.etichetta}>Digita {TESTO_RICHIESTO} per confermare</Text>
+        <Text style={styles.etichetta}>{t("eliminaAccount.digitaConferma", { testo: TESTO_RICHIESTO })}</Text>
         <TextInput style={styles.campo} value={testoConferma} onChangeText={setTestoConferma} autoCapitalize="characters" />
 
         {errore && <Text style={styles.errore}>{errore}</Text>}
@@ -87,7 +83,7 @@ export default function EliminaAccountScreen({ navigation }) {
           onPress={elimina}
           disabled={eliminando || testoConferma !== TESTO_RICHIESTO || !password}
         >
-          {eliminando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.eliminaTesto}>Elimina definitivamente il mio account</Text>}
+          {eliminando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.eliminaTesto}>{t("eliminaAccount.eliminaDefinitivamente")}</Text>}
         </Pressable>
       </ScrollView>
     </View>

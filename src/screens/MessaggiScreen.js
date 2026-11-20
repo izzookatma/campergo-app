@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { caricaConversazioni } from "../lib/mercatino";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import { useT } from "../i18n/i18n";
 
 function formattaData(iso) {
   const data = new Date(iso);
@@ -21,6 +22,7 @@ function formattaData(iso) {
 export default function MessaggiScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [conversazioni, setConversazioni] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -44,7 +46,7 @@ export default function MessaggiScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <View style={styles.intestazione}>
-        <Text style={styles.titolo}>I miei messaggi</Text>
+        <Text style={styles.titolo}>{t("mercatino.iMieiMessaggi")}</Text>
       </View>
 
       {caricamento ? (
@@ -52,12 +54,12 @@ export default function MessaggiScreen({ navigation }) {
       ) : !session ? (
         <View style={styles.vuoto}>
           <Ionicons name="chatbubbles-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Accedi al tuo account per vedere i tuoi messaggi.</Text>
+          <Text style={styles.vuotoTesto}>{t("mercatino.accediPerMessaggi")}</Text>
         </View>
       ) : conversazioni.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="chatbubbles-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Nessun messaggio per ora.</Text>
+          <Text style={styles.vuotoTesto}>{t("mercatino.nessunMessaggio")}</Text>
         </View>
       ) : (
         <FlatList

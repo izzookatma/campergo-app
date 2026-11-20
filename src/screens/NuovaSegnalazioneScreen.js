@@ -6,10 +6,12 @@ import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { TIPO_STRUTTURA_SEGNALABILE_META, SERVIZI_SEGNALAZIONE_META, inviaSegnalazioneStruttura } from "../lib/segnalazioni";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
+import { useT } from "../i18n/i18n";
 
 export default function NuovaSegnalazioneScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [tipoStruttura, setTipoStruttura] = useState("campeggio");
   const [amenities, setAmenities] = useState([]);
@@ -25,7 +27,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
 
   const invia = async () => {
     if (!nome.trim() || !citta.trim()) {
-      setErrore("Inserisci almeno il nome e la città della struttura.");
+      setErrore(t("segnalazioni.erroreNomeCitta"));
       return;
     }
     setErrore(null);
@@ -33,7 +35,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
     try {
       await inviaSegnalazioneStruttura({
         autoreId: session.user.id,
-        nomeAutore: session.user.user_metadata?.nome || "Cliente NaturaGo",
+        nomeAutore: session.user.user_metadata?.nome || t("segnalazioni.clienteDefault"),
         nome,
         citta,
         tipoStruttura,
@@ -41,11 +43,11 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
         sitoWeb,
         amenities,
       });
-      Alert.alert("Grazie!", "La tua segnalazione verrà controllata dal team NaturaGo prima di comparire sul sito.", [
-        { text: "OK", onPress: () => navigation.goBack() },
+      Alert.alert(t("segnalazioni.grazieTitolo"), t("segnalazioni.notaControllo"), [
+        { text: t("comune.ok"), onPress: () => navigation.goBack() },
       ]);
     } catch (e) {
-      setErrore(messaggioErroreComprensibile(e, "Non è stato possibile inviare la segnalazione."));
+      setErrore(messaggioErroreComprensibile(e, t("segnalazioni.erroreInvio")));
     } finally {
       setInviando(false);
     }
@@ -57,16 +59,14 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titoloIntestazione}>Nuova segnalazione</Text>
+        <Text style={styles.titoloIntestazione}>{t("segnalazioni.nuovaSegnalazione")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sottotitolo}>
-          Conosci un campeggio o un&apos;area sosta non ancora su NaturaGo? Segnalacela.
-        </Text>
+        <Text style={styles.sottotitolo}>{t("segnalazioni.sottotitolo")}</Text>
 
-        <Text style={styles.etichetta}>Tipo struttura</Text>
+        <Text style={styles.etichetta}>{t("segnalazioni.tipoStruttura")}</Text>
         <View style={styles.pills}>
           {Object.entries(TIPO_STRUTTURA_SEGNALABILE_META).map(([chiave, meta]) => (
             <Pressable
@@ -80,7 +80,7 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.etichetta}>Servizi per camper (se li conosci)</Text>
+        <Text style={styles.etichetta}>{t("segnalazioni.serviziCamper")}</Text>
         <View style={styles.pills}>
           {Object.entries(SERVIZI_SEGNALAZIONE_META).map(([chiave, meta]) => {
             const attiva = amenities.includes(chiave);
@@ -93,16 +93,16 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
           })}
         </View>
 
-        <Text style={styles.etichetta}>Nome della struttura</Text>
-        <TextInput style={styles.campo} value={nome} onChangeText={setNome} placeholder="Es. Camping Belvedere" />
+        <Text style={styles.etichetta}>{t("segnalazioni.nomeStruttura")}</Text>
+        <TextInput style={styles.campo} value={nome} onChangeText={setNome} placeholder={t("segnalazioni.placeholderNome")} />
 
-        <Text style={styles.etichetta}>Città</Text>
-        <TextInput style={styles.campo} value={citta} onChangeText={setCitta} placeholder="Es. Riva del Garda" />
+        <Text style={styles.etichetta}>{t("segnalazioni.citta")}</Text>
+        <TextInput style={styles.campo} value={citta} onChangeText={setCitta} placeholder={t("segnalazioni.placeholderCitta")} />
 
-        <Text style={styles.etichetta}>Indirizzo (facoltativo)</Text>
-        <TextInput style={styles.campo} value={indirizzo} onChangeText={setIndirizzo} placeholder="Via, numero" />
+        <Text style={styles.etichetta}>{t("segnalazioni.indirizzo")}</Text>
+        <TextInput style={styles.campo} value={indirizzo} onChangeText={setIndirizzo} placeholder={t("segnalazioni.placeholderIndirizzo")} />
 
-        <Text style={styles.etichetta}>Sito web (facoltativo)</Text>
+        <Text style={styles.etichetta}>{t("segnalazioni.sitoWebFacoltativo")}</Text>
         <TextInput
           style={styles.campo}
           value={sitoWeb}
@@ -112,12 +112,12 @@ export default function NuovaSegnalazioneScreen({ navigation }) {
           keyboardType="url"
         />
 
-        <Text style={styles.nota}>La segnalazione verrà controllata dal team NaturaGo prima di comparire sul sito.</Text>
+        <Text style={styles.nota}>{t("segnalazioni.notaControllo")}</Text>
 
         {errore && <Text style={styles.errore}>{errore}</Text>}
 
         <Pressable style={styles.invia} onPress={invia} disabled={inviando}>
-          {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>Invia segnalazione</Text>}
+          {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>{t("segnalazioni.inviaSegnalazione")}</Text>}
         </Pressable>
       </ScrollView>
     </View>

@@ -4,11 +4,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
+import { useT } from "../i18n/i18n";
 
 // Elenco dei servizi (stessi di Esplora) da spuntare: usato dalla Mappa.
 export default function ModaleServizi({ visibile, selezionati, onCambia, onChiudi }) {
   const { c } = useTema();
   const stili = useStili(c);
+  const t = useT();
   const [aperte, setAperte] = useState({});
   const alterna = (chiave) =>
     onCambia(selezionati.includes(chiave) ? selezionati.filter((c) => c !== chiave) : [...selezionati, chiave]);
@@ -17,8 +19,8 @@ export default function ModaleServizi({ visibile, selezionati, onCambia, onChiud
     <Modal visible={visibile} animationType="slide" presentationStyle="pageSheet" onRequestClose={onChiudi}>
       <SafeAreaView style={stili.schermo} edges={["top", "bottom"]}>
         <View style={stili.testata}>
-          <Text style={stili.titolo}>Filtri servizi</Text>
-          <Pressable onPress={onChiudi} hitSlop={10} accessibilityLabel="Chiudi">
+          <Text style={stili.titolo}>{t("mappa.filtriServizi")}</Text>
+          <Pressable onPress={onChiudi} hitSlop={10} accessibilityLabel={t("comune.chiudi")}>
             <Ionicons name="close" size={22} color={c.testo} />
           </Pressable>
         </View>
@@ -45,14 +47,14 @@ export default function ModaleServizi({ visibile, selezionati, onCambia, onChiud
               </View>
             );
           })}
-          <Text style={stili.nota}>Con un servizio scelto i rifugi e i bivacchi non compaiono: non hanno questi servizi.</Text>
+          <Text style={stili.nota}>{t("mappa.notaServiziRifugi")}</Text>
         </ScrollView>
         <View style={stili.piede}>
           <Pressable style={stili.cancella} onPress={() => onCambia([])} disabled={selezionati.length === 0}>
-            <Text style={[stili.cancellaTesto, selezionati.length === 0 && { opacity: 0.4 }]}>Cancella</Text>
+            <Text style={[stili.cancellaTesto, selezionati.length === 0 && { opacity: 0.4 }]}>{t("comune.cancella")}</Text>
           </Pressable>
           <Pressable style={stili.mostra} onPress={onChiudi}>
-            <Text style={stili.mostraTesto}>{selezionati.length === 0 ? "Chiudi" : "Mostra sulla mappa"}</Text>
+            <Text style={stili.mostraTesto}>{selezionati.length === 0 ? t("comune.chiudi") : t("mappa.mostraSullaMappa")}</Text>
           </Pressable>
         </View>
       </SafeAreaView>

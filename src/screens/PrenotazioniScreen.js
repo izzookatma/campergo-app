@@ -9,6 +9,7 @@ import { usePreferenze } from "../context/PreferenzeContext";
 import { urlMappa } from "../lib/mappa";
 import AccediScreen from "./AccediScreen";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import { useT } from "../i18n/i18n";
 
 // Non esiste ancora una prenotazione vera da nessuna parte (il pulsante
 // "Prenota subito" nella Scheda non è collegato a nulla, per scelta:
@@ -74,6 +75,7 @@ function SezioneVuota({ icona, testo }) {
 export default function PrenotazioniScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const { motoreMappa } = usePreferenze();
   const [future, setFuture] = useState([]);
@@ -102,29 +104,23 @@ export default function PrenotazioniScreen({ navigation }) {
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={20} color={c.testo} />
         </Pressable>
-        <Text style={styles.titolo}>Le mie prenotazioni</Text>
+        <Text style={styles.titolo}>{t("profilo.leMiePrenotazioni")}</Text>
         <View style={{ width: 20 }} />
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.contenuto}>
-        <Text style={styles.sezioneTitolo}>Prenotazioni</Text>
+        <Text style={styles.sezioneTitolo}>{t("prenotazioni.sezionePrenotazioni")}</Text>
         {!caricamento && future.length === 0 ? (
-          <SezioneVuota
-            icona="calendar-outline"
-            testo="Qui vedrai le strutture che hai prenotato, con la scheda e la mappa a portata di mano."
-          />
+          <SezioneVuota icona="calendar-outline" testo={t("prenotazioni.vuotoFuture")} />
         ) : (
           future.map((p) => (
             <CardPrenotazione key={p.id} prenotazione={p} navigation={navigation} motoreMappa={motoreMappa} />
           ))
         )}
 
-        <Text style={[styles.sezioneTitolo, { marginTop: 22 }]}>I tuoi soggiorni</Text>
+        <Text style={[styles.sezioneTitolo, { marginTop: 22 }]}>{t("prenotazioni.iTuoiSoggiorni")}</Text>
         {!caricamento && passate.length === 0 ? (
-          <SezioneVuota
-            icona="time-outline"
-            testo="Qui compariranno i posti dove hai già soggiornato, con le date del soggiorno."
-          />
+          <SezioneVuota icona="time-outline" testo={t("prenotazioni.vuotoPassate")} />
         ) : (
           passate.map((p) => (
             <CardPrenotazione key={p.id} prenotazione={p} navigation={navigation} motoreMappa={motoreMappa} />

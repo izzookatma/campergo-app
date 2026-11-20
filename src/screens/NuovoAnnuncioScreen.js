@@ -19,12 +19,14 @@ import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { pubblicaAnnuncio, CATEGORIE_MERCATINO, STATO_PRODOTTO_META } from "../lib/mercatino";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
+import { useT } from "../i18n/i18n";
 
 const MASSIMO_FOTO = 6;
 
 export default function NuovoAnnuncioScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [categoria, setCategoria] = useState("camper");
   const [titolo, setTitolo] = useState("");
@@ -40,7 +42,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
   const scegliFoto = async () => {
     const permesso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permesso.granted) {
-      Alert.alert("Foto non disponibili", "Consenti l'accesso alle foto per aggiungerle all'annuncio.");
+      Alert.alert(t("nuovoAnnuncio.fotoNonDisponibiliTitolo"), t("nuovoAnnuncio.fotoNonDisponibiliMessaggio"));
       return;
     }
     const risultato = await ImagePicker.launchImageLibraryAsync({
@@ -61,16 +63,16 @@ export default function NuovoAnnuncioScreen({ navigation }) {
   const pubblica = async () => {
     setErrore(null);
     if (foto.length === 0) {
-      setErrore("Aggiungi almeno una foto.");
+      setErrore(t("nuovoAnnuncio.erroreAggiungiFoto"));
       return;
     }
     if (!titolo.trim() || !prezzo || !metodoRitiro.trim() || !citta.trim()) {
-      setErrore("Compila titolo, prezzo, ritiro e città.");
+      setErrore(t("nuovoAnnuncio.erroreCompila"));
       return;
     }
     const prezzoNumero = Number(prezzo.replace(",", "."));
     if (!prezzoNumero || prezzoNumero <= 0) {
-      setErrore("Il prezzo deve essere maggiore di zero.");
+      setErrore(t("nuovoAnnuncio.errorePrezzo"));
       return;
     }
 
@@ -78,7 +80,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
     try {
       await pubblicaAnnuncio({
         utenteId: session.user.id,
-        nomeVenditore: session.user.user_metadata?.nome || "Utente NaturaGo",
+        nomeVenditore: session.user.user_metadata?.nome || t("comune.utenteDefault"),
         categoria,
         titolo: titolo.trim(),
         descrizione: descrizione.trim(),
@@ -88,8 +90,8 @@ export default function NuovoAnnuncioScreen({ navigation }) {
         citta: citta.trim(),
         foto,
       });
-      Alert.alert("Annuncio inviato", "Sarà visibile a tutti dopo l'approvazione di un amministratore.", [
-        { text: "Ok", onPress: () => navigation.goBack() },
+      Alert.alert(t("nuovoAnnuncio.annuncioInviatoTitolo"), t("nuovoAnnuncio.annuncioInviatoMessaggio"), [
+        { text: t("comune.ok"), onPress: () => navigation.goBack() },
       ]);
     } catch (e) {
       console.error("Errore nella pubblicazione dell'annuncio:", e);
@@ -106,12 +108,12 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color={c.testo} />
           </Pressable>
-          <Text style={styles.titoloSchermo}>Nuovo annuncio</Text>
+          <Text style={styles.titoloSchermo}>{t("nuovoAnnuncio.titoloSchermo")}</Text>
           <View style={{ width: 20 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.contenuto}>
-          <Text style={styles.etichetta}>Foto (max {MASSIMO_FOTO})</Text>
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.foto", { n: MASSIMO_FOTO })}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
             {foto.map((uri) => (
               <View key={uri} style={styles.fotoBox}>
@@ -128,7 +130,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
             )}
           </ScrollView>
 
-          <Text style={styles.etichetta}>Categoria</Text>
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.categoria")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
             {Object.entries(CATEGORIE_MERCATINO).map(([chiave, etichetta]) => (
               <Pressable
@@ -141,20 +143,20 @@ export default function NuovoAnnuncioScreen({ navigation }) {
             ))}
           </ScrollView>
 
-          <Text style={styles.etichetta}>Titolo</Text>
-          <TextInput style={styles.campo} placeholder="Es. Camper Fiat Ducato 2018" placeholderTextColor={c.testoSecondario} value={titolo} onChangeText={setTitolo} />
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.titolo")}</Text>
+          <TextInput style={styles.campo} placeholder={t("nuovoAnnuncio.placeholderTitolo")} placeholderTextColor={c.testoSecondario} value={titolo} onChangeText={setTitolo} />
 
-          <Text style={styles.etichetta}>Descrizione</Text>
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.descrizione")}</Text>
           <TextInput
             style={[styles.campo, styles.campoMultilinea]}
-            placeholder="Descrivi l'oggetto, le condizioni, eventuali dettagli utili…"
+            placeholder={t("nuovoAnnuncio.placeholderDescrizione")}
             placeholderTextColor={c.testoSecondario}
             value={descrizione}
             onChangeText={setDescrizione}
             multiline
           />
 
-          <Text style={styles.etichetta}>Condizioni</Text>
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.condizioni")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
             {Object.entries(STATO_PRODOTTO_META).map(([chiave, etichetta]) => (
               <Pressable
@@ -167,16 +169,16 @@ export default function NuovoAnnuncioScreen({ navigation }) {
             ))}
           </ScrollView>
 
-          <Text style={styles.etichetta}>Prezzo (€)</Text>
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.prezzo")}</Text>
           <TextInput style={styles.campo} placeholder="0" placeholderTextColor={c.testoSecondario} value={prezzo} onChangeText={setPrezzo} keyboardType="decimal-pad" />
 
-          <Text style={styles.etichetta}>Città</Text>
-          <TextInput style={styles.campo} placeholder="Es. Verona" placeholderTextColor={c.testoSecondario} value={citta} onChangeText={setCitta} />
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.citta")}</Text>
+          <TextInput style={styles.campo} placeholder={t("nuovoAnnuncio.placeholderCitta")} placeholderTextColor={c.testoSecondario} value={citta} onChangeText={setCitta} />
 
-          <Text style={styles.etichetta}>Come si ritira</Text>
+          <Text style={styles.etichetta}>{t("nuovoAnnuncio.comeSiRitira")}</Text>
           <TextInput
             style={styles.campo}
-            placeholder="Es. Consegna a mano, spedizione a carico dell'acquirente…"
+            placeholder={t("nuovoAnnuncio.placeholderRitiro")}
             placeholderTextColor={c.testoSecondario}
             value={metodoRitiro}
             onChangeText={setMetodoRitiro}
@@ -185,9 +187,9 @@ export default function NuovoAnnuncioScreen({ navigation }) {
           {errore ? <Text style={styles.errore}>{errore}</Text> : null}
 
           <Pressable style={styles.pulsantePubblica} onPress={pubblica} disabled={pubblicando}>
-            {pubblicando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.pulsantePubblicaTesto}>Pubblica annuncio</Text>}
+            {pubblicando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.pulsantePubblicaTesto}>{t("nuovoAnnuncio.pubblicaAnnuncio")}</Text>}
           </Pressable>
-          <Text style={styles.nota}>Il tuo annuncio sarà visibile a tutti dopo l&apos;approvazione di un amministratore.</Text>
+          <Text style={styles.nota}>{t("nuovoAnnuncio.notaApprovazione")}</Text>
         </ScrollView>
       </SafeAreaView>
     </KeyboardAvoidingView>

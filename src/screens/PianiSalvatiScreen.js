@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaPianiSalvati, eliminaPianoSalvato } from "../lib/pianiSalvati";
+import { useT } from "../i18n/i18n";
 
 function dataBreve(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -14,6 +15,7 @@ function dataBreve(iso) {
 export default function PianiSalvatiScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [piani, setPiani] = useState(null);
 
@@ -26,10 +28,10 @@ export default function PianiSalvatiScreen({ navigation }) {
   useFocusEffect(carica);
 
   const elimina = (p) => {
-    Alert.alert("Eliminare questo piano?", p.richiesta, [
-      { text: "Annulla", style: "cancel" },
+    Alert.alert(t("pianiSalvati.eliminareTitolo"), p.richiesta, [
+      { text: t("comune.annulla"), style: "cancel" },
       {
-        text: "Elimina",
+        text: t("comune.elimina"),
         style: "destructive",
         onPress: () => {
           setPiani((prev) => prev.filter((x) => x.id !== p.id));
@@ -48,7 +50,7 @@ export default function PianiSalvatiScreen({ navigation }) {
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titoloIntestazione}>I miei piani di viaggio</Text>
+        <Text style={styles.titoloIntestazione}>{t("profilo.iMieiPianiViaggio")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
@@ -60,7 +62,7 @@ export default function PianiSalvatiScreen({ navigation }) {
           piani === null ? (
             <ActivityIndicator color={c.primario} style={{ marginTop: 30 }} />
           ) : (
-            <Text style={styles.vuoto}>Non hai ancora salvato nessun piano di viaggio.</Text>
+            <Text style={styles.vuoto}>{t("pianiSalvati.nessunoSalvato")}</Text>
           )
         }
         renderItem={({ item }) => (
@@ -73,9 +75,9 @@ export default function PianiSalvatiScreen({ navigation }) {
                 {item.richiesta}
               </Text>
               <Text style={styles.cardSottotitolo}>
-                {item.giorniRichiesti} giorni · {(item.tappe || []).join(" → ")}
+                {t("pianiSalvati.giorniTappe", { n: item.giorniRichiesti, tappe: (item.tappe || []).join(" → ") })}
               </Text>
-              <Text style={styles.cardData}>Salvato il {dataBreve(item.creatoIl)}</Text>
+              <Text style={styles.cardData}>{t("pianiSalvati.salvatoIl", { data: dataBreve(item.creatoIl) })}</Text>
             </View>
             <Pressable style={styles.elimina} onPress={() => elimina(item)} hitSlop={8}>
               <Ionicons name="trash-outline" size={17} color={c.pericolo} />

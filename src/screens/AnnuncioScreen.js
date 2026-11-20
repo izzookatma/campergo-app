@@ -6,6 +6,7 @@ import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { CATEGORIE_MERCATINO, STATO_PRODOTTO_META, inviaMessaggio } from "../lib/mercatino";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import { useT } from "../i18n/i18n";
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -14,6 +15,7 @@ function formattaData(iso) {
 export default function AnnuncioScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { annuncio } = route.params;
   const { session } = useAuth();
   const [testo, setTesto] = useState("");
@@ -30,14 +32,14 @@ export default function AnnuncioScreen({ route, navigation }) {
         annuncioId: annuncio.id,
         mittenteId: session.user.id,
         destinatarioId: annuncio.venditore_id,
-        nomeMittente: session.user.user_metadata?.nome || "Utente NaturaGo",
+        nomeMittente: session.user.user_metadata?.nome || t("comune.utenteDefault"),
         testo: testo.trim(),
       });
       setInviato(true);
       setTesto("");
     } catch (e) {
       console.error("Errore nell'invio del messaggio:", e);
-      Alert.alert("Non riesco a inviare il messaggio", "Riprova tra poco.");
+      Alert.alert(t("mercatino.erroreInvioTitolo"), t("comune.riprovaTraPoco"));
     } finally {
       setInviando(false);
     }
@@ -88,35 +90,32 @@ export default function AnnuncioScreen({ route, navigation }) {
 
           {annuncio.descrizione ? <Text style={styles.descrizione}>{annuncio.descrizione}</Text> : null}
 
-          <Text style={styles.venditore}>Venduto da {annuncio.nome_venditore} · {formattaData(annuncio.creato_il)}</Text>
+          <Text style={styles.venditore}>{t("mercatino.vendutoDa", { nome: annuncio.nome_venditore, data: formattaData(annuncio.creato_il) })}</Text>
 
           <View style={styles.avviso}>
             <Ionicons name="shield-checkmark-outline" size={16} color={c.primario} />
-            <Text style={styles.avvisoTesto}>
-              Incontrati sempre in un luogo pubblico e verifica l&apos;oggetto prima di pagare. NaturaGo non gestisce né
-              garantisce le transazioni tra utenti.
-            </Text>
+            <Text style={styles.avvisoTesto}>{t("mercatino.avvisoSicurezza")}</Text>
           </View>
 
           {!propio && !session && (
             <Pressable
               style={styles.pulsanteInvia}
-              onPress={() => Alert.alert("Accedi", "Accedi al tuo account per contattare il venditore.")}
+              onPress={() => Alert.alert(t("accedi.titoloAccedi"), t("mercatino.accediPerContattare"))}
             >
-              <Text style={styles.pulsanteInviaTesto}>Contatta il venditore</Text>
+              <Text style={styles.pulsanteInviaTesto}>{t("mercatino.contattaVenditore")}</Text>
             </Pressable>
           )}
 
           {!propio && session && (
             <View style={styles.contatta}>
               {inviato ? (
-                <Text style={styles.inviatoTesto}>Messaggio inviato. Trovi la conversazione in &quot;I miei messaggi&quot;.</Text>
+                <Text style={styles.inviatoTesto}>{t("mercatino.messaggioInviato")}</Text>
               ) : (
                 <>
-                  <Text style={styles.contattaTitolo}>Contatta il venditore</Text>
+                  <Text style={styles.contattaTitolo}>{t("mercatino.contattaVenditore")}</Text>
                   <TextInput
                     style={styles.campoMessaggio}
-                    placeholder="Scrivi un messaggio..."
+                    placeholder={t("mercatino.placeholderMessaggio")}
                     placeholderTextColor={c.testoSecondario}
                     value={testo}
                     onChangeText={setTesto}
@@ -126,7 +125,7 @@ export default function AnnuncioScreen({ route, navigation }) {
                     {inviando ? (
                       <ActivityIndicator color={c.sulPrimario} size="small" />
                     ) : (
-                      <Text style={styles.pulsanteInviaTesto}>Invia messaggio</Text>
+                      <Text style={styles.pulsanteInviaTesto}>{t("mercatino.inviaMessaggio")}</Text>
                     )}
                   </Pressable>
                 </>

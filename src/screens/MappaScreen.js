@@ -19,6 +19,7 @@ import CreaPercorso from "../components/CreaPercorso";
 import TendinaSuggerimentiMappa from "../components/mappa/TendinaSuggerimentiMappa";
 import ModalePianoMappa from "../components/mappa/ModalePianoMappa";
 import { distanzaKmPunti } from "../lib/percorsoStradale";
+import { useT } from "../i18n/i18n";
 
 // react-native-maps richiede moduli nativi non presenti in Expo Go: in attesa
 // della build di sviluppo EAS si mostra il segnaposto per non far crashare
@@ -69,21 +70,20 @@ const PAROLE_CATEGORIA_ITINERARIO = {
 function MappaPlaceholder() {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
   return (
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.sovrapposizioneStatica}>
         <MarchioNaturaGo />
         <View style={styles.ricercaPill}>
           <Ionicons name="search" size={15} color={c.testoSecondario} />
-          <Text style={styles.placeholderRicerca}>Zona, regione, struttura…</Text>
+          <Text style={styles.placeholderRicerca}>{t("esplora.placeholderRicerca")}</Text>
         </View>
       </SafeAreaView>
       <View style={styles.centro}>
         <Ionicons name="map-outline" size={32} color="#93c5fd" />
-        <Text style={styles.messaggioCentro}>Mappa in arrivo</Text>
-        <Text style={styles.messaggioCentroPiccolo}>
-          Pronta, ma serve la build di sviluppo per vederla su questo telefono
-        </Text>
+        <Text style={styles.messaggioCentro}>{t("mappa.inArrivo")}</Text>
+        <Text style={styles.messaggioCentroPiccolo}>{t("mappa.serveBuildSviluppo")}</Text>
       </View>
     </View>
   );
@@ -93,6 +93,7 @@ function MappaVera({ navigation, route }) {
   const { default: MapView, Marker, Polyline } = require("react-native-maps");
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
   const { session } = useAuth();
   const mappaRef = useRef(null);
   const [strutture, setStrutture] = useState([]);
@@ -400,11 +401,11 @@ function MappaVera({ navigation, route }) {
       permesso = await Location.requestForegroundPermissionsAsync();
     } catch (e) {
       console.error("Permesso posizione:", e);
-      Alert.alert("Posizione non disponibile", "Per centrare la mappa su di te, consenti l'accesso alla posizione.");
+      Alert.alert(t("esplora.posizioneTitolo"), t("mappa.posizioneMessaggio"));
       return;
     }
     if (permesso.status !== "granted") {
-      Alert.alert("Posizione non disponibile", "Per centrare la mappa su di te, consenti l'accesso alla posizione.");
+      Alert.alert(t("esplora.posizioneTitolo"), t("mappa.posizioneMessaggio"));
       return;
     }
     setCercandoPosizione(true);
@@ -416,16 +417,16 @@ function MappaVera({ navigation, route }) {
       );
     } catch (e) {
       console.error("Errore nel trovare la posizione:", e);
-      Alert.alert("Non riesco a trovare la tua posizione", "Riprova tra poco.");
+      Alert.alert(t("esplora.posizioneErroreTitolo"), t("comune.riprovaTraPoco"));
     } finally {
       setCercandoPosizione(false);
     }
   };
 
   const onRicercaIARichiedeAccesso = () => {
-    Alert.alert("Accedi", "La ricerca con l'IA è gratuita per chi si registra. Accedi o registrati per usarla.", [
-      { text: "Annulla", style: "cancel" },
-      { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+    Alert.alert(t("accedi.titoloAccedi"), t("esplora.iaAccediMessaggio"), [
+      { text: t("comune.annulla"), style: "cancel" },
+      { text: t("accedi.titoloAccedi"), onPress: () => navigation.navigate("Accedi") },
     ]);
   };
 
@@ -564,7 +565,7 @@ function MappaVera({ navigation, route }) {
             <Ionicons name="search" size={15} color={c.testoSecondario} />
             <TextInput
               style={styles.ricercaInput}
-              placeholder="Zona, regione, struttura…"
+              placeholder={t("esplora.placeholderRicerca")}
               placeholderTextColor={c.testoSecondario}
               value={termine}
               onChangeText={setTermine}
@@ -618,7 +619,7 @@ function MappaVera({ navigation, route }) {
         {!!piano?.giorni?.length && !modalPianoAperto && (
           <Pressable style={styles.pillPiano} onPress={() => setModalPianoAperto(true)}>
             <Ionicons name="calendar-outline" size={14} color={c.primario} />
-            <Text style={styles.pillPianoTesto}>Vedi il piano</Text>
+            <Text style={styles.pillPianoTesto}>{t("mappa.vediIlPiano")}</Text>
           </Pressable>
         )}
 
@@ -663,7 +664,7 @@ function MappaVera({ navigation, route }) {
           </ScrollView>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={filtriServiziIA.length > 0 ? `Filtri servizi, ${filtriServiziIA.length} attivi` : "Filtri servizi"}
+            accessibilityLabel={filtriServiziIA.length > 0 ? t("mappa.filtriServiziAttivi", { n: filtriServiziIA.length }) : t("mappa.filtriServizi")}
             style={[styles.bottoneServizi, filtriServiziIA.length > 0 && styles.bottoneServiziAttivo]}
             onPress={() => setServiziAperti(true)}
           >
@@ -682,7 +683,7 @@ function MappaVera({ navigation, route }) {
         {senzaConnessione && (
           <View style={styles.bannerOffline}>
             <Ionicons name="cloud-offline-outline" size={14} color={c.testoSecondario} />
-            <Text style={styles.bannerOfflineTesto}>Senza connessione: ultimi risultati salvati.</Text>
+            <Text style={styles.bannerOfflineTesto}>{t("esplora.senzaConnessione")}</Text>
           </View>
         )}
       </SafeAreaView>
@@ -705,7 +706,7 @@ function MappaVera({ navigation, route }) {
         <SafeAreaView edges={["bottom"]} style={styles.strisciaPercorso} pointerEvents="box-none">
           {struttureToccateDalPercorso.length === 0 ? (
             <View style={styles.strutturaPercorsoVuota}>
-              <Text style={styles.strutturaPercorsoVuotaTesto}>Nessuna struttura mostrata è sul percorso</Text>
+              <Text style={styles.strutturaPercorsoVuotaTesto}>{t("mappa.nessunaStrutturaSulPercorso")}</Text>
             </View>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strisciaPercorsoContenuto}>

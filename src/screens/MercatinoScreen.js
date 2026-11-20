@@ -10,12 +10,13 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
-
-const FILTRI_CATEGORIA = [{ chiave: "", etichetta: "Tutte" }, ...Object.entries(CATEGORIE_MERCATINO).map(([chiave, etichetta]) => ({ chiave, etichetta }))];
+import { useT } from "../i18n/i18n";
 
 export default function MercatinoScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
+  const FILTRI_CATEGORIA = [{ chiave: "", etichetta: t("mercatino.tutte") }, ...Object.entries(CATEGORIE_MERCATINO).map(([chiave, etichetta]) => ({ chiave, etichetta }))];
   const { session } = useAuth();
   const [vista, setVista] = useState("tutti");
   const [annunci, setAnnunci] = useState([]);
@@ -46,7 +47,7 @@ export default function MercatinoScreen({ navigation }) {
 
   const nuovoAnnuncio = () => {
     if (!session) {
-      Alert.alert("Accedi", "Accedi al tuo account per pubblicare un annuncio.");
+      Alert.alert(t("accedi.titoloAccedi"), t("mercatino.accediPerPubblicare"));
       return;
     }
     navigation.navigate("NuovoAnnuncio");
@@ -57,31 +58,31 @@ export default function MercatinoScreen({ navigation }) {
       <View style={styles.intestazione}>
         <MarchioNaturaGo />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Mercatino</Text>
+          <Text style={styles.titolo}>{t("tab.mercatino")}</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Pressable
               style={styles.pulsanteMessaggi}
               onPress={() =>
                 session
                   ? navigation.navigate("Messaggi")
-                  : Alert.alert("Accedi", "Accedi al tuo account per vedere i tuoi messaggi.")
+                  : Alert.alert(t("accedi.titoloAccedi"), t("mercatino.accediPerMessaggi"))
               }
             >
               <Ionicons name="chatbubble-outline" size={16} color={c.primario} />
             </Pressable>
             <Pressable style={styles.pulsanteNuovo} onPress={nuovoAnnuncio}>
               <Ionicons name="add" size={16} color={c.sulPrimario} />
-              <Text style={styles.pulsanteNuovoTesto}>Vendi</Text>
+              <Text style={styles.pulsanteNuovoTesto}>{t("mercatino.vendi")}</Text>
             </Pressable>
           </View>
         </View>
 
         <View style={styles.vistaToggle}>
           <Pressable style={[styles.vistaChip, vista === "tutti" && styles.vistaChipAttivo]} onPress={() => setVista("tutti")}>
-            <Text style={[styles.vistaChipTesto, vista === "tutti" && styles.vistaChipTestoAttivo]}>Tutti gli annunci</Text>
+            <Text style={[styles.vistaChipTesto, vista === "tutti" && styles.vistaChipTestoAttivo]}>{t("mercatino.tuttiGliAnnunci")}</Text>
           </Pressable>
           <Pressable style={[styles.vistaChip, vista === "miei" && styles.vistaChipAttivo]} onPress={() => setVista("miei")}>
-            <Text style={[styles.vistaChipTesto, vista === "miei" && styles.vistaChipTestoAttivo]}>I miei annunci</Text>
+            <Text style={[styles.vistaChipTesto, vista === "miei" && styles.vistaChipTestoAttivo]}>{t("mercatino.iMieiAnnunci")}</Text>
           </Pressable>
         </View>
 
@@ -91,7 +92,7 @@ export default function MercatinoScreen({ navigation }) {
               <Ionicons name="search" size={15} color={c.testoSecondario} />
               <TextInput
                 style={styles.inputRicerca}
-                placeholder="Filtra per città…"
+                placeholder={t("mercatino.placeholderCitta")}
                 placeholderTextColor={c.testoSecondario}
                 value={citta}
                 onChangeText={setCitta}
@@ -116,13 +117,13 @@ export default function MercatinoScreen({ navigation }) {
       ) : !session && vista === "miei" ? (
         <View style={styles.vuoto}>
           <Ionicons name="pricetag-outline" size={28} color={c.testoSecondario} />
-          <Text style={styles.vuotoTesto}>Accedi al tuo account per pubblicare e gestire i tuoi annunci.</Text>
+          <Text style={styles.vuotoTesto}>{t("mercatino.accediPerGestire")}</Text>
         </View>
       ) : annunci.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="pricetag-outline" size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>
-            {vista === "miei" ? "Non hai ancora pubblicato nessun annuncio." : "Nessun annuncio trovato."}
+            {vista === "miei" ? t("mercatino.nessunoPubblicato") : t("mercatino.nessunoTrovato")}
           </Text>
         </View>
       ) : (
@@ -148,10 +149,10 @@ export default function MercatinoScreen({ navigation }) {
                 <Text style={styles.cardLocalita}>{item.citta}</Text>
                 {vista === "miei" && item.stato !== "approvato" && (
                   <Text style={styles.cardStato}>
-                    {item.stato === "in_attesa" ? "In attesa di approvazione" : "Rifiutato"}
+                    {item.stato === "in_attesa" ? t("mercatino.inAttesa") : t("mercatino.rifiutato")}
                   </Text>
                 )}
-                {item.venduto && <Text style={styles.cardVenduto}>Venduto</Text>}
+                {item.venduto && <Text style={styles.cardVenduto}>{t("mercatino.venduto")}</Text>}
               </View>
               <Text style={styles.cardPrezzo}>{item.prezzo}€</Text>
             </Pressable>

@@ -6,10 +6,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaMessaggi, inviaMessaggio } from "../lib/mercatino";
+import { useT } from "../i18n/i18n";
 
 export default function ConversazioneScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { conversazione } = route.params;
   const { session } = useAuth();
   const [messaggi, setMessaggi] = useState([]);
@@ -35,7 +37,7 @@ export default function ConversazioneScreen({ route, navigation }) {
         annuncioId: conversazione.annuncioId,
         mittenteId: session.user.id,
         destinatarioId: conversazione.controparteId,
-        nomeMittente: session.user.user_metadata?.nome || "Utente NaturaGo",
+        nomeMittente: session.user.user_metadata?.nome || t("comune.utenteDefault"),
         testo: testo.trim(),
       });
       setTesto("");
@@ -83,7 +85,7 @@ export default function ConversazioneScreen({ route, navigation }) {
         <View style={styles.barraInvio}>
           <TextInput
             style={styles.campo}
-            placeholder="Scrivi un messaggio…"
+            placeholder={t("mercatino.placeholderMessaggio")}
             placeholderTextColor={c.testoSecondario}
             value={testo}
             onChangeText={setTesto}

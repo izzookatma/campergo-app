@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../../theme/tema";
+import { useT } from "../../i18n/i18n";
 
 // Tendina dei suggerimenti sotto la barra di ricerca della Mappa (ricerche
 // recenti + regioni + strutture già caricate): stessa idea già vista in
@@ -18,21 +19,22 @@ export default function TendinaSuggerimentiMappa({
 }) {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
 
   return (
     <View style={styles.tendina}>
       {mostraRicercheRecenti && (
         <>
           <View style={styles.tendinaIntestazione}>
-            <Text style={styles.tendinaIntestazioneTesto}>Ricerche recenti</Text>
+            <Text style={styles.tendinaIntestazioneTesto}>{t("esplora.ricercheRecenti")}</Text>
             <Pressable onPress={onCancellaRicerche} hitSlop={8}>
-              <Text style={styles.tendinaCancella}>Cancella</Text>
+              <Text style={styles.tendinaCancella}>{t("comune.cancella")}</Text>
             </Pressable>
           </View>
-          {ricercheRecenti.map((t) => (
-            <Pressable key={`recente-${t}`} style={styles.rigaTendina} onPress={() => onScegliTermine(t)}>
+          {ricercheRecenti.map((termine) => (
+            <Pressable key={`recente-${termine}`} style={styles.rigaTendina} onPress={() => onScegliTermine(termine)}>
               <Ionicons name="time-outline" size={15} color={c.testoSecondario} />
-              <Text style={styles.rigaTendinaTesto}>{t}</Text>
+              <Text style={styles.rigaTendinaTesto}>{termine}</Text>
             </Pressable>
           ))}
         </>
@@ -41,7 +43,7 @@ export default function TendinaSuggerimentiMappa({
         <Pressable key={`regione-${r}`} style={styles.rigaTendina} onPress={() => onScegliRegione(r)}>
           <Ionicons name="map-outline" size={15} color={c.primario} />
           <Text style={styles.rigaTendinaTesto}>{r}</Text>
-          <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
+          <Text style={styles.rigaTendinaEtichetta}>{t("esplora.regione")}</Text>
         </Pressable>
       ))}
       {struttureSuggerite.map((s) => (
