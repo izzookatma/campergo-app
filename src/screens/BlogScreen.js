@@ -6,6 +6,7 @@ import { caricaArticoli, etichettaRubrica } from "../lib/blog";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
+import { useT } from "../i18n/i18n";
 
 function dataBreve(iso) {
   if (!iso) return null;
@@ -15,6 +16,7 @@ function dataBreve(iso) {
 export default function BlogScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const [articoli, setArticoli] = useState(null);
   const [rubricaScelta, setRubricaScelta] = useState(null);
 
@@ -39,14 +41,14 @@ export default function BlogScreen({ navigation }) {
       <View style={styles.intestazione}>
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
         <Text style={styles.titolo}>NaturaGo Explorer</Text>
-        <Text style={styles.sottotitolo}>Idee e itinerari per chi viaggia lento, in camper, tenda o roulotte</Text>
+        <Text style={styles.sottotitolo}>{t("blog.sottotitolo")}</Text>
       </View>
 
       {articoli === null ? (
         <ScheletroCard righe={4} />
       ) : articoli.length === 0 ? (
         <View style={styles.vuoto}>
-          <Text style={styles.vuotoTesto}>Primi articoli in arrivo: torna a trovarci presto.</Text>
+          <Text style={styles.vuotoTesto}>{t("blog.nessunArticolo")}</Text>
         </View>
       ) : (
         <FlatList
@@ -84,7 +86,7 @@ export default function BlogScreen({ navigation }) {
                     style={[styles.chip, rubricaScelta === null && styles.chipAttivo]}
                     onPress={() => setRubricaScelta(null)}
                   >
-                    <Text style={[styles.chipTesto, rubricaScelta === null && styles.chipTestoAttivo]}>Tutte</Text>
+                    <Text style={[styles.chipTesto, rubricaScelta === null && styles.chipTestoAttivo]}>{t("mercatino.tutte")}</Text>
                   </Pressable>
                   {rubricheDisponibili.map((r) => (
                     <Pressable

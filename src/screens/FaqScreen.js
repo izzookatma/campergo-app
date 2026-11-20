@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
+import { useT } from "../i18n/i18n";
 
 // Domande frequenti (src/FaqPage.jsx sul sito): contenuto statico, non da
 // tabella — se cambia una regola (commissione, cancellazioni...) va
@@ -237,6 +238,7 @@ function GruppoFaq({ titolo, voci, apertaId, onToggle, navigation, styles, c }) 
 export default function FaqScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const [apertaId, setApertaId] = useState(null);
   const gestori = FAQ_GESTORI.filter((f) => !(f.finoAllApertura && PRENOTAZIONI_ATTIVE));
   const viaggiatori = FAQ_VIAGGIATORI.filter((f) => !(f.finoAllApertura && PRENOTAZIONI_ATTIVE));
@@ -247,13 +249,11 @@ export default function FaqScreen({ navigation }) {
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.contenuto}>
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
-        <Text style={styles.titolo}>Domande frequenti</Text>
-        <Text style={styles.sottotitolo}>
-          Le risposte alle domande che ci fanno più spesso, soprattutto i gestori di campeggi, aree sosta e strutture.
-        </Text>
+        <Text style={styles.titolo}>{t("faq.titolo")}</Text>
+        <Text style={styles.sottotitolo}>{t("faq.sottotitolo")}</Text>
 
         <GruppoFaq
-          titolo="Per i gestori di strutture e attività"
+          titolo={t("faq.perIGestori")}
           voci={gestori}
           apertaId={apertaId}
           onToggle={alterna}
@@ -262,7 +262,7 @@ export default function FaqScreen({ navigation }) {
           c={c}
         />
         <GruppoFaq
-          titolo="Per chi viaggia"
+          titolo={t("faq.perChiViaggia")}
           voci={viaggiatori}
           apertaId={apertaId}
           onToggle={alterna}
@@ -272,10 +272,10 @@ export default function FaqScreen({ navigation }) {
         />
 
         <View style={styles.cassettaAiuto}>
-          <Text style={styles.cassettaTitolo}>Non hai trovato la risposta?</Text>
-          <Text style={styles.cassettaTesto}>Scrivici la tua domanda: ti rispondiamo via email, il prima possibile.</Text>
+          <Text style={styles.cassettaTitolo}>{t("faq.nonHaiTrovato")}</Text>
+          <Text style={styles.cassettaTesto}>{t("faq.scriviciLaTuaDomanda")}</Text>
           <Pressable style={styles.cassettaPulsante} onPress={() => navigation.navigate("NuovaDomanda")}>
-            <Text style={styles.cassettaPulsanteTesto}>Fai una domanda</Text>
+            <Text style={styles.cassettaPulsanteTesto}>{t("faq.faiUnaDomanda")}</Text>
           </Pressable>
         </View>
       </ScrollView>

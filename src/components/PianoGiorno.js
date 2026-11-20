@@ -5,6 +5,7 @@ import { useTema, ombra } from "../theme/tema";
 import { ETICHETTE_TIPO, ETICHETTA_RIFUGIO } from "../lib/strutture";
 import { CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { CATEGORIA_ITINERARIO_META } from "../lib/itinerari";
+import { useT } from "../i18n/i18n";
 
 // Le card del piano giorno-per-giorno (genera-itinerario-ia), condivise tra
 // PianificaViaggioScreen.js e CreaPercorso.js/MappaScreen.js — stessa idea
@@ -77,16 +78,18 @@ function ModaleScelta({ visibile, titolo, opzioni, onScegli, onChiudi }) {
 function PulsanteCambia({ onPress }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   return (
     <Pressable style={styles.cambiaLink} onPress={onPress} hitSlop={6}>
       <Ionicons name="swap-horizontal" size={12} color={c.primario} />
-      <Text style={styles.cambiaTesto}>Cambia</Text>
+      <Text style={styles.cambiaTesto}>{t("comune.cambia")}</Text>
     </Pressable>
   );
 }
 
 function CardStrutturaSingola({ struttura, etichetta, icona, navigation, alternative, onCambia }) {
   const { c, spazio, raggio } = useTema();
+  const t = useT();
   const styles = useEstili(c, spazio, raggio);
   const [apertoScelta, setApertoScelta] = useState(false);
   if (!struttura) return null;
@@ -108,7 +111,7 @@ function CardStrutturaSingola({ struttura, etichetta, icona, navigation, alterna
       {onCambia && (
         <ModaleScelta
           visibile={apertoScelta}
-          titolo={`Scegli ${etichetta.toLowerCase()}`}
+          titolo={t("pianoGiorno.scegli", { etichetta: etichetta.toLowerCase() })}
           opzioni={altreOpzioni}
           onScegli={(o) => {
             setApertoScelta(false);
@@ -124,16 +127,17 @@ function CardStrutturaSingola({ struttura, etichetta, icona, navigation, alterna
 function SezioneDormire({ dormire, navigation, candidati, onCambia }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   if (!dormire) return null;
   const libera = dormire.libera;
-  const etichettaLibera = libera?.tipo === "sosta_libera" ? "Sosta libera" : "Parcheggio";
+  const etichettaLibera = libera?.tipo === "sosta_libera" ? t("pianifica.sostaLibera") : t("scheda.parcheggio");
   if (!dormire.campeggio && !dormire.areaSosta && !libera) return null;
   return (
     <View style={{ gap: 6 }}>
-      <Text style={styles.etichettaSezione}>Dove dormire</Text>
+      <Text style={styles.etichettaSezione}>{t("pianifica.doveDormire")}</Text>
       <CardStrutturaSingola
         struttura={dormire.campeggio}
-        etichetta="Campeggio"
+        etichetta={t("pianifica.campeggio")}
         icona="bonfire-outline"
         navigation={navigation}
         alternative={candidati?.campeggio}
@@ -141,7 +145,7 @@ function SezioneDormire({ dormire, navigation, candidati, onCambia }) {
       />
       <CardStrutturaSingola
         struttura={dormire.areaSosta}
-        etichetta="Area sosta"
+        etichetta={t("pianifica.areaSosta")}
         icona="bus-outline"
         navigation={navigation}
         alternative={candidati?.areaSosta}
@@ -162,6 +166,7 @@ function SezioneDormire({ dormire, navigation, candidati, onCambia }) {
 function CardVoce({ voce, navigation, alternative, onCambia }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const [apertoScelta, setApertoScelta] = useState(false);
   const meta = voce.tipo === "cultura" ? CATEGORIA_CULTURALE_META[voce.categoria] : CATEGORIA_ITINERARIO_META[voce.categoria];
   const sottotitolo = voce.tipo === "cultura" ? voce.citta : voce.regione;
@@ -188,7 +193,7 @@ function CardVoce({ voce, navigation, alternative, onCambia }) {
       {onCambia && (
         <ModaleScelta
           visibile={apertoScelta}
-          titolo="Scegli cosa visitare"
+          titolo={t("pianoGiorno.scegliCosaVisitare")}
           opzioni={altreOpzioni}
           onScegli={(o) => {
             setApertoScelta(false);

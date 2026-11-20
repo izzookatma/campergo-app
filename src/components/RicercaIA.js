@@ -5,6 +5,7 @@ import { useTema } from "../theme/tema";
 import { interpretaRicercaIA, mappaFiltriIA } from "../lib/ricercaIA";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
+import { useT } from "../i18n/i18n";
 
 // Campo "descrivi cosa cerchi" sotto la barra di ricerca normale, stessa
 // prova già pubblicata sul sito — ora con microfono (build di sviluppo,
@@ -20,6 +21,7 @@ import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
 export default function RicercaIA({ onRisultato, loggato, onRichiedeAccesso }) {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
   const [testo, setTesto] = useState("");
   const [caricando, setCaricando] = useState(false);
   const [errore, setErrore] = useState("");
@@ -35,11 +37,13 @@ export default function RicercaIA({ onRisultato, loggato, onRichiedeAccesso }) {
     }
     setErrore("");
     setAscoltando(true);
+    // "it-IT" fissa apposta: la frase va interpretata da interpretaRicercaIA
+    // (lib/ricercaIA.js), che oggi capisce solo l'italiano.
     const controllo = await avviaDettatura({
       lingua: "it-IT",
       onRisultato: (trascrizione) => setTesto(trascrizione),
       onErrore: () => {
-        setErrore("Non sono riuscito ad ascoltare: riprova, oppure scrivi la ricerca.");
+        setErrore(t("ricercaIA.erroreAscolto"));
         setAscoltando(false);
       },
       onFine: () => setAscoltando(false),
@@ -61,7 +65,7 @@ export default function RicercaIA({ onRisultato, loggato, onRichiedeAccesso }) {
       const filtri = await interpretaRicercaIA(frase);
       onRisultato(mappaFiltriIA(filtri));
     } catch (e) {
-      setErrore(messaggioErroreComprensibile(e, "Non sono riuscito a interpretare la ricerca."));
+      setErrore(messaggioErroreComprensibile(e, t("ricercaIA.erroreInterpretazione")));
     } finally {
       setCaricando(false);
     }
@@ -70,14 +74,14 @@ export default function RicercaIA({ onRisultato, loggato, onRichiedeAccesso }) {
   return (
     <View style={styles.contenitore}>
       <View style={styles.badge}>
-        <Text style={styles.badgeNovita}>NOVITÀ</Text>
-        <Text style={styles.badgeGratis}>gratis se ti iscrivi</Text>
+        <Text style={styles.badgeNovita}>{t("ricercaIA.novita")}</Text>
+        <Text style={styles.badgeGratis}>{t("ricercaIA.gratisSeIscrivi")}</Text>
       </View>
       <View style={styles.pill}>
         <Ionicons name="sparkles-outline" size={16} color={c.pericolo} />
         <TextInput
           style={styles.input}
-          placeholder="Oppure descrivi cosa cerchi…"
+          placeholder={t("ricercaIA.placeholder")}
           placeholderTextColor={c.testoSecondario}
           value={testo}
           onChangeText={setTesto}
@@ -101,7 +105,7 @@ export default function RicercaIA({ onRisultato, loggato, onRichiedeAccesso }) {
           {caricando ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <Text style={styles.bottoneTesto}>Cerca con l&apos;IA</Text>
+            <Text style={styles.bottoneTesto}>{t("ricercaIA.cercaConIA")}</Text>
           )}
         </Pressable>
       </View>

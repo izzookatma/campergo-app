@@ -5,6 +5,7 @@ import { useTema } from "../theme/tema";
 import { creaPercorso } from "../lib/pianificatore";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
+import { useT } from "../i18n/i18n";
 
 // "Creami un percorso": stessa idea della Ricerca IA (RicercaIA.js) e di
 // "Pianifica il tuo viaggio" (PianificaViaggioScreen.js) - stesso stile,
@@ -16,6 +17,7 @@ import { dettaturaDisponibile, avviaDettatura } from "../lib/voce";
 export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onRichiedeAccesso }) {
   const { c } = useTema();
   const styles = useEstili(c);
+  const t = useT();
   const [aperto, setAperto] = useState(false);
   const [testo, setTesto] = useState("");
   const [caricando, setCaricando] = useState(false);
@@ -32,11 +34,15 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
     }
     setErrore("");
     setAscoltando(true);
+    // "it-IT" fissa apposta: la frase va interpretata da creaPercorso()
+    // (lib/pianificatore.js), che oggi capisce solo l'italiano — cambiare
+    // solo la lingua del microfono senza toccare quella lato server
+    // peggiorerebbe l'esperienza, non la risolverebbe.
     const controllo = await avviaDettatura({
       lingua: "it-IT",
       onRisultato: (trascrizione) => setTesto(trascrizione),
       onErrore: () => {
-        setErrore("Non sono riuscito ad ascoltare: riprova, oppure scrivi la richiesta.");
+        setErrore(t("creaPercorso.erroreAscolto"));
         setAscoltando(false);
       },
       onFine: () => setAscoltando(false),
@@ -59,7 +65,7 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
       onPercorso(risultato);
       setAperto(false);
     } catch (e) {
-      setErrore(messaggioErroreComprensibile(e, "Non sono riuscito a creare il percorso."));
+      setErrore(messaggioErroreComprensibile(e, t("creaPercorso.erroreCreazione")));
     } finally {
       setCaricando(false);
     }
@@ -79,12 +85,12 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
       <View style={styles.rigaChiuso}>
         <Pressable style={styles.pillChiuso} onPress={() => setAperto(true)}>
           <Ionicons name="sparkles-outline" size={14} color={c.pericolo} />
-          <Text style={styles.pillChiusoTesto}>{attivo ? "Modifica il percorso" : "Creami un percorso"}</Text>
+          <Text style={styles.pillChiusoTesto}>{attivo ? t("creaPercorso.modificaPercorso") : t("creaPercorso.creamiUnPercorso")}</Text>
         </Pressable>
         {attivo && (
           <Pressable style={styles.pillTogli} onPress={chiudi}>
             <Ionicons name="close" size={14} color={c.testoSecondario} />
-            <Text style={styles.pillTogliTesto}>Togli il percorso</Text>
+            <Text style={styles.pillTogliTesto}>{t("creaPercorso.togliIlPercorso")}</Text>
           </Pressable>
         )}
       </View>
@@ -97,7 +103,7 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
         <Ionicons name="sparkles-outline" size={16} color={c.pericolo} />
         <TextInput
           style={styles.input}
-          placeholder="Es. Da Milano al Lago di Garda in 3 giorni"
+          placeholder={t("creaPercorso.placeholder")}
           placeholderTextColor={c.testoSecondario}
           value={testo}
           onChangeText={setTesto}
@@ -122,7 +128,7 @@ export default function CreaPercorso({ loggato, attivo, onPercorso, onReset, onR
           onPress={crea}
           disabled={caricando || !testo.trim()}
         >
-          {caricando ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.bottoneTesto}>Crea</Text>}
+          {caricando ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.bottoneTesto}>{t("comune.crea")}</Text>}
         </Pressable>
       </View>
       {errore ? <Text style={styles.errore}>{errore}</Text> : null}

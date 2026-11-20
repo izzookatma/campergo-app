@@ -15,6 +15,7 @@ import {
   testoCtaArticolo,
 } from "../lib/blog";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
+import { useT } from "../i18n/i18n";
 
 function dataLunga(iso) {
   if (!iso) return null;
@@ -53,6 +54,7 @@ function BloccoTesto({ testo, stile, styles }) {
 }
 
 function BloccoArticolo({ paragrafo, styles }) {
+  const t = useT();
   if (paragrafo.startsWith("## ")) {
     return <Text style={styles.sottotitolo}>{paragrafo.slice(3)}</Text>;
   }
@@ -62,7 +64,7 @@ function BloccoArticolo({ paragrafo, styles }) {
     return (
       <View style={styles.figura}>
         <ImmagineConRiserva uri={url} larghezza={780} style={styles.figuraImmagine} icona={null} />
-        {credito ? <Text style={styles.figuraCredito}>Foto: {credito}</Text> : null}
+        {credito ? <Text style={styles.figuraCredito}>{t("blog.foto", { credito })}</Text> : null}
       </View>
     );
   }
@@ -72,6 +74,7 @@ function BloccoArticolo({ paragrafo, styles }) {
 export default function ArticoloBlogScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { slug } = route.params;
   const [articolo, setArticolo] = useState(undefined);
   const [correlati, setCorrelati] = useState([]);
@@ -150,8 +153,8 @@ export default function ArticoloBlogScreen({ route, navigation }) {
           </Pressable>
         </SafeAreaView>
         <View style={styles.vuoto}>
-          <Text style={styles.vuotoTitolo}>Articolo non trovato</Text>
-          <Text style={styles.vuotoTesto}>Può essere stato tolto o spostato.</Text>
+          <Text style={styles.vuotoTitolo}>{t("blog.articoloNonTrovato")}</Text>
+          <Text style={styles.vuotoTesto}>{t("blog.puoEssereStatoTolto")}</Text>
         </View>
       </View>
     );
@@ -188,11 +191,11 @@ export default function ArticoloBlogScreen({ route, navigation }) {
         )}
 
         <View style={styles.contenuto}>
-          {articolo.foto_credito && <Text style={styles.fotoCredito}>Foto: {articolo.foto_credito}</Text>}
+          {articolo.foto_credito && <Text style={styles.fotoCredito}>{t("blog.foto", { credito: articolo.foto_credito })}</Text>}
           {articolo.rubrica && <Text style={styles.rubrica}>{etichettaRubrica(articolo.rubrica)}</Text>}
           <Text style={styles.titolo}>{articolo.titolo}</Text>
           {articolo.data_pubblicazione && (
-            <Text style={styles.data}>Pubblicato il {dataLunga(articolo.data_pubblicazione)}</Text>
+            <Text style={styles.data}>{t("blog.pubblicatoIl", { data: dataLunga(articolo.data_pubblicazione) })}</Text>
           )}
           {articolo.estratto && <Text style={styles.estratto}>{articolo.estratto}</Text>}
 
@@ -210,7 +213,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
             >
               <Ionicons name={giaMesso ? "heart" : "heart-outline"} size={16} color={giaMesso ? c.accento : c.testo} />
               <Text style={[styles.miPiaceTesto, giaMesso && { color: c.accento }]}>
-                Mi piace{conteggio > 0 ? ` (${conteggio})` : ""}
+                {t("blog.miPiace")}{conteggio > 0 ? ` (${conteggio})` : ""}
               </Text>
             </Pressable>
           </View>
@@ -224,7 +227,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
 
           {correlati.length > 0 && (
             <View style={styles.leggiAnche}>
-              <Text style={styles.leggiAncheTitolo}>Leggi anche</Text>
+              <Text style={styles.leggiAncheTitolo}>{t("blog.leggiAnche")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                 {correlati.map((c) => (
                   <Pressable

@@ -23,6 +23,7 @@ import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import { CardGiorno } from "../components/PianoGiorno";
 import MappaPianoViaggio from "../components/MappaPianoViaggio";
+import { useT } from "../i18n/i18n";
 
 // "Pianifica il tuo viaggio": form a campi (partenza, arrivo, giorni, dove
 // dormire, luoghi di interesse) invece di una frase libera — chi visita
@@ -35,17 +36,20 @@ import MappaPianoViaggio from "../components/MappaPianoViaggio";
 // Deve restare uguale a GIORNI_MASSIMI nella edge function genera-itinerario-ia.
 const GIORNI_MASSIMI = 10;
 
-const OPZIONI_DORMIRE = [
-  { valore: null, etichetta: "Qualsiasi" },
-  { valore: "campeggio", etichetta: "Campeggio" },
-  { valore: "areaSosta", etichetta: "Area sosta" },
-  { valore: "libera", etichetta: "Sosta libera" },
-];
+function opzioniDormire(t) {
+  return [
+    { valore: null, etichetta: t("pianifica.qualsiasi") },
+    { valore: "campeggio", etichetta: t("pianifica.campeggio") },
+    { valore: "areaSosta", etichetta: t("pianifica.areaSosta") },
+    { valore: "libera", etichetta: t("pianifica.sostaLibera") },
+  ];
+}
 
 // Suggerimenti di luoghi (Nominatim) 400ms dopo l'ultima digitazione, solo
 // se il campo è aperto — stesso principio del debounce già usato altrove
 // nell'app per le ricerche live.
 function useSuggerimentiLuogo(testo, attivo) {
+  const t = useT();
   const [risultati, setRisultati] = useState([]);
   const [errore, setErrore] = useState("");
   useEffect(() => {
@@ -70,7 +74,7 @@ function useSuggerimentiLuogo(testo, attivo) {
           .catch((e) => {
             if (corrente) {
               setRisultati([]);
-              setErrore(messaggioErroreComprensibile(e, "Suggerimenti non disponibili:"));
+              setErrore(messaggioErroreComprensibile(e, t("pianifica.suggerimentiNonDisponibili")));
             }
           });
       },
@@ -80,7 +84,7 @@ function useSuggerimentiLuogo(testo, attivo) {
       corrente = false;
       clearTimeout(timer);
     };
-  }, [testo, attivo]);
+  }, [testo, attivo, t]);
   return { risultati, errore };
 }
 
@@ -141,9 +145,10 @@ function CampoLuogo({ etichetta, placeholder, testo, setTesto, setLuogo }) {
 function SelettoreGiorni({ valore, onCambia }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   return (
     <View style={styles.campoContenitore}>
-      <Text style={styles.etichettaCampo}>Quanti giorni</Text>
+      <Text style={styles.etichettaCampo}>{t("pianifica.quantiGiorni")}</Text>
       <View style={styles.stepper}>
         <Pressable style={styles.stepperPulsante} onPress={() => onCambia(Math.max(1, valore - 1))} hitSlop={8}>
           <Ionicons name="remove" size={16} color={c.primario} />
@@ -160,13 +165,14 @@ function SelettoreGiorni({ valore, onCambia }) {
 function SelettoreDormire({ valore, onCambia }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   return (
     <View style={styles.campoContenitore}>
       <Text style={styles.etichettaCampo}>
-        <Ionicons name="bed-outline" size={12} color={c.testoSecondario} /> Dove dormire
+        <Ionicons name="bed-outline" size={12} color={c.testoSecondario} /> {t("pianifica.doveDormire")}
       </Text>
       <View style={styles.chipRiga}>
-        {OPZIONI_DORMIRE.map((o) => (
+        {opzioniDormire(t).map((o) => (
           <Pressable
             key={o.etichetta}
             style={[styles.chip, valore === o.valore && styles.chipAttivo]}
@@ -183,12 +189,13 @@ function SelettoreDormire({ valore, onCambia }) {
 function ToggleLuoghiInteresse({ attivo, onCambia }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   return (
     <View style={styles.toggleRiga}>
       <Ionicons name="flag-outline" size={18} color={c.primario} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.toggleTitolo}>Luoghi di interesse</Text>
-        <Text style={styles.toggleSottotitolo}>Borghi, musei e attività lungo il percorso</Text>
+        <Text style={styles.toggleTitolo}>{t("pianifica.luoghiInteresse")}</Text>
+        <Text style={styles.toggleSottotitolo}>{t("pianifica.luoghiInteresseSottotitolo")}</Text>
       </View>
       <Switch
         value={attivo}
@@ -203,6 +210,7 @@ function ToggleLuoghiInteresse({ attivo, onCambia }) {
 export default function PianificaViaggioScreen({ navigation, route }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [richiesta, setRichiesta] = useState("");
   const [testoPartenza, setTestoPartenza] = useState("");
@@ -245,9 +253,9 @@ export default function PianificaViaggioScreen({ navigation, route }) {
   }, [route?.params?.pianoSalvato, route?.params?.richiestaSalvata]);
 
   const richiedeAccesso = () => {
-    Alert.alert("Accedi", "Pianificare un viaggio con l'IA è gratuito per chi si registra. Accedi o registrati per usarla.", [
-      { text: "Annulla", style: "cancel" },
-      { text: "Accedi", onPress: () => navigation.navigate("Accedi") },
+    Alert.alert(t("accedi.titoloAccedi"), t("pianifica.accediMessaggio"), [
+      { text: t("comune.annulla"), style: "cancel" },
+      { text: t("accedi.titoloAccedi"), onPress: () => navigation.navigate("Accedi") },
     ]);
   };
 
@@ -258,7 +266,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       return;
     }
     if (testoPartenza.trim().length < 3 || testoArrivo.trim().length < 3) {
-      setErrore("Scrivi la partenza e l'arrivo (almeno 3 lettere ciascuno).");
+      setErrore(t("pianifica.erroreCampiMancanti"));
       return;
     }
     setCaricando(true);
@@ -273,7 +281,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       const partenza = await risolvi(luogoPartenza, testoPartenza);
       const arrivo = await risolvi(luogoArrivo, testoArrivo);
       if (!partenza || !arrivo) {
-        setErrore(`Non trovo ${!partenza ? `"${testoPartenza.trim()}"` : `"${testoArrivo.trim()}"`} sulla mappa: prova con un nome più preciso e scegli dalla lista.`);
+        setErrore(t("pianifica.erroreLuogoNonTrovato", { luogo: !partenza ? `"${testoPartenza.trim()}"` : `"${testoArrivo.trim()}"` }));
         return;
       }
       setLuogoPartenza(partenza);
@@ -296,7 +304,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       if (/devi accedere|accedere con il tuo account/i.test(e?.message || "")) {
         richiedeAccesso();
       } else {
-        setErrore(messaggioErroreComprensibile(e, "Non sono riuscito a generare il piano di viaggio."));
+        setErrore(messaggioErroreComprensibile(e, t("pianifica.erroreGenerico")));
       }
     } finally {
       setCaricando(false);
@@ -315,7 +323,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       });
       setSalvato(true);
     } catch (e) {
-      Alert.alert("Non salvato", messaggioErroreComprensibile(e, "Non sono riuscito a salvare il piano."));
+      Alert.alert(t("pianifica.nonSalvatoTitolo"), messaggioErroreComprensibile(e, t("pianifica.erroreSalvataggio")));
     } finally {
       setSalvando(false);
     }
@@ -363,23 +371,20 @@ export default function PianificaViaggioScreen({ navigation, route }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
             <MarchioNaturaGo />
-            <Text style={styles.titolo}>Pianifica il tuo viaggio</Text>
-            <Text style={styles.sottotitolo}>
-              Scegli partenza, arrivo e per quanti giorni: l&apos;IA costruisce un piano giorno per giorno con le
-              schede vere di NaturaGo.
-            </Text>
+            <Text style={styles.titolo}>{t("pianifica.titolo")}</Text>
+            <Text style={styles.sottotitolo}>{t("pianifica.sottotitolo")}</Text>
 
             <View style={styles.card}>
               <CampoLuogo
-                etichetta="Partenza"
-                placeholder="Es. Mantova"
+                etichetta={t("pianifica.partenza")}
+                placeholder={t("pianifica.placeholderPartenza")}
                 testo={testoPartenza}
                 setTesto={setTestoPartenza}
                 setLuogo={setLuogoPartenza}
               />
               <CampoLuogo
-                etichetta="Arrivo"
-                placeholder="Es. Lago di Garda"
+                etichetta={t("pianifica.arrivo")}
+                placeholder={t("pianifica.placeholderArrivo")}
                 testo={testoArrivo}
                 setTesto={setTestoArrivo}
                 setLuogo={setLuogoArrivo}
@@ -394,7 +399,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
                 ) : (
                   <>
                     <Ionicons name="sparkles-outline" size={16} color={c.sulPrimario} />
-                    <Text style={styles.bottoneTesto}>Genera il piano</Text>
+                    <Text style={styles.bottoneTesto}>{t("pianifica.generaIlPiano")}</Text>
                   </>
                 )}
               </Pressable>
@@ -406,7 +411,7 @@ export default function PianificaViaggioScreen({ navigation, route }) {
               <View style={styles.risultato}>
                 <View style={styles.rigaRisultato}>
                   <Text style={styles.risultatoTitolo}>
-                    {piano.giorniRichiesti} giorni · {piano.tappe.join(" → ")}
+                    {t("pianiSalvati.giorniTappe", { n: piano.giorniRichiesti, tappe: piano.tappe.join(" → ") })}
                   </Text>
                   <Pressable style={styles.pulsanteSalva} onPress={salva} disabled={salvando || salvato}>
                     {salvando ? (

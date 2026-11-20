@@ -6,66 +6,74 @@ import { temaGiochi } from "../theme/giochiTema";
 import { useAuth } from "../context/AuthContext";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import DisegnoImpiccato from "../components/DisegnoImpiccato";
+import { useT } from "../i18n/i18n";
 
 // Gratuiti per chi ha un account NaturaGo (come la ricerca con l'IA in
 // EsploraHubScreen): senza login si vede la stessa schermata ma con
 // l'invito ad accedere, non i giochi.
-const GIOCHI = [
-  {
-    chiave: "tris",
-    etichetta: "Tris",
-    descrizione: "Contro il computer o in due, a turni",
-    icona: "grid-outline",
-    colore: temaGiochi.viola,
-    tinta: temaGiochi.violaChiaro,
-    schermo: "Tris",
-  },
-  {
-    chiave: "coppie",
-    etichetta: "Gioco delle coppie",
-    descrizione: "Memory con le foto di campeggi, camper e tende",
-    icona: "images-outline",
-    colore: temaGiochi.rosa,
-    tinta: temaGiochi.rosaChiaro,
-    schermo: "Memory",
-  },
-  {
-    chiave: "cruciverba",
-    etichetta: "Cruciverba",
-    descrizione: "Domande sul mondo dei campeggi, più schemi",
-    icona: "newspaper-outline",
-    colore: temaGiochi.verde,
-    tinta: temaGiochi.verdeChiaro,
-    schermo: "Cruciverba",
-  },
-  {
-    chiave: "impiccato",
-    etichetta: "Impiccato",
-    descrizione: "Indovina la parola lettera per lettera",
-    icona: "impiccato",
-    colore: temaGiochi.giallo,
-    tinta: temaGiochi.gialloChiaro,
-    schermo: "Impiccato",
-  },
-  {
-    chiave: "oca",
-    etichetta: "Sentiero del campeggio",
-    descrizione: "Tabellone con dado e domande, contro il computer o in due",
-    icona: "dice-outline",
-    colore: temaGiochi.azzurro,
-    tinta: temaGiochi.azzurroChiaro,
-    schermo: "Oca",
-  },
-];
+// Cruciverba e Impiccato restano un gioco di parole italiane (banca di
+// parole/indizi in italiano, src/lib/cruciverbaBanca.js): tradurne solo il
+// titolo/descrizione nell'hub, non il contenuto del gioco, che richiederebbe
+// banche di parole intere per lingua — fuori scopo qui.
+function giochi(t) {
+  return [
+    {
+      chiave: "tris",
+      etichetta: t("giochi.tris"),
+      descrizione: t("giochi.trisDescrizione"),
+      icona: "grid-outline",
+      colore: temaGiochi.viola,
+      tinta: temaGiochi.violaChiaro,
+      schermo: "Tris",
+    },
+    {
+      chiave: "coppie",
+      etichetta: t("giochi.coppie"),
+      descrizione: t("giochi.coppieDescrizione"),
+      icona: "images-outline",
+      colore: temaGiochi.rosa,
+      tinta: temaGiochi.rosaChiaro,
+      schermo: "Memory",
+    },
+    {
+      chiave: "cruciverba",
+      etichetta: t("giochi.cruciverba"),
+      descrizione: t("giochi.cruciverbaDescrizione"),
+      icona: "newspaper-outline",
+      colore: temaGiochi.verde,
+      tinta: temaGiochi.verdeChiaro,
+      schermo: "Cruciverba",
+    },
+    {
+      chiave: "impiccato",
+      etichetta: t("giochi.impiccato"),
+      descrizione: t("giochi.impiccatoDescrizione"),
+      icona: "impiccato",
+      colore: temaGiochi.giallo,
+      tinta: temaGiochi.gialloChiaro,
+      schermo: "Impiccato",
+    },
+    {
+      chiave: "oca",
+      etichetta: t("giochi.oca"),
+      descrizione: t("giochi.ocaDescrizione"),
+      icona: "dice-outline",
+      colore: temaGiochi.azzurro,
+      tinta: temaGiochi.azzurroChiaro,
+      schermo: "Oca",
+    },
+  ];
+}
 
 export default function GiochiHubScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
 
   const vaiA = (gioco) => {
     if (gioco.inArrivo) {
-      Alert.alert(gioco.etichetta, "Questo gioco arriverà in una prossima versione dell'app.");
+      Alert.alert(gioco.etichetta, t("giochi.inArrivoMessaggio"));
       return;
     }
     navigation.push(gioco.schermo);
@@ -75,20 +83,20 @@ export default function GiochiHubScreen({ navigation }) {
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.contenuto} showsVerticalScrollIndicator={false}>
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
-        <Text style={styles.titolo}>Giochi da viaggio</Text>
-        <Text style={styles.sottotitolo}>Per passare il tempo mentre si viaggia</Text>
+        <Text style={styles.titolo}>{t("profilo.giochiDaViaggio")}</Text>
+        <Text style={styles.sottotitolo}>{t("giochi.sottotitolo")}</Text>
 
         {!session ? (
           <View style={styles.bloccoAccesso}>
             <Ionicons name="lock-closed-outline" size={28} color={c.primario} />
-            <Text style={styles.bloccoAccessoTitolo}>Giochi gratuiti per chi ha un account</Text>
-            <Text style={styles.bloccoAccessoTesto}>Accedi o registrati, gratis, per sbloccare tutti i giochi da viaggio.</Text>
+            <Text style={styles.bloccoAccessoTitolo}>{t("giochi.soloConAccount")}</Text>
+            <Text style={styles.bloccoAccessoTesto}>{t("giochi.accediPerSbloccare")}</Text>
             <Pressable style={styles.bottoneAccedi} onPress={() => navigation.navigate("Accedi")}>
-              <Text style={styles.bottoneAccediTesto}>Accedi o registrati</Text>
+              <Text style={styles.bottoneAccediTesto}>{t("giochi.accediORegistrati")}</Text>
             </Pressable>
           </View>
         ) : (
-          GIOCHI.map((gioco) => (
+          giochi(t).map((gioco) => (
             <Pressable
               key={gioco.chiave}
               style={[styles.card, { backgroundColor: gioco.tinta }]}
@@ -106,7 +114,7 @@ export default function GiochiHubScreen({ navigation }) {
                 <Text style={styles.cardDescrizione}>{gioco.descrizione}</Text>
               </View>
               {gioco.inArrivo ? (
-                <Text style={[styles.cardArrivo, { color: gioco.colore }]}>In arrivo</Text>
+                <Text style={[styles.cardArrivo, { color: gioco.colore }]}>{t("giochi.inArrivo")}</Text>
               ) : (
                 <Ionicons name="chevron-forward" size={18} color={gioco.colore} />
               )}

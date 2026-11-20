@@ -6,6 +6,7 @@ import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { inviaDomanda } from "../lib/domanda";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
+import { useT } from "../i18n/i18n";
 
 const EMAIL_VALIDA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MIN_MESSAGGIO = 10;
@@ -16,6 +17,7 @@ const MIN_MESSAGGIO = 10;
 export default function NuovaDomandaScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
+  const t = useT();
   const { session } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState(session?.user?.email || "");
@@ -27,8 +29,8 @@ export default function NuovaDomandaScreen({ navigation }) {
   const invia = async () => {
     const emailPulita = email.trim();
     const testo = messaggio.trim();
-    if (!EMAIL_VALIDA.test(emailPulita)) return setErrore("Inserisci un indirizzo email valido.");
-    if (testo.length < MIN_MESSAGGIO) return setErrore("Scrivi qualche parola in più nel messaggio.");
+    if (!EMAIL_VALIDA.test(emailPulita)) return setErrore(t("domanda.erroreEmail"));
+    if (testo.length < MIN_MESSAGGIO) return setErrore(t("domanda.erroreMessaggioBreve"));
 
     setErrore(null);
     setInviando(true);
@@ -37,7 +39,7 @@ export default function NuovaDomandaScreen({ navigation }) {
       setInviataA(emailPulita);
       setMessaggio("");
     } catch (e) {
-      setErrore(messaggioErroreComprensibile(e, "Non è stato possibile inviare la domanda."));
+      setErrore(messaggioErroreComprensibile(e, t("domanda.erroreInvio")));
     } finally {
       setInviando(false);
     }
@@ -49,7 +51,7 @@ export default function NuovaDomandaScreen({ navigation }) {
         <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
-        <Text style={styles.titoloIntestazione}>Fai una domanda</Text>
+        <Text style={styles.titoloIntestazione}>{t("faq.faiUnaDomanda")}</Text>
         <View style={{ width: 34 }} />
       </SafeAreaView>
 
@@ -59,20 +61,20 @@ export default function NuovaDomandaScreen({ navigation }) {
             <View style={styles.grazieIcona}>
               <Ionicons name="checkmark-circle" size={30} color={c.primario} />
             </View>
-            <Text style={styles.grazieTitolo}>Grazie!</Text>
-            <Text style={styles.grazieTesto}>Ti risponderemo via email all&apos;indirizzo {inviataA} il prima possibile.</Text>
+            <Text style={styles.grazieTitolo}>{t("segnalazioni.grazieTitolo")}</Text>
+            <Text style={styles.grazieTesto}>{t("domanda.grazieTesto", { email: inviataA })}</Text>
             <Pressable onPress={() => setInviataA(null)}>
-              <Text style={styles.grazieLink}>Fai un&apos;altra domanda</Text>
+              <Text style={styles.grazieLink}>{t("domanda.faiUnAltraDomanda")}</Text>
             </Pressable>
           </View>
         ) : (
           <>
-            <Text style={styles.sottotitolo}>Scrivici la tua domanda: ti rispondiamo via email, il prima possibile.</Text>
+            <Text style={styles.sottotitolo}>{t("faq.scriviciLaTuaDomanda")}</Text>
 
-            <Text style={styles.etichetta}>Nome (facoltativo)</Text>
+            <Text style={styles.etichetta}>{t("domanda.nomeFacoltativo")}</Text>
             <TextInput style={styles.campo} value={nome} onChangeText={setNome} autoComplete="name" maxLength={100} />
 
-            <Text style={styles.etichetta}>Email</Text>
+            <Text style={styles.etichetta}>{t("modificaProfilo.email")}</Text>
             <TextInput
               style={styles.campo}
               value={email}
@@ -82,14 +84,14 @@ export default function NuovaDomandaScreen({ navigation }) {
               autoComplete="email"
               maxLength={254}
             />
-            <Text style={styles.aiuto}>Ti risponderemo a questo indirizzo.</Text>
+            <Text style={styles.aiuto}>{t("domanda.aiutoEmail")}</Text>
 
-            <Text style={styles.etichetta}>Messaggio</Text>
+            <Text style={styles.etichetta}>{t("domanda.messaggio")}</Text>
             <TextInput
               style={[styles.campo, styles.campoMessaggio]}
               value={messaggio}
               onChangeText={setMessaggio}
-              placeholder="Scrivi qui la tua domanda…"
+              placeholder={t("domanda.placeholderMessaggio")}
               multiline
               numberOfLines={6}
               maxLength={3000}
@@ -98,23 +100,23 @@ export default function NuovaDomandaScreen({ navigation }) {
             {errore && <Text style={styles.errore}>{errore}</Text>}
 
             <Text style={styles.privacy}>
-              Inviando accetti la{" "}
+              {t("domanda.privacyAccetti")}{" "}
               <Text style={styles.link} onPress={() => Linking.openURL("https://www.naturago.it/privacy")}>
-                Privacy
+                {t("domanda.privacyLink")}
               </Text>
               .
             </Text>
 
             <Pressable style={styles.invia} onPress={invia} disabled={inviando}>
-              {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>Invia</Text>}
+              {inviando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.inviaTesto}>{t("comune.invia")}</Text>}
             </Pressable>
 
             <Text style={styles.oppure}>
-              Vedi anche le{" "}
+              {t("domanda.vediAncheLe")}{" "}
               <Text style={styles.link} onPress={() => navigation.goBack()}>
-                domande frequenti
+                {t("domanda.domandeFrequenti")}
               </Text>{" "}
-              o scrivi a{" "}
+              {t("domanda.oScriviA")}{" "}
               <Text style={styles.link} onPress={() => Linking.openURL("mailto:info@naturago.it")}>
                 info@naturago.it
               </Text>
