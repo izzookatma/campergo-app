@@ -5,7 +5,7 @@
 
 import { supabase } from "./supabase";
 import { geocodificaOCoordinate } from "./geocodifica";
-import { aggiungiTappeIntermedie, percorsoStradale } from "./percorsoStradale";
+import { aggiungiTappeIntermedie, percorsoStradaleConDati } from "./percorsoStradale";
 
 async function chiamaFunzione(nome, corpo) {
   const { data, error } = await supabase.functions.invoke(nome, { body: corpo });
@@ -91,7 +91,20 @@ export async function generaPianoStrutturato({ partenza, arrivo, giorni, prefere
 export async function creaPercorso(testo) {
   const { tappe: tappeNominate, giorni, interessi } = await interpretaTappe(testo);
   const tappe = await aggiungiTappeIntermedie(tappeNominate, giorni);
-  const percorso = tappe.length >= 2 ? await percorsoStradale(tappe) : null;
+  // Un solo luogo ("Roma", "vicino a Mantova"): non c'è una strada da
+  // disegnare. Si usa quel punto come percorso "fermo": la mappa si centra
+  // lì, si mostrano le strutture nei dintorni e il piano della zona, invece
+  // di rispondere con un errore.
+  const unSoloLuogo = tappe.length === 1;
+  const datiPercorso = tappe.length >= 2 ? await percorsoStradaleConDati(tappe) : null;
+  const percorso = unSoloLuogo
+    ? [
+        { lat: tappe[0].lat, lng: tappe[0].lng },
+        { lat: tappe[0].lat, lng: tappe[0].lng },
+      ]
+    : datiPercorso
+      ? datiPercorso.punti
+      : null;
   if (!percorso) {
     throw new Error("Non sono riuscito a disegnare un percorso stradale tra queste tappe: provare con tappe più vicine o più precise.");
   }
@@ -102,5 +115,5 @@ export async function creaPercorso(testo) {
   } catch {
     piano = null;
   }
-  return { tappe, percorso, piano };
+  return { tappe, percorso, piano, richiesta: testo, distanzaKm: datiPercorso?.distanzaKm ?? null, minuti: datiPercorso?.minuti ?? null };
 }

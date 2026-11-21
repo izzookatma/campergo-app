@@ -39,6 +39,7 @@ import AccediScreen from "./src/screens/AccediScreen";
 import BlogScreen from "./src/screens/BlogScreen";
 import ArticoloBlogScreen from "./src/screens/ArticoloBlogScreen";
 import PianificaViaggioScreen from "./src/screens/PianificaViaggioScreen";
+import CreaVacanzaScreen from "./src/screens/CreaVacanzaScreen";
 import PianiSalvatiScreen from "./src/screens/PianiSalvatiScreen";
 import FaqScreen from "./src/screens/FaqScreen";
 import NuovaDomandaScreen from "./src/screens/NuovaDomandaScreen";
@@ -95,6 +96,7 @@ function EsploraStackNavigator() {
       <EsploraStack.Screen name="Blog" component={BlogScreen} />
       <EsploraStack.Screen name="ArticoloBlog" component={ArticoloBlogScreen} />
       <EsploraStack.Screen name="PianificaViaggio" component={PianificaViaggioScreen} />
+      <EsploraStack.Screen name="CreaVacanza" component={CreaVacanzaScreen} />
       <EsploraStack.Screen name="Faq" component={FaqScreen} />
       <EsploraStack.Screen name="NuovaDomanda" component={NuovaDomandaScreen} />
     </EsploraStack.Navigator>
@@ -134,6 +136,7 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="ItinerarioDettaglio" component={ItinerarioDettaglioScreen} />
       <ProfiloStack.Screen name="PianiSalvati" component={PianiSalvatiScreen} />
       <ProfiloStack.Screen name="PianificaViaggio" component={PianificaViaggioScreen} />
+      <ProfiloStack.Screen name="CreaVacanza" component={CreaVacanzaScreen} />
       <ProfiloStack.Screen name="MieSegnalazioni" component={MieSegnalazioniScreen} />
       <ProfiloStack.Screen name="ItinerariOffline" component={ItinerariOfflineScreen} />
       <ProfiloStack.Screen name="NuovaSegnalazione" component={NuovaSegnalazioneScreen} />

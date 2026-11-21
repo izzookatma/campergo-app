@@ -51,7 +51,9 @@ export default function PianiSalvatiScreen({ navigation }) {
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>{t("profilo.iMieiPianiViaggio")}</Text>
-        <View style={{ width: 34 }} />
+        <Pressable style={styles.tornaIndietro} onPress={() => navigation.navigate("CreaVacanza")} accessibilityRole="button" accessibilityLabel={t("vacanza.titolo")}>
+          <Ionicons name="add" size={20} color={c.primario} />
+        </Pressable>
       </SafeAreaView>
 
       <FlatList
@@ -68,7 +70,11 @@ export default function PianiSalvatiScreen({ navigation }) {
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
-            onPress={() => navigation.navigate("PianificaViaggio", { pianoSalvato: item.piano, richiestaSalvata: item.richiesta })}
+            onPress={() =>
+              item.piano?.tipo === "personale"
+                ? navigation.navigate("CreaVacanza", { pianoSalvato: item.piano, idPiano: item.id })
+                : navigation.navigate("PianificaViaggio", { pianoSalvato: item.piano, richiestaSalvata: item.richiesta })
+            }
           >
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitolo} numberOfLines={2}>

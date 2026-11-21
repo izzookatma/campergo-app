@@ -415,6 +415,7 @@ export default function EsploraHubScreen({ navigation }) {
         <Pulsante titolo={t("hub.vediTutteLeStrutture")} variante="secondario" onPress={() => navigation.push("EsploraLista")} style={{ marginTop: 6 }} />
 
         <Gruppo style={{ marginTop: 10 }}>
+          <Riga icona="create-outline" testo={t("vacanza.titolo")} onPress={() => navigation.push("CreaVacanza")} />
           <Riga icona="book-outline" testo="Blog NaturaGo Explorer" onPress={() => navigation.push("Blog")} />
         </Gruppo>
       </ScrollView>

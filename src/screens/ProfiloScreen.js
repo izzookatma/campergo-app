@@ -34,6 +34,7 @@ const MOTORI_MAPPA = [
 function vociMenu(t) {
   return [
     { icona: "calendar-outline", testo: t("profilo.leMiePrenotazioni"), azione: "naviga", schermo: "Prenotazioni" },
+    { icona: "create-outline", testo: t("vacanza.titolo"), azione: "naviga", schermo: "CreaVacanza" },
     { icona: "map-outline", testo: t("profilo.iMieiPianiViaggio"), azione: "naviga", schermo: "PianiSalvati" },
     { icona: "flag-outline", testo: t("profilo.segnalaStruttura"), azione: "naviga", schermo: "MieSegnalazioni" },
     { icona: "cloud-download-outline", testo: t("profilo.itinerariOffline"), azione: "naviga", schermo: "ItinerariOffline" },

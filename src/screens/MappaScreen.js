@@ -162,6 +162,9 @@ function MappaVera({ navigation, route }) {
   // filtrata - stessa idea del sito (src/App.jsx, CreaPercorsoMappa).
   const [routeTappe, setRouteTappe] = useState(null);
   const [routePercorso, setRoutePercorso] = useState(null);
+  // km e minuti di guida veri (da OSRM, come sul sito); se mancano si usa la stima.
+  const [routeDati, setRouteDati] = useState(null);
+  const [routeRichiesta, setRouteRichiesta] = useState("");
   // Giorno per giorno (dove dormire + cosa visitare/sentieri nei
   // dintorni), mostrato in un modale appena pronto - stessa idea del sito,
   // dove "Creami un percorso" prima disegnava solo la strada senza
@@ -171,6 +174,14 @@ function MappaVera({ navigation, route }) {
 
   useEffect(() => {
     if (!routePercorso) return;
+    // Un solo luogo (punto ripetuto): si centra con uno zoom di zona, senza
+    // stringere l'inquadratura su un punto solo.
+    const primo = routePercorso[0];
+    const ultimo = routePercorso[routePercorso.length - 1];
+    if (primo.lat === ultimo.lat && primo.lng === ultimo.lng) {
+      mappaRef.current?.animateToRegion({ latitude: primo.lat, longitude: primo.lng, latitudeDelta: 0.25, longitudeDelta: 0.25 }, 600);
+      return;
+    }
     mappaRef.current?.fitToCoordinates(
       routePercorso.map((p) => ({ latitude: p.lat, longitude: p.lng })),
       { edgePadding: { top: 100, right: 60, bottom: 160, left: 60 }, animated: true }
@@ -186,17 +197,21 @@ function MappaVera({ navigation, route }) {
     return routePercorso.filter((_, i) => i % passo === 0);
   }, [routePercorso]);
 
-  // Lunghezza del percorso e tempo stimato (media prudente da camper, 60 km/h):
-  // è una stima, non il tempo reale del traffico, e l'etichetta lo dice.
+  // Lunghezza e tempo di guida: quelli veri della strada (OSRM, in auto) se
+  // ci sono; altrimenti una stima dalla linea d'aria a 60 km/h (media
+  // prudente da camper), e l'etichetta lo dice.
+  const formattaTempo = (minuti) => {
+    const ore = Math.floor(minuti / 60);
+    return ore > 0 ? `${ore} h ${String(minuti % 60).padStart(2, "0")} min` : `${minuti} min`;
+  };
   const riepilogoPercorso = useMemo(() => {
     if (!routePercorso || routePercorso.length < 2) return null;
+    if (routeDati) return { km: routeDati.km, tempo: formattaTempo(routeDati.minuti), vero: true };
     let km = 0;
     for (let i = 1; i < routePercorso.length; i++) km += distanzaKmPunti(routePercorso[i - 1], routePercorso[i]);
-    const minuti = Math.round((km / 60) * 60);
-    const ore = Math.floor(minuti / 60);
-    const tempo = ore > 0 ? `${ore} h ${String(minuti % 60).padStart(2, "0")} min` : `${minuti} min`;
-    return { km: Math.round(km), tempo };
-  }, [routePercorso]);
+    if (km < 1) return null; // un solo luogo: nessuna distanza da mostrare
+    return { km: Math.round(km), tempo: formattaTempo(Math.round(km)), vero: false };
+  }, [routePercorso, routeDati]);
 
   // Il tracciato si "disegna" da solo (in circa un secondo) invece di
   // comparire di colpo; a fine animazione si usa il percorso completo.
@@ -663,15 +678,18 @@ function MappaVera({ navigation, route }) {
         <CreaPercorso
           loggato={!!session}
           attivo={!!routePercorso}
-          onPercorso={({ tappe, percorso, piano: pianoGenerato }) => {
+          onPercorso={({ tappe, percorso, piano: pianoGenerato, richiesta, distanzaKm, minuti }) => {
+            setRouteRichiesta(richiesta || "");
             setRouteTappe(tappe);
             setRoutePercorso(percorso);
+            setRouteDati(distanzaKm != null && minuti != null ? { km: Math.round(distanzaKm), minuti } : null);
             setPiano(pianoGenerato);
             setModalPianoAperto(!!pianoGenerato?.giorni?.length);
           }}
           onReset={() => {
             setRouteTappe(null);
             setRoutePercorso(null);
+            setRouteDati(null);
             setPiano(null);
             setModalPianoAperto(false);
           }}
@@ -770,7 +788,7 @@ function MappaVera({ navigation, route }) {
             <View style={styles.riepilogoPercorso}>
               <Ionicons name="trail-sign" size={16} color="#FFFFFF" />
               <Text style={styles.riepilogoPercorsoTesto}>
-                {t("mappa.stimaPercorso", { km: riepilogoPercorso.km, tempo: riepilogoPercorso.tempo })}
+                {t(riepilogoPercorso.vero ? "mappa.percorsoVero" : "mappa.stimaPercorso", { km: riepilogoPercorso.km, tempo: riepilogoPercorso.tempo })}
               </Text>
             </View>
           )}
@@ -825,6 +843,8 @@ function MappaVera({ navigation, route }) {
       <ModalePianoMappa
         visibile={modalPianoAperto}
         piano={piano}
+        richiesta={routeRichiesta}
+        utenteId={session?.user?.id}
         onChiudi={() => setModalPianoAperto(false)}
         navigation={navigation}
       />

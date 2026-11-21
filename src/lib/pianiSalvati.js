@@ -38,3 +38,24 @@ export async function eliminaPianoSalvato(id) {
   const { error } = await supabase.from("piani_viaggio_salvati").delete().eq("id", id);
   if (error) throw error;
 }
+
+// Vacanza creata a mano ("Crea la tua vacanza"): stessa tabella dei piani
+// generati, riconoscibile da piano.tipo === "personale". Restituisce l'id
+// della riga, per poterla poi aggiornare invece di duplicarla.
+export async function salvaVacanzaPersonale(utenteId, { titolo, tappe, giorniRichiesti, piano }) {
+  const { data, error } = await supabase
+    .from("piani_viaggio_salvati")
+    .insert({ utente_id: utenteId, richiesta: titolo, tappe, giorni_richiesti: giorniRichiesti, piano })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function aggiornaVacanzaPersonale(id, { titolo, tappe, giorniRichiesti, piano }) {
+  const { error } = await supabase
+    .from("piani_viaggio_salvati")
+    .update({ richiesta: titolo, tappe, giorni_richiesti: giorniRichiesti, piano })
+    .eq("id", id);
+  if (error) throw error;
+}

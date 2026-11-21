@@ -20,15 +20,49 @@ export function distanzaKmPunti(a, b) {
   return 2 * R * Math.asin(Math.sqrt(Math.min(1, h)));
 }
 
-// Percorso stradale vero tra le tappe (in ordine): restituisce {lat,lng}
-// per punto, lo stesso formato di geocodificaOCoordinate - chi disegna la
-// mappa (react-native-maps vuole {latitude,longitude}) converte all'uso.
-export async function percorsoStradale(tappe) {
+// Percorso stradale vero tra le tappe (in ordine), con anche km e minuti di
+// guida presi dalla risposta OSRM (come sul sito, src/percorsoViaggio.js:
+// niente di ricalcolato). Punti nello stesso formato di
+// geocodificaOCoordinate ({lat,lng}); chi disegna la mappa
+// (react-native-maps vuole {latitude,longitude}) converte all'uso.
+export async function percorsoStradaleConDati(tappe) {
   const coordinate = tappe.map((t) => `${t.lng},${t.lat}`).join(";");
   const risposta = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinate}?overview=full&geometries=geojson`);
   const dati = await risposta.json();
-  const geometria = dati?.routes?.[0]?.geometry?.coordinates;
-  return geometria && geometria.length > 1 ? geometria.map(([lng, lat]) => ({ lat, lng })) : null;
+  const rotta = dati?.routes?.[0];
+  const geometria = rotta?.geometry?.coordinates;
+  if (!geometria || geometria.length < 2) return null;
+  return {
+    punti: geometria.map(([lng, lat]) => ({ lat, lng })),
+    distanzaKm: rotta.distance != null ? rotta.distance / 1000 : null,
+    minuti: rotta.duration != null ? Math.round(rotta.duration / 60) : null,
+  };
+}
+
+// Percorso stradale vero per UN ELENCO ORDINATO di punti, con km e minuti di
+// OGNI tratto (da un punto al successivo, nell'ordine dato da chi pianifica).
+// Serve a "Crea la tua vacanza": una sola chiamata OSRM per tutto il viaggio.
+// Restituisce { punti, tratte: [{ km, minuti }], distanzaKm, minuti } o null.
+export async function percorsoConTratte(puntiOrdinati) {
+  if (!puntiOrdinati || puntiOrdinati.length < 2) return null;
+  const coordinate = puntiOrdinati.map((t) => `${t.lng},${t.lat}`).join(";");
+  const risposta = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinate}?overview=full&geometries=geojson`);
+  const dati = await risposta.json();
+  const rotta = dati?.routes?.[0];
+  const geometria = rotta?.geometry?.coordinates;
+  if (!rotta || !geometria || geometria.length < 2 || !Array.isArray(rotta.legs)) return null;
+  return {
+    punti: geometria.map(([lng, lat]) => ({ lat, lng })),
+    tratte: rotta.legs.map((l) => ({ km: l.distance / 1000, minuti: Math.round(l.duration / 60) })),
+    distanzaKm: rotta.distance / 1000,
+    minuti: Math.round(rotta.duration / 60),
+  };
+}
+
+// Solo i punti, come prima: le mappe che non mostrano km e tempo non cambiano.
+export async function percorsoStradale(tappe) {
+  const risultato = await percorsoStradaleConDati(tappe);
+  return risultato ? risultato.punti : null;
 }
 
 // "Da Milano a Napoli in 7 giorni" nominava solo partenza e arrivo: senza
@@ -39,7 +73,9 @@ export async function percorsoStradale(tappe) {
 // delle tappe che chi visita ha nominato.
 export async function aggiungiTappeIntermedie(tappeNominate, giorni) {
   if (tappeNominate.length < 2) return tappeNominate;
-  const totaliDesiderate = Math.min(giorni, TAPPE_MASSIME);
+  // +1: la partenza non è una giornata di visita (vedi genera-itinerario-ia),
+  // quindi servono tante tappe da visitare quanti sono i giorni.
+  const totaliDesiderate = Math.min(giorni + 1, TAPPE_MASSIME);
   const daAggiungere = totaliDesiderate - tappeNominate.length;
   if (daAggiungere <= 0) return tappeNominate;
 
