@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Animated, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import SelettoreDate from "../components/SelettoreDate";
 import CercaLuogoModal from "../components/vacanza/CercaLuogoModal";
 import MappaVacanza from "../components/vacanza/MappaVacanza";
+import RigaPostoVacanza from "../components/vacanza/RigaPostoVacanza";
 import { percorsoConTratte } from "../lib/percorsoStradale";
 import { salvaVacanzaPersonale, aggiornaVacanzaPersonale } from "../lib/pianiSalvati";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
@@ -26,6 +27,10 @@ import {
   pianoDaVacanza,
   vacanzaDaPiano,
   nomiTappe,
+  conLuogoCambiato,
+  riassuntoPrenotazioni,
+  spostaLuogo,
+  trovaBersaglio,
 } from "../lib/vacanza";
 
 // "Crea la tua vacanza". Dall'alto in basso:
@@ -60,6 +65,15 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const [calcolo, setCalcolo] = useState({ firma: null, dati: null });
   const scrollRef = useRef(null);
   const posizioniGiorni = useRef({});
+  // Trascinamento dei posti: { giorno, indice, bersaglio: { giorno, indice } | null }.
+  const [trascinamento, setTrascinamento] = useState(null);
+  const [traslazione] = useState(() => new Animated.Value(0));
+  const righeRef = useRef({}); // `${giorno}-${indice}` → riga
+  const sezioniRef = useRef({}); // giorno → contenitore del giorno
+  const misure = useRef({ righe: [], sezioni: [], scroll0: 0 });
+  const scrollY = useRef(0);
+  const ultimoTrascinamento = useRef(null);
+  const vacanzaRicente = useRef(null);
 
   const punti = useMemo(() => sequenzaPunti(vacanza), [vacanza]);
   const firma = useMemo(() => firmaPunti(punti), [punti]);
@@ -88,6 +102,10 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   }, [firma]);
 
   const { giorni: totaliGiorno, trasferimenti } = useMemo(() => totaliPerGiorno(punti, rotta?.tratte), [punti, rotta]);
+
+  useEffect(() => {
+    vacanzaRicente.current = vacanza;
+  }, [vacanza]);
 
   const modifica = (nuova) => {
     setVacanza(nuova);
@@ -141,6 +159,56 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     });
   const togliLuogo = (numero, indice) => aggiornaGiorno(numero, (g) => ({ luoghi: g.luoghi.filter((_, i) => i !== indice) }));
 
+  // --- Trascinare i posti con il dito -------------------------------------
+  // Si tiene premuta la maniglia e si porta il posto sopra un altro, anche di
+  // un altro giorno (se è aperto): la riga evidenziata è dove cadrà. Le
+  // posizioni delle righe si misurano all'inizio del gesto.
+  const iniziaTrascinamento = (giorno, indice) => {
+    traslazione.setValue(0);
+    misure.current = { righe: [], sezioni: [], scroll0: scrollY.current };
+    Object.entries(righeRef.current).forEach(([chiave, el]) => {
+      if (!el) return;
+      const [g, i] = chiave.split("-").map(Number);
+      el.measureInWindow((_x, y, _w, h) => misure.current.righe.push({ giorno: g, indice: i, y, h }));
+    });
+    Object.entries(sezioniRef.current).forEach(([g, el]) => {
+      if (!el) return;
+      el.measureInWindow((_x, y, _w, h) => misure.current.sezioni.push({ giorno: Number(g), y, h }));
+    });
+    const stato = { giorno, indice, bersaglio: { giorno, indice } };
+    ultimoTrascinamento.current = stato;
+    setTrascinamento(stato);
+  };
+  const muoviTrascinamento = (moveY) => {
+    const corrente = ultimoTrascinamento.current;
+    if (!corrente) return;
+    const scarto = scrollY.current - misure.current.scroll0; // la pagina è scorsa
+    const quanti = {};
+    (vacanzaRicente.current?.giorni || []).forEach((g) => {
+      quanti[g.numero] = g.luoghi.length;
+    });
+    const bersaglio = trovaBersaglio({ righe: misure.current.righe, sezioni: misure.current.sezioni, quanti }, moveY, scarto);
+    const prima = corrente.bersaglio;
+    if (bersaglio?.giorno !== prima?.giorno || bersaglio?.indice !== prima?.indice) {
+      const nuovo = { ...corrente, bersaglio };
+      ultimoTrascinamento.current = nuovo;
+      setTrascinamento(nuovo);
+    }
+    // Vicino ai bordi dello schermo la pagina scorre da sola.
+    const altezza = Dimensions.get("window").height;
+    if (moveY < 150) scrollRef.current?.scrollTo({ y: Math.max(0, scrollY.current - 14), animated: false });
+    else if (moveY > altezza - 130) scrollRef.current?.scrollTo({ y: scrollY.current + 14, animated: false });
+  };
+  const finisciTrascinamento = (annullato) => {
+    const corrente = ultimoTrascinamento.current;
+    ultimoTrascinamento.current = null;
+    setTrascinamento(null);
+    traslazione.setValue(0);
+    if (!corrente || annullato || !corrente.bersaglio) return;
+    modifica(spostaLuogo(vacanzaRicente.current, { giorno: corrente.giorno, indice: corrente.indice }, corrente.bersaglio));
+  };
+  const cambiaLuogo = (giorno, ruolo, indice, cambia) => modifica(conLuogoCambiato(vacanza, giorno, ruolo, indice, cambia));
+
   // Un posto entra nel percorso (dalla ricerca con il +, o dalla sua scheda
   // con «Aggiungi al percorso»). Aggiornamento "funzionale": vale anche
   // quando arriva da un'altra schermata con lo stato già cambiato.
@@ -190,6 +258,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     setRicerca(null);
     setTimeout(() => {
       if (tipo === "struttura") navigation.navigate("Scheda", { struttura: oggetto, aggiungiAlPercorso: richiesta });
+      else if (tipo === "itinerario") navigation.navigate("ItinerarioDettaglio", { itinerarioId: oggetto.id, aggiungiAlPercorso: richiesta });
       else navigation.navigate("SchedaCulturale", { id: oggetto.id, aggiungiAlPercorso: richiesta });
     }, 350);
   };
@@ -198,8 +267,9 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const apriSchedaDelPosto = (luogo) => {
     if (luogo.tipo === "struttura" && luogo.struttura) navigation.navigate("Scheda", { struttura: luogo.struttura });
     else if (luogo.tipo === "cultura") navigation.navigate("SchedaCulturale", { id: luogo.id });
+    else if (luogo.tipo === "itinerario") navigation.navigate("ItinerarioDettaglio", { itinerarioId: luogo.id });
   };
-  const haScheda = (luogo) => (luogo.tipo === "struttura" && !!luogo.struttura) || luogo.tipo === "cultura";
+  const haScheda = (luogo) => (luogo.tipo === "struttura" && !!luogo.struttura) || luogo.tipo === "cultura" || luogo.tipo === "itinerario";
 
   const dateScelte = ({ checkIn, checkOut }) => {
     setSelettoreDate(false);
@@ -257,6 +327,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   // I posti si numerano da 1; partenza e arrivo restano fuori ("P" e "A").
   const numeroPosto = (k) => k + (vacanza.partenza ? 0 : 1);
   const trattoPer = (k) => (rotta && k > 0 ? rotta.tratte[k - 1] : null);
+  const prenotazioni = riassuntoPrenotazioni(vacanza);
   const numeroPostiTotali = vacanza.giorni.reduce((n, g) => n + g.luoghi.length + (g.dormire ? 1 : 0), 0);
 
   // Punto da cui guardare la mappa di scelta: l'ultimo posto del viaggio fino
@@ -334,7 +405,16 @@ export default function CreaVacanzaScreen({ navigation, route }) {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.contenuto}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!trascinamento}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            scrollY.current = e.nativeEvent.contentOffset.y;
+          }}
+        >
           <Text style={styles.etichetta}>{t("vacanza.nomeEtichetta")}</Text>
           <TextInput
             style={styles.campoTitolo}
@@ -437,7 +517,14 @@ export default function CreaVacanzaScreen({ navigation, route }) {
                 </Pressable>
 
                 {aperto && (
-                  <View style={{ gap: 8 }}>
+                  <View
+                    style={{ gap: 8 }}
+                    collapsable={false}
+                    ref={(el) => {
+                      if (el) sezioniRef.current[g.numero] = el;
+                      else delete sezioniRef.current[g.numero];
+                    }}
+                  >
                     {g.luoghi.length === 0 && <Text style={styles.vuoto}>{t("vacanza.nessunPosto")}</Text>}
                     {g.luoghi.map((l, i) => {
                       const k = posizioneGlobale(g.numero, "visita", i);
@@ -450,29 +537,37 @@ export default function CreaVacanzaScreen({ navigation, route }) {
                               <Text style={styles.trattoTesto}>{testoTratto(tratto)}</Text>
                             </View>
                           )}
-                          <View style={styles.rigaPosto}>
-                            <View style={styles.numeroPosto}>
-                              <Text style={styles.numeroPostoTesto}>{numeroPosto(k)}</Text>
-                            </View>
-                            <Pressable style={{ flex: 1 }} onPress={() => haScheda(l) && apriSchedaDelPosto(l)} disabled={!haScheda(l)} accessibilityRole="button">
-                              <Text style={styles.postoNome} numberOfLines={2}>
-                                {l.nome}
-                              </Text>
-                              {l.localita ? <Text style={styles.postoSotto}>{l.localita}</Text> : null}
-                              {haScheda(l) ? <Text style={styles.apriScheda}>{t("vacanza.apriScheda")}</Text> : null}
-                            </Pressable>
-                            <View style={styles.azioniPosto}>
-                              <Pressable onPress={() => sposta(g.numero, i, -1)} hitSlop={6} disabled={i === 0} accessibilityLabel="Sposta su">
-                                <Ionicons name="arrow-up" size={18} color={i === 0 ? c.separatore : c.primario} />
-                              </Pressable>
-                              <Pressable onPress={() => sposta(g.numero, i, 1)} hitSlop={6} disabled={i === g.luoghi.length - 1} accessibilityLabel="Sposta giù">
-                                <Ionicons name="arrow-down" size={18} color={i === g.luoghi.length - 1 ? c.separatore : c.primario} />
-                              </Pressable>
-                              <Pressable onPress={() => togliLuogo(g.numero, i)} hitSlop={6} accessibilityLabel="Togli">
-                                <Ionicons name="close-circle" size={18} color={c.pericolo} />
-                              </Pressable>
-                            </View>
-                          </View>
+                          <RigaPostoVacanza
+                            luogo={l}
+                            ruolo="visita"
+                            numero={numeroPosto(k)}
+                            colore={c.primario}
+                            sfondo={c.primarioChiaro}
+                            giorno={g.numero}
+                            indice={i}
+                            ultimo={i === g.luoghi.length - 1}
+                            dataGiorno={data}
+                            altriGiorni={vacanza.giorni.filter((gg) => gg.numero !== g.numero).map((gg) => gg.numero)}
+                            haScheda={haScheda(l)}
+                            stato={{
+                              eQuesta: trascinamento?.giorno === g.numero && trascinamento?.indice === i,
+                              bersaglioSopra: !!trascinamento?.bersaglio && trascinamento.bersaglio.giorno === g.numero && trascinamento.bersaglio.indice === i,
+                              bersaglioSotto: !!trascinamento?.bersaglio && trascinamento.bersaglio.giorno === g.numero && i === g.luoghi.length - 1 && trascinamento.bersaglio.indice === g.luoghi.length,
+                              traslazione,
+                            }}
+                            onApriScheda={() => apriSchedaDelPosto(l)}
+                            onTogli={() => togliLuogo(g.numero, i)}
+                            onSposta={(verso) => sposta(g.numero, i, verso)}
+                            onSpostaAlGiorno={(n) => modifica(spostaLuogo(vacanza, { giorno: g.numero, indice: i }, { giorno: n, indice: 1e9 }))}
+                            onPrenotazione={(prenotazione) => cambiaLuogo(g.numero, "visita", i, () => ({ prenotazione }))}
+                            onInizia={iniziaTrascinamento}
+                            onMuovi={muoviTrascinamento}
+                            onFinisci={finisciTrascinamento}
+                            registraRiga={(el) => {
+                              if (el) righeRef.current[`${g.numero}-${i}`] = el;
+                              else delete righeRef.current[`${g.numero}-${i}`];
+                            }}
+                          />
                         </View>
                       );
                     })}
@@ -494,21 +589,29 @@ export default function CreaVacanzaScreen({ navigation, route }) {
                             </View>
                           ) : null;
                         })()}
-                        <View style={[styles.rigaPosto, { backgroundColor: c.accentoChiaro }]}>
-                          <View style={[styles.numeroPosto, { backgroundColor: c.accento }]}>
-                            <Text style={styles.numeroPostoTesto}>{numeroPosto(posizioneGlobale(g.numero, "dormire", null))}</Text>
-                          </View>
-                          <Pressable style={{ flex: 1 }} onPress={() => haScheda(g.dormire) && apriSchedaDelPosto(g.dormire)} disabled={!haScheda(g.dormire)} accessibilityRole="button">
-                            <Text style={styles.postoNome} numberOfLines={2}>
-                              {g.dormire.nome}
-                            </Text>
-                            {g.dormire.localita ? <Text style={styles.postoSotto}>{g.dormire.localita}</Text> : null}
-                            {haScheda(g.dormire) ? <Text style={styles.apriScheda}>{t("vacanza.apriScheda")}</Text> : null}
-                          </Pressable>
-                          <Pressable onPress={() => aggiornaGiorno(g.numero, () => ({ dormire: null }))} hitSlop={6} accessibilityLabel="Togli">
-                            <Ionicons name="close-circle" size={18} color={c.pericolo} />
-                          </Pressable>
-                        </View>
+                        <RigaPostoVacanza
+                          luogo={g.dormire}
+                          ruolo="dormire"
+                          numero={numeroPosto(posizioneGlobale(g.numero, "dormire", null))}
+                          colore={c.accento}
+                          sfondo={c.accentoChiaro}
+                          giorno={g.numero}
+                          indice={null}
+                          ultimo
+                          dataGiorno={data}
+                          altriGiorni={[]}
+                          haScheda={haScheda(g.dormire)}
+                          stato={null}
+                          onApriScheda={() => apriSchedaDelPosto(g.dormire)}
+                          onTogli={() => aggiornaGiorno(g.numero, () => ({ dormire: null }))}
+                          onSposta={() => {}}
+                          onSpostaAlGiorno={() => {}}
+                          onPrenotazione={(prenotazione) => cambiaLuogo(g.numero, "dormire", null, () => ({ prenotazione }))}
+                          onInizia={() => {}}
+                          onMuovi={() => {}}
+                          onFinisci={() => {}}
+                          registraRiga={() => {}}
+                        />
                       </View>
                     ) : (
                       <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: g.numero, ruolo: "dormire" })} accessibilityRole="button">
@@ -555,7 +658,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
             </Text>
             <Text style={styles.totaleSotto}>
               {rotta || calcolando
-                ? t("vacanza.totaleSub", { giorni: vacanza.giorni.length, posti: numeroPostiTotali })
+                ? `${t("vacanza.totaleSub", { giorni: vacanza.giorni.length, posti: numeroPostiTotali })}${prenotazioni.fatte + prenotazioni.daFare > 0 ? ` · ${t("vacanza.prenotazioniRiepilogo", { fatte: prenotazioni.fatte, daFare: prenotazioni.daFare })}` : ""}`
                 : t("vacanza.totaleNonDisponibile")}
             </Text>
           </View>

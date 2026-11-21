@@ -188,3 +188,83 @@ export async function risolviLinkGoogleMaps(testo) {
     return null;
   }
 }
+
+// --- Spostare i posti ----------------------------------------------------
+// Sposta un posto da (giorno, indice) a (giorno, indice): dentro lo stesso
+// giorno o in un altro. L'indice di arrivo è la posizione "prima di", come
+// quando si lascia una riga trascinata sopra un'altra.
+export function spostaLuogo(vacanza, da, a) {
+  const giorni = vacanza.giorni.map((g) => ({ ...g, luoghi: [...g.luoghi] }));
+  const gDa = giorni.find((g) => g.numero === da.giorno);
+  const gA = giorni.find((g) => g.numero === a.giorno);
+  if (!gDa || !gA) return vacanza;
+  const [luogo] = gDa.luoghi.splice(da.indice, 1);
+  if (!luogo) return vacanza;
+  let indice = a.indice;
+  if (gDa === gA && da.indice < indice) indice -= 1;
+  indice = Math.max(0, Math.min(indice, gA.luoghi.length));
+  gA.luoghi.splice(indice, 0, luogo);
+  return { ...vacanza, giorni };
+}
+
+// --- Prenotazioni ----------------------------------------------------------
+// Ogni posto può avere luogo.prenotazione = { stato: "da_prenotare" |
+// "prenotato", nota }: serve a tenere il conto di cosa si è già prenotato
+// (conferme, orari) mentre NaturaGo non ha ancora le prenotazioni attive.
+export const STATI_PRENOTAZIONE = [null, "da_prenotare", "prenotato"];
+
+export function prossimoStatoPrenotazione(stato) {
+  const i = STATI_PRENOTAZIONE.indexOf(stato || null);
+  return STATI_PRENOTAZIONE[(i + 1) % STATI_PRENOTAZIONE.length];
+}
+
+// Cambia un posto di un giorno (ruolo "visita" con indice, oppure "dormire").
+export function conLuogoCambiato(vacanza, giorno, ruolo, indice, cambia) {
+  return {
+    ...vacanza,
+    giorni: vacanza.giorni.map((g) => {
+      if (g.numero !== giorno) return g;
+      if (ruolo === "dormire") return g.dormire ? { ...g, dormire: { ...g.dormire, ...cambia(g.dormire) } } : g;
+      return { ...g, luoghi: g.luoghi.map((l, i) => (i === indice ? { ...l, ...cambia(l) } : l)) };
+    }),
+  };
+}
+
+export function riassuntoPrenotazioni(vacanza) {
+  let daFare = 0;
+  let fatte = 0;
+  for (const g of vacanza.giorni) {
+    for (const l of [...g.luoghi, ...(g.dormire ? [g.dormire] : [])]) {
+      if (l.prenotazione?.stato === "da_prenotare") daFare += 1;
+      if (l.prenotazione?.stato === "prenotato") fatte += 1;
+    }
+  }
+  return { daFare, fatte };
+}
+
+// Pagina web per prenotare/contattare un posto con le date del soggiorno già
+// inserite (per dormire: dal giorno al giorno dopo). null se non c'è.
+export function urlPrenotazione(luogo, dataGiorno, dormire) {
+  if (!luogo?.urlSito) return null;
+  const base = `https://www.naturago.it${luogo.urlSito}`;
+  if (luogo.tipo !== "struttura" || !dataGiorno || !dormire) return base;
+  return `${base}${base.includes("?") ? "&" : "?"}checkin=${dataGiorno}&checkout=${dataDelGiorno(dataGiorno, 2)}`;
+}
+
+// Dove cadrebbe un posto trascinato fino a moveY (coordinata sullo schermo).
+// righe = [{ giorno, indice, y, h }], sezioni = [{ giorno, y, h }] (misurate
+// all'inizio del gesto), scarto = di quanto la pagina è scorsa da allora,
+// quanti = numero di posti per giorno ({ [giorno]: n }). Sopra la metà di una
+// riga → prima di quella; sotto → dopo. Su un giorno senza righe sotto il dito
+// → in fondo a quel giorno. Fuori da tutto → null.
+export function trovaBersaglio({ righe, sezioni, quanti }, moveY, scarto = 0) {
+  for (const r of righe) {
+    const alto = r.y - scarto;
+    if (moveY >= alto && moveY <= alto + r.h) return { giorno: r.giorno, indice: r.indice + (moveY > alto + r.h / 2 ? 1 : 0) };
+  }
+  for (const sez of sezioni) {
+    const alto = sez.y - scarto;
+    if (moveY >= alto && moveY <= alto + sez.h) return { giorno: sez.giorno, indice: quanti[sez.giorno] ?? 0 };
+  }
+  return null;
+}

@@ -144,7 +144,7 @@ export function normalizzaCampeggio(c) {
 // tessera nell'hub, non ha senso inventargliene una per così poche schede.
 export const ETICHETTA_RIFUGIO = { rifugio: "Rifugio", bivacco: "Bivacco", capanna: "Rifugio" };
 
-function normalizzaRifugio(r) {
+export function normalizzaRifugio(r) {
   return {
     id: `rifugio-${r.id}`,
     idOriginale: r.id,

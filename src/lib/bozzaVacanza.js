@@ -30,6 +30,9 @@ export function luogoDaStruttura(struttura) {
     localita: struttura.localita || "",
     lat: Number(struttura.lat),
     lng: Number(struttura.lng),
+    telefono: struttura.telefono || null,
+    // Pagina della struttura sul sito (per prenotare con le date già inserite).
+    urlSito: struttura.origine === "campeggi_pubblici" ? `/esplora?apri=${struttura.idOriginale}` : null,
     struttura,
   };
 }
@@ -44,4 +47,39 @@ export function luogoDaSchedaCulturale(scheda) {
     lat: Number(scheda.lat),
     lng: Number(scheda.lng),
   };
+}
+
+// Un sentiero o percorso 4x4: il punto è il suo INIZIO (dove si lascia il
+// camper). `itinerario` ha i campi dell'app (titolo, regione, categoria,
+// modalita, lunghezzaKm, dislivelloM); `inizio` = { lat, lng }.
+export function luogoDaItinerario(itinerario, inizio) {
+  if (!itinerario || !inizio || inizio.lat == null || inizio.lng == null) return null;
+  return {
+    tipo: "itinerario",
+    id: itinerario.id,
+    nome: itinerario.titolo ?? itinerario.nome,
+    localita: itinerario.regione ?? itinerario.localita ?? "",
+    lat: Number(inizio.lat),
+    lng: Number(inizio.lng),
+    itinerario: {
+      categoria: itinerario.categoria,
+      modalita: itinerario.modalita ?? null,
+      lunghezzaKm: itinerario.lunghezzaKm ?? null,
+      dislivelloM: itinerario.dislivelloM ?? null,
+    },
+    urlSito: `/itinerario/${itinerario.id}`,
+  };
+}
+
+// "Sentiero a piedi · 8,5 km · ↑420 m": cosa mostrare sotto il nome di un
+// itinerario (nelle liste e nel percorso). Per i posti salvati dal sito c'è già `info`.
+export function infoLuogo(luogo, t) {
+  if (luogo?.itinerario) {
+    const it = luogo.itinerario;
+    const tipo = it.categoria === "percorso_4x4" ? t("vacanza.percorso4x4") : it.modalita === "bici" ? t("vacanza.sentieroBici") : t("vacanza.sentieroPiedi");
+    const km = it.lunghezzaKm != null ? `${Number(it.lunghezzaKm).toFixed(1).replace(".", ",").replace(",0", "")} km` : null;
+    const dislivello = it.dislivelloM != null ? `↑${Math.round(Number(it.dislivelloM))} m` : null;
+    return [tipo, km, dislivello].filter(Boolean).join(" · ");
+  }
+  return luogo?.info || "";
 }

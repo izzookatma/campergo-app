@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import PulsanteAggiungiAlPercorso from "../components/vacanza/PulsanteAggiungiAlPercorso";
+import { luogoDaItinerario } from "../lib/bozzaVacanza";
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -311,6 +313,15 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
           </View>
         </View>
       </ScrollView>
+      {route.params.aggiungiAlPercorso && (
+        <SafeAreaView edges={["bottom"]} style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6, borderTopWidth: 1, borderTopColor: c.separatore, backgroundColor: c.sfondoGruppo }}>
+          <PulsanteAggiungiAlPercorso
+            richiesta={route.params.aggiungiAlPercorso}
+            luogo={luogoDaItinerario(itinerario, tappe.find((tp) => tp.lat != null && tp.lng != null))}
+            navigation={navigation}
+          />
+        </SafeAreaView>
+      )}
     </View>
   );
 }

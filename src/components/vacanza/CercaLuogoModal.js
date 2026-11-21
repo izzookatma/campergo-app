@@ -5,10 +5,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../../theme/tema";
 import { useT } from "../../i18n/i18n";
 import { suggerimentiLuogo } from "../../lib/geocodifica";
-import { luogoDaStruttura, luogoDaSchedaCulturale } from "../../lib/bozzaVacanza";
+import { luogoDaStruttura, luogoDaSchedaCulturale, luogoDaItinerario, infoLuogo } from "../../lib/bozzaVacanza";
 import { risolviLinkGoogleMaps, urlGoogleMaps } from "../../lib/vacanza";
 import { areaCercata, formattaDistanza } from "../../lib/ricercaPosti";
-import { culturaPerNome, culturaPressoPunto, strutturePressoPunto, struttureperNome } from "../../lib/cercaPosti";
+import {
+  camperServicePressoPunto,
+  culturaPerNome,
+  culturaPressoPunto,
+  itinerariPerNome,
+  itinerariPressoPunto,
+  sosteLiberePressoPunto,
+  strutturePressoPunto,
+  struttureperNome,
+} from "../../lib/cercaPosti";
 import MappaScegliPosto from "./MappaScegliPosto";
 
 // Cerca un posto per la vacanza, con la logica di chi pianifica:
@@ -25,7 +34,19 @@ function pulisci(testo) {
   return testo.trim().replace(/[,(){}%]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const VUOTO = { chiave: null, vicinoStrutture: [], vicinoCultura: [], perNomeStrutture: [], perNomeCultura: [], luoghi: [], area: null };
+const VUOTO = {
+  chiave: null,
+  vicinoStrutture: [],
+  vicinoCultura: [],
+  vicinoItinerari: [],
+  vicinoSoste: [],
+  vicinoCamper: [],
+  perNomeStrutture: [],
+  perNomeCultura: [],
+  perNomeItinerari: [],
+  luoghi: [],
+  area: null,
+};
 
 export default function CercaLuogoModal({ visibile, titolo, richiesta, centro, centroNome = "", iniziale = "", onScegli, onApriScheda, onChiudi }) {
   const { c } = useTema();
@@ -51,31 +72,36 @@ export default function CercaLuogoModal({ visibile, titolo, richiesta, centro, c
     const timer = setTimeout(
       async () => {
         try {
+          const caricaVicini = async (punto) => {
+            const [vicinoStrutture, vicinoCultura, vicinoItinerari, vicinoSoste, vicinoCamper] = await Promise.all([
+              ruolo === "dormire" ? strutturePressoPunto(punto) : [],
+              ruolo === "visita" ? culturaPressoPunto(punto) : [],
+              ruolo === "visita" ? itinerariPressoPunto(punto).catch(() => []) : [],
+              ruolo === "dormire" ? sosteLiberePressoPunto(punto).catch(() => []) : [],
+              ruolo === "dormire" ? camperServicePressoPunto(punto).catch(() => []) : [],
+            ]);
+            return { vicinoStrutture, vicinoCultura, vicinoItinerari, vicinoSoste, vicinoCamper };
+          };
           if (termine.length < 3) {
             // Elenco della zona: i posti vicini al punto del viaggio.
             if (!centro || (ruolo !== "dormire" && ruolo !== "visita")) {
               if (attivo) setEsito({ ...VUOTO, chiave });
               return;
             }
-            const [s, k] = await Promise.all([
-              ruolo === "dormire" ? strutturePressoPunto(centro) : Promise.resolve([]),
-              ruolo === "visita" ? culturaPressoPunto(centro) : Promise.resolve([]),
-            ]);
-            if (attivo) setEsito({ ...VUOTO, chiave, vicinoStrutture: s, vicinoCultura: k, area: centroNome ? { nome: centroNome, lat: centro.lat, lng: centro.lng } : null });
+            const vicini = await caricaVicini(centro);
+            if (attivo) setEsito({ ...VUOTO, ...vicini, chiave, area: centroNome ? { nome: centroNome, lat: centro.lat, lng: centro.lng } : null });
             return;
           }
-          const [perNomeStrutture, perNomeCultura, luoghi] = await Promise.all([
+          const [perNomeStrutture, perNomeCultura, perNomeItinerari, luoghi] = await Promise.all([
             struttureperNome(termine, centro).catch(() => []),
             ruolo === "visita" ? culturaPerNome(termine, centro).catch(() => []) : Promise.resolve([]),
+            ruolo === "visita" ? itinerariPerNome(termine, centro).catch(() => []) : Promise.resolve([]),
             suggerimentiLuogo(termine).catch(() => []),
           ]);
           // "Lodi" → l'area è Lodi: si mostrano i posti vicini a quella città.
           const area = areaCercata(luoghi, termine);
-          let vicinoStrutture = [];
-          let vicinoCultura = [];
-          if (area && ruolo === "dormire") vicinoStrutture = await strutturePressoPunto(area).catch(() => []);
-          if (area && ruolo === "visita") vicinoCultura = await culturaPressoPunto(area).catch(() => []);
-          if (attivo) setEsito({ chiave, vicinoStrutture, vicinoCultura, perNomeStrutture, perNomeCultura, luoghi: luoghi || [], area });
+          const vicini = area ? await caricaVicini(area).catch(() => ({})) : {};
+          if (attivo) setEsito({ ...VUOTO, ...vicini, chiave, perNomeStrutture, perNomeCultura, perNomeItinerari, luoghi: luoghi || [], area });
         } catch (e) {
           console.error("Errore nella ricerca dei posti:", e);
           if (attivo) setEsito({ ...VUOTO, chiave });
@@ -97,8 +123,19 @@ export default function CercaLuogoModal({ visibile, titolo, richiesta, centro, c
   const perNomeStruttureNuove = vedi.perNomeStrutture.filter((s) => !giaVicini.has(s.id));
   const giaViciniCultura = new Set(vedi.vicinoCultura.map((k) => k.id));
   const perNomeCulturaNuova = vedi.perNomeCultura.filter((k) => !giaViciniCultura.has(k.id));
+  const giaViciniItinerari = new Set(vedi.vicinoItinerari.map((i) => i.id));
+  const perNomeItinerariNuovi = vedi.perNomeItinerari.filter((i) => !giaViciniItinerari.has(i.id));
   const nomeArea = vedi.area?.nome?.split(",")[0];
-  const totale = vedi.vicinoStrutture.length + vedi.vicinoCultura.length + perNomeStruttureNuove.length + perNomeCulturaNuova.length + vedi.luoghi.length;
+  const totale =
+    vedi.vicinoStrutture.length +
+    vedi.vicinoCultura.length +
+    vedi.vicinoItinerari.length +
+    vedi.vicinoSoste.length +
+    vedi.vicinoCamper.length +
+    perNomeStruttureNuove.length +
+    perNomeCulturaNuova.length +
+    perNomeItinerariNuovi.length +
+    vedi.luoghi.length;
   // La mappa si apre dove si sta cercando: la città scritta, altrimenti il punto del viaggio.
   const centroMappa = vedi.area?.lat != null ? { lat: vedi.area.lat, lng: vedi.area.lng } : centro;
   const luoghiPrima = ruolo === "partenza" || ruolo === "arrivo";
@@ -147,6 +184,41 @@ export default function CercaLuogoModal({ visibile, titolo, richiesta, centro, c
             sotto={[k.citta, formattaDistanza(k.distanzaKm)].filter(Boolean).join(" · ")}
             onPress={() => onApriScheda({ tipo: "cultura", oggetto: k, testo })}
             onAggiungi={() => scegli(luogoDaSchedaCulturale(k))}
+          />
+        ))}
+      </Sezione>
+    ) : null;
+
+  const sezioneItinerari = (lista, titoloSezione, chiavePrefisso) =>
+    lista.length > 0 ? (
+      <Sezione key={chiavePrefisso} icona="trail-sign-outline" titolo={titoloSezione} c={c} styles={styles}>
+        {lista.slice(0, NUMERO_PER_SEZIONE).map((i) => {
+          const luogo = luogoDaItinerario(i, i);
+          return (
+            <Riga
+              key={`${chiavePrefisso}-${i.id}`}
+              styles={styles}
+              nome={i.nome}
+              sotto={[infoLuogo(luogo, t), i.localita, formattaDistanza(i.distanzaKm)].filter(Boolean).join(" · ")}
+              onPress={() => onApriScheda({ tipo: "itinerario", oggetto: i, testo })}
+              onAggiungi={() => scegli(luogo)}
+            />
+          );
+        })}
+      </Sezione>
+    ) : null;
+
+  const sezioneSenzaScheda = (lista, titoloSezione, etichetta, tipo, icona) =>
+    lista.length > 0 ? (
+      <Sezione key={tipo} icona={icona} titolo={titoloSezione} c={c} styles={styles}>
+        {lista.slice(0, NUMERO_PER_SEZIONE).map((x) => (
+          <Riga
+            key={`${tipo}-${x.id}`}
+            styles={styles}
+            nome={x.nome}
+            sotto={[etichetta, x.localita, formattaDistanza(x.distanzaKm)].filter(Boolean).join(" · ")}
+            onPress={() => scegli({ tipo, id: x.id, nome: x.nome, localita: x.localita || "", lat: Number(x.lat), lng: Number(x.lng), info: etichetta })}
+            onAggiungi={() => scegli({ tipo, id: x.id, nome: x.nome, localita: x.localita || "", lat: Number(x.lat), lng: Number(x.lng), info: etichetta })}
           />
         ))}
       </Sezione>
@@ -253,6 +325,10 @@ export default function CercaLuogoModal({ visibile, titolo, richiesta, centro, c
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.lista}>
             {luoghiPrima ? sezioneLuoghi : null}
             {sezioneStrutture(vedi.vicinoStrutture, nomeArea ? t("vacanza.doveDormireVicino", { luogo: nomeArea }) : t("vacanza.doveDormireQuiVicino"), "vs")}
+            {sezioneSenzaScheda(vedi.vicinoSoste, nomeArea ? t("vacanza.sosteVicino", { luogo: nomeArea }) : t("vacanza.sosteQuiVicino"), t("vacanza.sostaLibera"), "sosta_libera", "caravan-outline")}
+            {sezioneSenzaScheda(vedi.vicinoCamper, nomeArea ? t("vacanza.camperVicino", { luogo: nomeArea }) : t("vacanza.camperQuiVicino"), t("vacanza.camperService"), "camper_service", "water-outline")}
+            {sezioneItinerari(vedi.vicinoItinerari, nomeArea ? t("vacanza.sentieriVicino", { luogo: nomeArea }) : t("vacanza.sentieriQuiVicino"), "vi")}
+            {sezioneItinerari(perNomeItinerariNuovi, t("vacanza.sentieriConNome"), "ni")}
             {sezioneCultura(vedi.vicinoCultura, nomeArea ? t("vacanza.cosaVedereVicino", { luogo: nomeArea }) : t("vacanza.cosaVedereQuiVicino"), "vk")}
             {sezioneCultura(perNomeCulturaNuova, t("vacanza.culturaConNome"), "nk")}
             {sezioneStrutture(perNomeStruttureNuove, t("vacanza.struttureConNome"), "ns")}
