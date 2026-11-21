@@ -32,7 +32,7 @@ function MappaVera({ punti, tracciato }) {
       {punti.map((p, i) => (
         <Marker key={`${i}-${p.luogo.lat}`} coordinate={{ latitude: p.luogo.lat, longitude: p.luogo.lng }} title={p.luogo.nome} stopPropagation>
           <View style={[styles.pin, { backgroundColor: p.ruolo === "dormire" ? c.accento : c.primario }]}>
-            <Text style={styles.pinTesto}>{p.ruolo === "partenza" ? "P" : i + (conPartenza ? 0 : 1)}</Text>
+            <Text style={styles.pinTesto}>{p.ruolo === "partenza" ? "P" : p.ruolo === "arrivo" ? "A" : i + (conPartenza ? 0 : 1)}</Text>
           </View>
         </Marker>
       ))}

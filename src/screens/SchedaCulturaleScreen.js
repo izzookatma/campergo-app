@@ -12,6 +12,8 @@ import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import RigaStelle from "../components/ui/RigaStelle";
 import { useT } from "../i18n/i18n";
+import PulsanteAggiungiAlPercorso from "../components/vacanza/PulsanteAggiungiAlPercorso";
+import { luogoDaSchedaCulturale } from "../lib/bozzaVacanza";
 import { urlMappa } from "../lib/mappa";
 import { apriLink } from "../lib/linkEsterni";
 import { usePreferenze } from "../context/PreferenzeContext";
@@ -254,6 +256,11 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
           </View>
         </View>
       </ScrollView>
+      {route.params.aggiungiAlPercorso && (
+        <SafeAreaView edges={["bottom"]} style={styles.barraAggiungi}>
+          <PulsanteAggiungiAlPercorso richiesta={route.params.aggiungiAlPercorso} luogo={luogoDaSchedaCulturale(scheda)} navigation={navigation} />
+        </SafeAreaView>
+      )}
     </View>
   );
 }
@@ -262,6 +269,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
 // richiamata da ogni componente di questo file che ne ha bisogno.
 function useEstili(c, spazio, raggio) {
   return StyleSheet.create({
+    barraAggiungi: { borderTopWidth: 1, borderTopColor: c.separatore, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6, backgroundColor: c.sfondoGruppo },
     schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
     hero: { height: 230, alignItems: "center", justifyContent: "center" },
     heroImmagine: { width: "100%", height: "100%", position: "absolute" },

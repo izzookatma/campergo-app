@@ -7,11 +7,14 @@ import { useT } from "../../i18n/i18n";
 import { cercaStrutture } from "../../lib/strutture";
 import { caricaSchedeCulturali } from "../../lib/cultura";
 import { suggerimentiLuogo } from "../../lib/geocodifica";
+import { luogoDaStruttura, luogoDaSchedaCulturale } from "../../lib/bozzaVacanza";
 
 // Cerca un posto da aggiungere alla vacanza: strutture NaturaGo, musei/
 // borghi/attività e qualsiasi luogo (Nominatim). Chi sceglie riceve un
 // oggetto semplice { tipo, id, nome, localita, lat, lng }.
-export default function CercaLuogoModal({ visibile, titolo, onScegli, onChiudi }) {
+// Toccando un risultato si APRE LA SUA SCHEDA (da lì «Aggiungi al percorso»,
+// e in futuro la prenotazione); con il + a destra lo si aggiunge subito.
+export default function CercaLuogoModal({ visibile, titolo, onScegli, onApriScheda, onChiudi }) {
   const { c } = useTema();
   const styles = useEstili(c);
   const t = useT();
@@ -91,7 +94,8 @@ export default function CercaLuogoModal({ visibile, titolo, onScegli, onChiudi }
                 styles={styles}
                 nome={s.nome}
                 sotto={[s.tipo, s.localita].filter(Boolean).join(" · ")}
-                onPress={() => scegli({ tipo: "struttura", id: s.id, nome: s.nome, localita: s.localita || "", lat: Number(s.lat), lng: Number(s.lng) })}
+                onPress={() => onApriScheda({ tipo: "struttura", oggetto: s })}
+                onAggiungi={() => scegli(luogoDaStruttura(s))}
               />
             ))}
           </Sezione>
@@ -102,7 +106,8 @@ export default function CercaLuogoModal({ visibile, titolo, onScegli, onChiudi }
                 styles={styles}
                 nome={k.titolo}
                 sotto={[k.citta, k.regione].filter(Boolean).join(", ")}
-                onPress={() => scegli({ tipo: "cultura", id: k.id, nome: k.titolo, localita: k.citta || "", lat: Number(k.lat), lng: Number(k.lng) })}
+                onPress={() => onApriScheda({ tipo: "cultura", oggetto: k })}
+                onAggiungi={() => scegli(luogoDaSchedaCulturale(k))}
               />
             ))}
           </Sezione>
@@ -114,10 +119,12 @@ export default function CercaLuogoModal({ visibile, titolo, onScegli, onChiudi }
                 nome={l.nome}
                 sotto=""
                 onPress={() => scegli({ tipo: "libero", id: null, nome: l.nome, localita: "", lat: l.lat, lng: l.lng })}
+                onAggiungi={null}
               />
             ))}
           </Sezione>
           {pochiCaratteri && <Text style={styles.vuoto}>{t("vacanza.scrivi3")}</Text>}
+          {!pochiCaratteri && !nessunRisultato && <Text style={styles.vuoto}>{t("vacanza.suggerimentoRicerca")}</Text>}
           {nessunRisultato && <Text style={styles.vuoto}>{t("vacanza.nessunRisultato")}</Text>}
         </ScrollView>
       </SafeAreaView>
@@ -139,10 +146,10 @@ function Sezione({ titolo, icona, children, c, styles }) {
   );
 }
 
-function Riga({ nome, sotto, onPress, styles }) {
+function Riga({ nome, sotto, onPress, onAggiungi, styles }) {
   return (
-    <Pressable style={styles.riga} onPress={onPress} accessibilityRole="button">
-      <View style={{ flex: 1 }}>
+    <View style={styles.riga}>
+      <Pressable style={{ flex: 1 }} onPress={onPress} accessibilityRole="button">
         <Text style={styles.rigaNome} numberOfLines={2}>
           {nome}
         </Text>
@@ -151,9 +158,15 @@ function Riga({ nome, sotto, onPress, styles }) {
             {sotto}
           </Text>
         ) : null}
-      </View>
-      <Ionicons name="add-circle" size={22} color="#00587C" />
-    </Pressable>
+      </Pressable>
+      {onAggiungi ? (
+        <Pressable onPress={onAggiungi} hitSlop={8} accessibilityRole="button" accessibilityLabel="Aggiungi subito">
+          <Ionicons name="add-circle" size={26} color="#00587C" />
+        </Pressable>
+      ) : (
+        <Ionicons name="add-circle" size={26} color="#00587C" />
+      )}
+    </View>
   );
 }
 

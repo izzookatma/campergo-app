@@ -1,4 +1,4 @@
-import { nuovaVacanza, giornoVuoto, dataDelGiorno, sequenzaPunti, totaliPerGiorno, pianoDaVacanza, vacanzaDaPiano, formattaKm, formattaTempo } from "../vacanza";
+import { intervalloDate, nuovaVacanza, giornoVuoto, dataDelGiorno, sequenzaPunti, totaliPerGiorno, pianoDaVacanza, vacanzaDaPiano, formattaKm, formattaTempo } from "../vacanza";
 
 const luogo = (nome, lat, lng) => ({ tipo: "libero", id: null, nome, localita: "", lat, lng });
 
@@ -27,9 +27,12 @@ describe("vacanza personale", () => {
       { km: 5, minuti: 6 }, // B→Campeggio (giorno 1)
       { km: 40, minuti: 45 }, // Campeggio→C (giorno 2)
     ];
-    const t = totaliPerGiorno(sequenzaPunti(v), tratte);
-    expect(t[1]).toEqual({ km: 15, minuti: 18 });
-    expect(t[2]).toEqual({ km: 40, minuti: 45 });
+    const { giorni, trasferimenti } = totaliPerGiorno(sequenzaPunti(v), tratte);
+    // Dentro il giorno 1: A→B e B→Campeggio. Il tratto Campeggio→C è il
+    // trasferimento verso il giorno 2, non parte di un giorno.
+    expect(giorni[1]).toEqual({ km: 15, minuti: 18 });
+    expect(giorni[2]).toBeUndefined();
+    expect(trasferimenti[2]).toEqual({ km: 40, minuti: 45 });
   });
 
   test("si salva come piano personale e si riapre uguale", () => {
@@ -51,10 +54,29 @@ describe("vacanza personale", () => {
     const punti = sequenzaPunti(v);
     expect(punti.map((p) => p.ruolo)).toEqual(["partenza", "visita"]);
     expect(punti[0].giorno).toBe(0);
-    const t = totaliPerGiorno(punti, [{ km: 30, minuti: 35 }]);
-    expect(t[1]).toEqual({ km: 30, minuti: 35 });
-    expect(t[0]).toBeUndefined();
+    const { giorni, trasferimenti } = totaliPerGiorno(punti, [{ km: 30, minuti: 35 }]);
+    expect(trasferimenti[1]).toEqual({ km: 30, minuti: 35 });
+    expect(giorni[1]).toBeUndefined();
     expect(vacanzaDaPiano(pianoDaVacanza(v, null)).partenza.nome).toBe("Casa");
+  });
+
+  test("l'arrivo finale chiude il viaggio e il suo tratto è un trasferimento", () => {
+    const v = nuovaVacanza();
+    v.partenza = luogo("Casa", 0, 0);
+    v.arrivo = luogo("Casa di nuovo", 0, 0);
+    v.giorni[0].luoghi = [luogo("A", 1, 1)];
+    const punti = sequenzaPunti(v);
+    expect(punti.map((p) => p.ruolo)).toEqual(["partenza", "visita", "arrivo"]);
+    const { trasferimenti } = totaliPerGiorno(punti, [{ km: 30, minuti: 35 }, { km: 31, minuti: 36 }]);
+    expect(trasferimenti[1]).toEqual({ km: 30, minuti: 35 });
+    expect(trasferimenti.arrivo).toEqual({ km: 31, minuti: 36 });
+    expect(vacanzaDaPiano(pianoDaVacanza(v, null)).arrivo.nome).toBe("Casa di nuovo");
+  });
+
+  test("l'intervallo di date sotto il nome della vacanza", () => {
+    expect(intervalloDate({ dataInizio: "2027-07-12", giorniRichiesti: 3 })).toBe("12 lug – 14 lug 2027");
+    expect(intervalloDate({ dataInizio: "2027-07-12", giorniRichiesti: 1 })).toBe("12 lug 2027");
+    expect(intervalloDate({ dataInizio: null, giorniRichiesti: 3 })).toBe("");
   });
 
   test("formati km e tempo", () => {

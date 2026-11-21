@@ -3,14 +3,14 @@
 // calcola le distanze vere tra i posti NELL'ORDINE scelto (percorsoConTratte).
 // Qui solo i dati e i conti, senza schermo.
 
-import { dataDaIso, isoDaData } from "./periodo";
+import { dataDaIso, etichettaData, isoDaData } from "./periodo";
 
 export function giornoVuoto(numero) {
   return { numero, appunti: "", luoghi: [], dormire: null };
 }
 
 export function nuovaVacanza() {
-  return { titolo: "", appuntiViaggio: "", dataInizio: null, partenza: null, giorni: [giornoVuoto(1)] };
+  return { titolo: "", appuntiViaggio: "", dataInizio: null, partenza: null, arrivo: null, giorni: [giornoVuoto(1)] };
 }
 
 // Data del giorno N: partenza + (N-1) giorni ("YYYY-MM-DD", ora locale).
@@ -50,6 +50,9 @@ export function sequenzaPunti(vacanza) {
     g.luoghi.forEach((luogo, indice) => punti.push({ giorno: g.numero, ruolo: "visita", indice, luogo }));
     if (g.dormire) punti.push({ giorno: g.numero, ruolo: "dormire", indice: null, luogo: g.dormire });
   }
+  // L'arrivo finale chiude il viaggio: ultimo punto, fuori dai giorni (il
+  // tratto che ci porta lì è un "trasferimento", non parte di un giorno).
+  if (vacanza.arrivo) punti.push({ giorno: vacanza.giorni.length + 1, ruolo: "arrivo", indice: null, luogo: vacanza.arrivo });
   return punti;
 }
 
@@ -61,18 +64,29 @@ export function firmaPunti(punti) {
 }
 
 // Tratto che ARRIVA al punto k (dal punto precedente): tratte[k-1].
-// Somma per giorno dei tratti che arrivano ai punti di quel giorno.
+// - Se il punto precedente è dello stesso giorno, il tratto è "dentro" quel
+//   giorno (giorni[n]: somma dei tratti della giornata).
+// - Altrimenti è un TRASFERIMENTO tra un giorno e il successivo (o dalla
+//   partenza al primo arrivo, o dall'ultimo giorno all'arrivo finale):
+//   trasferimenti[n] = tratto che porta al primo punto del giorno n, e
+//   trasferimenti.arrivo = tratto che porta all'arrivo finale.
 export function totaliPerGiorno(punti, tratte) {
-  const totali = {};
-  if (!tratte) return totali;
+  const giorni = {};
+  const trasferimenti = {};
+  if (!tratte) return { giorni, trasferimenti };
   punti.forEach((p, k) => {
     if (k === 0 || !tratte[k - 1]) return;
-    const t = totali[p.giorno] || { km: 0, minuti: 0 };
-    t.km += tratte[k - 1].km;
-    t.minuti += tratte[k - 1].minuti;
-    totali[p.giorno] = t;
+    const tratto = tratte[k - 1];
+    if (punti[k - 1].giorno === p.giorno) {
+      const t = giorni[p.giorno] || { km: 0, minuti: 0 };
+      t.km += tratto.km;
+      t.minuti += tratto.minuti;
+      giorni[p.giorno] = t;
+    } else {
+      trasferimenti[p.ruolo === "arrivo" ? "arrivo" : p.giorno] = tratto;
+    }
   });
-  return totali;
+  return { giorni, trasferimenti };
 }
 
 // Forma salvata nella colonna jsonb "piano" (piani_viaggio_salvati). Il
@@ -84,6 +98,7 @@ export function pianoDaVacanza(vacanza, totale) {
     appuntiViaggio: vacanza.appuntiViaggio,
     dataInizio: vacanza.dataInizio,
     partenza: vacanza.partenza || null,
+    arrivo: vacanza.arrivo || null,
     giorniRichiesti: vacanza.giorni.length,
     tappe: nomiTappe(vacanza),
     giorni: vacanza.giorni,
@@ -97,6 +112,7 @@ export function vacanzaDaPiano(piano) {
     appuntiViaggio: piano.appuntiViaggio || "",
     dataInizio: piano.dataInizio || null,
     partenza: piano.partenza || null,
+    arrivo: piano.arrivo || null,
     giorni: (piano.giorni || []).map((g, i) => ({
       numero: i + 1,
       appunti: g.appunti || "",
@@ -113,4 +129,14 @@ export function nomiTappe(vacanza) {
 
 export function eVacanzaPersonale(piano) {
   return piano?.tipo === "personale";
+}
+
+// "12 lug – 15 lug 2027" per una vacanza con data di partenza; vuoto se
+// la data non è stata scelta. Il giorno finale è partenza + giorni - 1.
+export function intervalloDate(piano) {
+  if (!piano?.dataInizio) return "";
+  const giorni = piano.giorniRichiesti || piano.giorni?.length || 1;
+  const fine = dataDelGiorno(piano.dataInizio, giorni);
+  const anno = dataDaIso(fine).getFullYear();
+  return giorni > 1 ? `${etichettaData(piano.dataInizio)} – ${etichettaData(fine)} ${anno}` : `${etichettaData(piano.dataInizio)} ${anno}`;
 }

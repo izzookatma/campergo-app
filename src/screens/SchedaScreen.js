@@ -22,6 +22,8 @@ import CuoreAnimato from "../components/ui/CuoreAnimato";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import GalleriaHero from "../components/scheda/GalleriaHero";
 import GalleriaFullscreen from "../components/scheda/GalleriaFullscreen";
+import PulsanteAggiungiAlPercorso from "../components/vacanza/PulsanteAggiungiAlPercorso";
+import { luogoDaStruttura } from "../lib/bozzaVacanza";
 import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
 import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
 import { EventiStruttura, SpazioBarbecue, AltreStrutture } from "../components/scheda/SezioniExtraScheda";
@@ -578,6 +580,9 @@ export default function SchedaScreen({ route, navigation }) {
             <Text style={styles.prezzoNotte}> /notte</Text>
           </Text>
         ) : null}
+        {route.params.aggiungiAlPercorso && (
+          <PulsanteAggiungiAlPercorso richiesta={route.params.aggiungiAlPercorso} luogo={luogoDaStruttura(struttura)} navigation={navigation} />
+        )}
         <View style={styles.pulsanti}>
           <Pulsante
             titolo={t("comune.chiama")}

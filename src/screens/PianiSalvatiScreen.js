@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaPianiSalvati, eliminaPianoSalvato } from "../lib/pianiSalvati";
+import { eVacanzaPersonale, intervalloDate } from "../lib/vacanza";
 import { useT } from "../i18n/i18n";
 
 function dataBreve(iso) {
@@ -80,6 +81,9 @@ export default function PianiSalvatiScreen({ navigation }) {
               <Text style={styles.cardTitolo} numberOfLines={2}>
                 {item.richiesta}
               </Text>
+              {eVacanzaPersonale(item.piano) && intervalloDate(item.piano) ? (
+                <Text style={styles.cardDate}>{intervalloDate(item.piano)}</Text>
+              ) : null}
               <Text style={styles.cardSottotitolo}>
                 {t("pianiSalvati.giorniTappe", { n: item.giorniRichiesti, tappe: (item.tappe || []).join(" → ") })}
               </Text>
@@ -123,6 +127,7 @@ function useEstili(c, spazio, raggio) {
   },
   cardTitolo: { fontSize: 13.5, fontWeight: "700", color: c.testo },
   cardSottotitolo: { fontSize: 11.5, color: c.primario, fontWeight: "600", marginTop: 3 },
+  cardDate: { fontSize: 13, fontWeight: "700", color: c.primario, marginTop: 3 },
   cardData: { fontSize: 10.5, color: c.testoSecondario, marginTop: 3 },
   elimina: { padding: 6 },
   });

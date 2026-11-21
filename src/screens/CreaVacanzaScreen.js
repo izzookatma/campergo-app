@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import MappaVacanza from "../components/vacanza/MappaVacanza";
 import { percorsoConTratte } from "../lib/percorsoStradale";
 import { salvaVacanzaPersonale, aggiornaVacanzaPersonale } from "../lib/pianiSalvati";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
+import { iscriviAggiuntaLuogo } from "../lib/bozzaVacanza";
 import { etichettaData, numeroNotti } from "../lib/periodo";
 import {
   giornoVuoto,
@@ -27,9 +28,15 @@ import {
   nomiTappe,
 } from "../lib/vacanza";
 
-// "Crea la tua vacanza": chi viaggia compone i giorni (posti da vedere in
-// ordine, dove dormire, data, appunti liberi) e l'app calcola km e tempi
-// veri tra i posti nell'ordine scelto. Si salva in Profilo → I miei percorsi.
+// "Crea la tua vacanza". Dall'alto in basso:
+//  1. punto di PARTENZA;
+//  2. RIEPILOGO dei giorni (con i km tra un giorno e l'altro: toccandone
+//     uno si apre il suo dettaglio);
+//  3. DETTAGLIO dei giorni: ognuno si apre e si chiude da solo, aprirne uno
+//     non chiude gli altri, così si vede tutto il piano;
+//  4. punto di ARRIVO FINALE;
+//  5. TOTALE del viaggio, sempre in fondo.
+// Le distanze sono quelle vere della strada, nell'ordine scelto.
 export default function CreaVacanzaScreen({ navigation, route }) {
   const { c } = useTema();
   const styles = useEstili(c);
@@ -43,8 +50,12 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const [salvando, setSalvando] = useState(false);
   const [ricerca, setRicerca] = useState(null); // { giorno, ruolo }
   const [selettoreDate, setSelettoreDate] = useState(false);
+  // Giorni aperti: ognuno resta com'è finché non lo cambia chi usa l'app.
+  const [aperti, setAperti] = useState(() => new Set([1]));
   // Ultimo calcolo delle distanze, con la firma dei punti a cui si riferisce.
   const [calcolo, setCalcolo] = useState({ firma: null, dati: null });
+  const scrollRef = useRef(null);
+  const posizioniGiorni = useRef({});
 
   const punti = useMemo(() => sequenzaPunti(vacanza), [vacanza]);
   const firma = useMemo(() => firmaPunti(punti), [punti]);
@@ -72,7 +83,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firma]);
 
-  const totaliGiorno = useMemo(() => totaliPerGiorno(punti, rotta?.tratte), [punti, rotta]);
+  const { giorni: totaliGiorno, trasferimenti } = useMemo(() => totaliPerGiorno(punti, rotta?.tratte), [punti, rotta]);
 
   const modifica = (nuova) => {
     setVacanza(nuova);
@@ -81,10 +92,40 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const aggiornaGiorno = (numero, cambia) =>
     modifica({ ...vacanza, giorni: vacanza.giorni.map((g) => (g.numero === numero ? { ...g, ...cambia(g) } : g)) });
 
-  const aggiungiGiorno = () => modifica({ ...vacanza, giorni: [...vacanza.giorni, giornoVuoto(vacanza.giorni.length + 1)] });
+  const alternaGiorno = (numero) =>
+    setAperti((prec) => {
+      const nuovo = new Set(prec);
+      if (nuovo.has(numero)) nuovo.delete(numero);
+      else nuovo.add(numero);
+      return nuovo;
+    });
+
+  // Dal riepilogo: apre il giorno (senza chiudere gli altri) e ci scorre.
+  const apriGiornoDalRiepilogo = (numero) => {
+    setAperti((prec) => new Set(prec).add(numero));
+    setTimeout(() => {
+      const y = posizioniGiorni.current[numero];
+      if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
+    }, 80);
+  };
+
+  const aggiungiGiorno = () => {
+    const numero = vacanza.giorni.length + 1;
+    modifica({ ...vacanza, giorni: [...vacanza.giorni, giornoVuoto(numero)] });
+    setAperti((prec) => new Set(prec).add(numero));
+  };
   const togliGiorno = (numero) => {
     const rimasti = vacanza.giorni.filter((g) => g.numero !== numero).map((g, i) => ({ ...g, numero: i + 1 }));
     modifica({ ...vacanza, giorni: rimasti });
+    // I numeri dei giorni successivi scalano di uno: gli aperti si riallineano.
+    setAperti((prec) => {
+      const nuovo = new Set();
+      prec.forEach((n) => {
+        if (n < numero) nuovo.add(n);
+        else if (n > numero) nuovo.add(n - 1);
+      });
+      return nuovo;
+    });
   };
   const sposta = (numero, indice, verso) =>
     aggiornaGiorno(numero, (g) => {
@@ -96,15 +137,50 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     });
   const togliLuogo = (numero, indice) => aggiornaGiorno(numero, (g) => ({ luoghi: g.luoghi.filter((_, i) => i !== indice) }));
 
+  // Un posto entra nel percorso (dalla ricerca con il +, o dalla sua scheda
+  // con «Aggiungi al percorso»). Aggiornamento "funzionale": vale anche
+  // quando arriva da un'altra schermata con lo stato già cambiato.
+  const applicaLuogo = useCallback(({ giorno, ruolo }, luogo) => {
+    if (!luogo) return;
+    setVacanza((prec) => {
+      if (ruolo === "partenza") return { ...prec, partenza: luogo };
+      if (ruolo === "arrivo") return { ...prec, arrivo: luogo };
+      return {
+        ...prec,
+        giorni: prec.giorni.map((g) => {
+          if (g.numero !== giorno) return g;
+          return ruolo === "dormire" ? { ...g, dormire: luogo } : { ...g, luoghi: [...g.luoghi, luogo] };
+        }),
+      };
+    });
+    setSalvato(false);
+  }, []);
+
+  useEffect(() => iscriviAggiuntaLuogo(applicaLuogo), [applicaLuogo]);
+
   const luogoScelto = (luogo) => {
-    const { giorno, ruolo } = ricerca;
+    const richiesta = ricerca;
     setRicerca(null);
-    if (ruolo === "partenza") {
-      modifica({ ...vacanza, partenza: luogo });
-      return;
-    }
-    aggiornaGiorno(giorno, (g) => (ruolo === "dormire" ? { dormire: luogo } : { luoghi: [...g.luoghi, luogo] }));
+    applicaLuogo(richiesta, luogo);
   };
+
+  // Dalla ricerca: apre la scheda del posto, con il pulsante «Aggiungi al
+  // percorso». Si aspetta che il pannello di ricerca si sia chiuso.
+  const apriSchedaDaRicerca = ({ tipo, oggetto }) => {
+    const richiesta = ricerca;
+    setRicerca(null);
+    setTimeout(() => {
+      if (tipo === "struttura") navigation.navigate("Scheda", { struttura: oggetto, aggiungiAlPercorso: richiesta });
+      else navigation.navigate("SchedaCulturale", { id: oggetto.id, aggiungiAlPercorso: richiesta });
+    }, 350);
+  };
+
+  // Dai posti già nel percorso: riapre la scheda (per leggere, chiamare, prenotare).
+  const apriSchedaDelPosto = (luogo) => {
+    if (luogo.tipo === "struttura" && luogo.struttura) navigation.navigate("Scheda", { struttura: luogo.struttura });
+    else if (luogo.tipo === "cultura") navigation.navigate("SchedaCulturale", { id: luogo.id });
+  };
+  const haScheda = (luogo) => (luogo.tipo === "struttura" && !!luogo.struttura) || luogo.tipo === "cultura";
 
   const dateScelte = ({ checkIn, checkOut }) => {
     setSelettoreDate(false);
@@ -115,7 +191,12 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     // Se è stato scelto anche l'ultimo giorno, si aggiungono i giorni che mancano.
     const giorniServono = checkOut ? numeroNotti(checkIn, checkOut) + 1 : vacanza.giorni.length;
     const giorni = [...vacanza.giorni];
-    while (giorni.length < Math.min(giorniServono, 30)) giorni.push(giornoVuoto(giorni.length + 1));
+    const nuoviAperti = new Set(aperti);
+    while (giorni.length < Math.min(giorniServono, 30)) {
+      giorni.push(giornoVuoto(giorni.length + 1));
+      nuoviAperti.add(giorni.length);
+    }
+    setAperti(nuoviAperti);
     modifica({ ...vacanza, dataInizio: checkIn, giorni });
   };
 
@@ -154,9 +235,60 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   // Numero progressivo del punto nell'intero viaggio (per i tratti e la mappa).
   const posizioneGlobale = (giorno, ruolo, indice) =>
     punti.findIndex((p) => p.giorno === giorno && p.ruolo === ruolo && (ruolo === "dormire" || p.indice === indice));
-  // I posti si numerano da 1; la partenza resta fuori dalla numerazione (è la "P").
+  // I posti si numerano da 1; partenza e arrivo restano fuori ("P" e "A").
   const numeroPosto = (k) => k + (vacanza.partenza ? 0 : 1);
   const trattoPer = (k) => (rotta && k > 0 ? rotta.tratte[k - 1] : null);
+  const numeroPostiTotali = vacanza.giorni.reduce((n, g) => n + g.luoghi.length + (g.dormire ? 1 : 0), 0);
+
+  const testoTratto = (tratto) => t("vacanza.tratta", { km: formattaKm(tratto.km), tempo: formattaTempo(tratto.minuti) });
+  const connettore = (tratto) =>
+    tratto ? (
+      <View style={styles.connettore}>
+        <View style={styles.connettoreLinea} />
+        <Ionicons name="car-outline" size={14} color={c.testoSecondario} />
+        <Text style={styles.connettoreTesto}>{testoTratto(tratto)}</Text>
+      </View>
+    ) : (
+      <View style={[styles.connettore, { opacity: 0.4 }]}>
+        <View style={styles.connettoreLinea} />
+        <Ionicons name="ellipsis-vertical" size={14} color={c.testoSecondario} />
+      </View>
+    );
+
+  // Casella di partenza / arrivo finale (stessa grafica, colori diversi).
+  const casellaEstremo = ({ ruolo, luogo, colore, lettera, titolo, scegli, etichetta }) => (
+    <View style={styles.cardEstremo}>
+      <Text style={styles.etichetta}>{titolo}</Text>
+      {luogo ? (
+        <View style={[styles.rigaPosto, { backgroundColor: c.sfondo }]}>
+          <View style={[styles.numeroPosto, { backgroundColor: colore }]}>
+            <Text style={styles.numeroPostoTesto}>{lettera}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.postoNome} numberOfLines={2}>
+              {luogo.nome}
+            </Text>
+            <Text style={styles.postoSotto}>{etichetta}</Text>
+          </View>
+          <Pressable onPress={() => setRicerca({ giorno: 0, ruolo })} hitSlop={8} accessibilityLabel={scegli}>
+            <Ionicons name="create-outline" size={18} color={c.primario} />
+          </Pressable>
+          <Pressable
+            onPress={() => modifica({ ...vacanza, [ruolo]: null })}
+            hitSlop={8}
+            accessibilityLabel="Togli"
+          >
+            <Ionicons name="close-circle" size={18} color={c.pericolo} />
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: 0, ruolo })} accessibilityRole="button">
+          <Ionicons name={ruolo === "partenza" ? "home-outline" : "flag-outline"} size={18} color={colore} />
+          <Text style={[styles.bottoneAggiungiTesto, { color: colore }]}>{scegli}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
@@ -169,7 +301,8 @@ export default function CreaVacanzaScreen({ navigation, route }) {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
+          <Text style={styles.etichetta}>{t("vacanza.nomeEtichetta")}</Text>
           <TextInput
             style={styles.campoTitolo}
             value={vacanza.titolo}
@@ -181,165 +314,194 @@ export default function CreaVacanzaScreen({ navigation, route }) {
           <Pressable style={styles.rigaData} onPress={() => setSelettoreDate(true)} accessibilityRole="button">
             <Ionicons name="calendar-outline" size={18} color={c.primario} />
             <Text style={styles.rigaDataTesto}>
-              {vacanza.dataInizio
-                ? `${t("vacanza.partenza")} ${etichettaData(vacanza.dataInizio)}`
-                : t("vacanza.sceglieDate")}
+              {vacanza.dataInizio ? `${t("vacanza.partenza")} ${etichettaData(vacanza.dataInizio)}` : t("vacanza.sceglieDate")}
             </Text>
             <Ionicons name="chevron-forward" size={16} color={c.testoSecondario} />
           </Pressable>
 
-          {punti.length > 0 && (
-            <View style={styles.riquadroTotale}>
-              <Ionicons name="trail-sign" size={16} color="#FFFFFF" />
-              <Text style={styles.riquadroTotaleTesto}>
-                {calcolando
-                  ? t("vacanza.calcolo")
-                  : rotta
-                    ? t("vacanza.totaleViaggio", { km: formattaKm(rotta.distanzaKm), tempo: formattaTempo(rotta.minuti) })
-                    : t("vacanza.serveDuePunti")}
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.cardPartenza}>
-            <Text style={styles.etichetta}>{t("vacanza.daDoveParti")}</Text>
-            {vacanza.partenza ? (
-              <View style={[styles.rigaPosto, { backgroundColor: c.successoChiaro }]}>
-                <View style={[styles.numeroPosto, { backgroundColor: c.successo }]}>
-                  <Text style={styles.numeroPostoTesto}>P</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.postoNome} numberOfLines={2}>
-                    {vacanza.partenza.nome}
-                  </Text>
-                  <Text style={styles.postoSotto}>{t("vacanza.partenzaEtichetta")}</Text>
-                </View>
-                <Pressable onPress={() => setRicerca({ giorno: 0, ruolo: "partenza" })} hitSlop={8} accessibilityLabel="Cambia partenza">
-                  <Ionicons name="create-outline" size={18} color={c.primario} />
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: 0, ruolo: "partenza" })} accessibilityRole="button">
-                <Ionicons name="home-outline" size={18} color={c.successo} />
-                <Text style={[styles.bottoneAggiungiTesto, { color: c.successo }]}>{t("vacanza.scegliPartenza")}</Text>
-              </Pressable>
-            )}
-          </View>
+          {/* 1. PARTENZA */}
+          {casellaEstremo({ ruolo: "partenza", luogo: vacanza.partenza, colore: c.successo, lettera: "P", titolo: t("vacanza.daDoveParti"), scegli: t("vacanza.scegliPartenza"), etichetta: t("vacanza.partenzaEtichetta") })}
 
           <MappaVacanza punti={punti} tracciato={rotta?.punti} />
 
+          {/* 2. RIEPILOGO dei giorni, con i km tra un giorno e l'altro */}
+          <View style={styles.cardRiepilogo}>
+            <Text style={styles.sezioneTitolo}>{t("vacanza.riepilogo")}</Text>
+            {vacanza.partenza && (
+              <View style={styles.rigaRiepilogoEstremo}>
+                <View style={[styles.numeroPostoPiccolo, { backgroundColor: c.successo }]}>
+                  <Text style={styles.numeroPostoTesto}>P</Text>
+                </View>
+                <Text style={styles.riepilogoNome} numberOfLines={1}>
+                  {vacanza.partenza.nome}
+                </Text>
+              </View>
+            )}
+            {vacanza.giorni.map((g) => {
+              const data = dataDelGiorno(vacanza.dataInizio, g.numero);
+              const tot = totaliGiorno[g.numero];
+              const nPosti = g.luoghi.length + (g.dormire ? 1 : 0);
+              return (
+                <View key={g.numero}>
+                  {(vacanza.partenza || g.numero > 1) && connettore(trasferimenti[g.numero])}
+                  <Pressable style={styles.rigaRiepilogo} onPress={() => apriGiornoDalRiepilogo(g.numero)} accessibilityRole="button">
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.riepilogoGiorno}>
+                        {t("vacanza.giorno", { n: g.numero })}
+                        {data ? ` · ${etichettaDataLunga(data)}` : ""}
+                      </Text>
+                      <Text style={styles.riepilogoSotto}>
+                        {nPosti === 0
+                          ? t("vacanza.nessunPostoBreve")
+                          : [t("vacanza.postiN", { n: nPosti }), tot ? testoTratto(tot) : null].filter(Boolean).join(" · ")}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={c.testoSecondario} />
+                  </Pressable>
+                </View>
+              );
+            })}
+            {vacanza.arrivo && (
+              <>
+                {connettore(trasferimenti.arrivo)}
+                <View style={styles.rigaRiepilogoEstremo}>
+                  <View style={[styles.numeroPostoPiccolo, { backgroundColor: c.pericolo }]}>
+                    <Text style={styles.numeroPostoTesto}>A</Text>
+                  </View>
+                  <Text style={styles.riepilogoNome} numberOfLines={1}>
+                    {vacanza.arrivo.nome}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* 3. DETTAGLIO dei giorni (si aprono e chiudono da soli) */}
+          <Text style={styles.sezioneTitolo}>{t("vacanza.dettaglio")}</Text>
           {vacanza.giorni.map((g) => {
             const data = dataDelGiorno(vacanza.dataInizio, g.numero);
             const tot = totaliGiorno[g.numero];
+            const aperto = aperti.has(g.numero);
+            const nPosti = g.luoghi.length + (g.dormire ? 1 : 0);
             return (
-              <View key={g.numero} style={styles.cardGiorno}>
-                <View style={styles.giornoIntestazione}>
+              <View
+                key={g.numero}
+                style={styles.cardGiorno}
+                onLayout={(e) => {
+                  posizioniGiorni.current[g.numero] = e.nativeEvent.layout.y;
+                }}
+              >
+                <Pressable style={styles.giornoIntestazione} onPress={() => alternaGiorno(g.numero)} accessibilityRole="button" accessibilityState={{ expanded: aperto }}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.giornoTitolo}>{t("vacanza.giorno", { n: g.numero })}</Text>
-                    {data ? <Text style={styles.giornoData}>{etichettaDataLunga(data)}</Text> : null}
+                    <Text style={styles.giornoData}>
+                      {[data ? etichettaDataLunga(data) : null, nPosti > 0 ? t("vacanza.postiN", { n: nPosti }) : null, tot ? testoTratto(tot) : null]
+                        .filter(Boolean)
+                        .join(" · ") || t("vacanza.nessunPostoBreve")}
+                    </Text>
                   </View>
-                  {vacanza.giorni.length > 1 && (
-                    <Pressable onPress={() => togliGiorno(g.numero)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("vacanza.rimuoviGiorno")}>
-                      <Ionicons name="trash-outline" size={18} color={c.pericolo} />
-                    </Pressable>
-                  )}
-                </View>
+                  <Ionicons name={aperto ? "chevron-up" : "chevron-down"} size={20} color={c.primario} />
+                </Pressable>
 
-                {g.luoghi.length === 0 && <Text style={styles.vuoto}>{t("vacanza.nessunPosto")}</Text>}
-                {g.luoghi.map((l, i) => {
-                  const k = posizioneGlobale(g.numero, "visita", i);
-                  const tratto = trattoPer(k);
-                  return (
-                    <View key={`${g.numero}-${i}`}>
-                      {tratto && (
-                        <View style={styles.tratto}>
-                          <Ionicons name="car-outline" size={13} color={c.testoSecondario} />
-                          <Text style={styles.trattoTesto}>{t("vacanza.tratta", { km: formattaKm(tratto.km), tempo: formattaTempo(tratto.minuti) })}</Text>
+                {aperto && (
+                  <View style={{ gap: 8 }}>
+                    {g.luoghi.length === 0 && <Text style={styles.vuoto}>{t("vacanza.nessunPosto")}</Text>}
+                    {g.luoghi.map((l, i) => {
+                      const k = posizioneGlobale(g.numero, "visita", i);
+                      const tratto = trattoPer(k);
+                      return (
+                        <View key={`${g.numero}-${i}`}>
+                          {tratto && (
+                            <View style={styles.tratto}>
+                              <Ionicons name="car-outline" size={13} color={c.testoSecondario} />
+                              <Text style={styles.trattoTesto}>{testoTratto(tratto)}</Text>
+                            </View>
+                          )}
+                          <View style={styles.rigaPosto}>
+                            <View style={styles.numeroPosto}>
+                              <Text style={styles.numeroPostoTesto}>{numeroPosto(k)}</Text>
+                            </View>
+                            <Pressable style={{ flex: 1 }} onPress={() => haScheda(l) && apriSchedaDelPosto(l)} disabled={!haScheda(l)} accessibilityRole="button">
+                              <Text style={styles.postoNome} numberOfLines={2}>
+                                {l.nome}
+                              </Text>
+                              {l.localita ? <Text style={styles.postoSotto}>{l.localita}</Text> : null}
+                              {haScheda(l) ? <Text style={styles.apriScheda}>{t("vacanza.apriScheda")}</Text> : null}
+                            </Pressable>
+                            <View style={styles.azioniPosto}>
+                              <Pressable onPress={() => sposta(g.numero, i, -1)} hitSlop={6} disabled={i === 0} accessibilityLabel="Sposta su">
+                                <Ionicons name="arrow-up" size={18} color={i === 0 ? c.separatore : c.primario} />
+                              </Pressable>
+                              <Pressable onPress={() => sposta(g.numero, i, 1)} hitSlop={6} disabled={i === g.luoghi.length - 1} accessibilityLabel="Sposta giù">
+                                <Ionicons name="arrow-down" size={18} color={i === g.luoghi.length - 1 ? c.separatore : c.primario} />
+                              </Pressable>
+                              <Pressable onPress={() => togliLuogo(g.numero, i)} hitSlop={6} accessibilityLabel="Togli">
+                                <Ionicons name="close-circle" size={18} color={c.pericolo} />
+                              </Pressable>
+                            </View>
+                          </View>
                         </View>
-                      )}
-                      <View style={styles.rigaPosto}>
-                        <View style={styles.numeroPosto}>
-                          <Text style={styles.numeroPostoTesto}>{numeroPosto(k)}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.postoNome} numberOfLines={2}>
-                            {l.nome}
-                          </Text>
-                          {l.localita ? <Text style={styles.postoSotto}>{l.localita}</Text> : null}
-                        </View>
-                        <View style={styles.azioniPosto}>
-                          <Pressable onPress={() => sposta(g.numero, i, -1)} hitSlop={6} disabled={i === 0} accessibilityLabel="Sposta su">
-                            <Ionicons name="arrow-up" size={18} color={i === 0 ? c.separatore : c.primario} />
+                      );
+                    })}
+
+                    <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: g.numero, ruolo: "visita" })} accessibilityRole="button">
+                      <Ionicons name="add-circle-outline" size={18} color={c.primario} />
+                      <Text style={styles.bottoneAggiungiTesto}>{t("vacanza.aggiungiPosto")}</Text>
+                    </Pressable>
+
+                    <Text style={styles.etichetta}>{t("vacanza.doveDormire")}</Text>
+                    {g.dormire ? (
+                      <View>
+                        {(() => {
+                          const tratto = trattoPer(posizioneGlobale(g.numero, "dormire", null));
+                          return tratto ? (
+                            <View style={styles.tratto}>
+                              <Ionicons name="car-outline" size={13} color={c.testoSecondario} />
+                              <Text style={styles.trattoTesto}>{testoTratto(tratto)}</Text>
+                            </View>
+                          ) : null;
+                        })()}
+                        <View style={[styles.rigaPosto, { backgroundColor: c.accentoChiaro }]}>
+                          <View style={[styles.numeroPosto, { backgroundColor: c.accento }]}>
+                            <Text style={styles.numeroPostoTesto}>{numeroPosto(posizioneGlobale(g.numero, "dormire", null))}</Text>
+                          </View>
+                          <Pressable style={{ flex: 1 }} onPress={() => haScheda(g.dormire) && apriSchedaDelPosto(g.dormire)} disabled={!haScheda(g.dormire)} accessibilityRole="button">
+                            <Text style={styles.postoNome} numberOfLines={2}>
+                              {g.dormire.nome}
+                            </Text>
+                            {g.dormire.localita ? <Text style={styles.postoSotto}>{g.dormire.localita}</Text> : null}
+                            {haScheda(g.dormire) ? <Text style={styles.apriScheda}>{t("vacanza.apriScheda")}</Text> : null}
                           </Pressable>
-                          <Pressable onPress={() => sposta(g.numero, i, 1)} hitSlop={6} disabled={i === g.luoghi.length - 1} accessibilityLabel="Sposta giù">
-                            <Ionicons name="arrow-down" size={18} color={i === g.luoghi.length - 1 ? c.separatore : c.primario} />
-                          </Pressable>
-                          <Pressable onPress={() => togliLuogo(g.numero, i)} hitSlop={6} accessibilityLabel="Togli">
+                          <Pressable onPress={() => aggiornaGiorno(g.numero, () => ({ dormire: null }))} hitSlop={6} accessibilityLabel="Togli">
                             <Ionicons name="close-circle" size={18} color={c.pericolo} />
                           </Pressable>
                         </View>
                       </View>
-                    </View>
-                  );
-                })}
-
-                <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: g.numero, ruolo: "visita" })} accessibilityRole="button">
-                  <Ionicons name="add-circle-outline" size={18} color={c.primario} />
-                  <Text style={styles.bottoneAggiungiTesto}>{t("vacanza.aggiungiPosto")}</Text>
-                </Pressable>
-
-                <Text style={styles.etichetta}>{t("vacanza.doveDormire")}</Text>
-                {g.dormire ? (
-                  <View>
-                    {(() => {
-                      const k = posizioneGlobale(g.numero, "dormire", null);
-                      const tratto = trattoPer(k);
-                      return tratto ? (
-                        <View style={styles.tratto}>
-                          <Ionicons name="car-outline" size={13} color={c.testoSecondario} />
-                          <Text style={styles.trattoTesto}>{t("vacanza.tratta", { km: formattaKm(tratto.km), tempo: formattaTempo(tratto.minuti) })}</Text>
-                        </View>
-                      ) : null;
-                    })()}
-                    <View style={[styles.rigaPosto, { backgroundColor: c.accentoChiaro }]}>
-                      <View style={[styles.numeroPosto, { backgroundColor: c.accento }]}>
-                        <Text style={styles.numeroPostoTesto}>{numeroPosto(posizioneGlobale(g.numero, "dormire", null))}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.postoNome} numberOfLines={2}>
-                          {g.dormire.nome}
-                        </Text>
-                        {g.dormire.localita ? <Text style={styles.postoSotto}>{g.dormire.localita}</Text> : null}
-                      </View>
-                      <Pressable onPress={() => aggiornaGiorno(g.numero, () => ({ dormire: null }))} hitSlop={6} accessibilityLabel="Togli">
-                        <Ionicons name="close-circle" size={18} color={c.pericolo} />
+                    ) : (
+                      <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: g.numero, ruolo: "dormire" })} accessibilityRole="button">
+                        <Ionicons name="bed-outline" size={18} color={c.accento} />
+                        <Text style={[styles.bottoneAggiungiTesto, { color: c.accento }]}>{t("vacanza.scegliDormire")}</Text>
                       </Pressable>
-                    </View>
-                  </View>
-                ) : (
-                  <Pressable style={styles.bottoneAggiungi} onPress={() => setRicerca({ giorno: g.numero, ruolo: "dormire" })} accessibilityRole="button">
-                    <Ionicons name="bed-outline" size={18} color={c.accento} />
-                    <Text style={[styles.bottoneAggiungiTesto, { color: c.accento }]}>{t("vacanza.scegliDormire")}</Text>
-                  </Pressable>
-                )}
+                    )}
 
-                {tot && (
-                  <View style={styles.totaleGiorno}>
-                    <Text style={styles.totaleGiornoTesto}>
-                      {t("vacanza.totaleGiorno", { km: formattaKm(tot.km), tempo: formattaTempo(tot.minuti) })}
-                    </Text>
+                    <Text style={styles.etichetta}>{t("vacanza.appunti")}</Text>
+                    <TextInput
+                      style={styles.appunti}
+                      value={g.appunti}
+                      onChangeText={(v) => aggiornaGiorno(g.numero, () => ({ appunti: v }))}
+                      placeholder={t("vacanza.appuntiSegnaposto")}
+                      placeholderTextColor={c.testoSecondario}
+                      multiline
+                    />
+
+                    {vacanza.giorni.length > 1 && (
+                      <Pressable style={styles.rimuoviGiorno} onPress={() => togliGiorno(g.numero)} accessibilityRole="button">
+                        <Ionicons name="trash-outline" size={16} color={c.pericolo} />
+                        <Text style={styles.rimuoviGiornoTesto}>{t("vacanza.rimuoviGiorno")}</Text>
+                      </Pressable>
+                    )}
                   </View>
                 )}
-
-                <Text style={styles.etichetta}>{t("vacanza.appunti")}</Text>
-                <TextInput
-                  style={styles.appunti}
-                  value={g.appunti}
-                  onChangeText={(v) => aggiornaGiorno(g.numero, () => ({ appunti: v }))}
-                  placeholder={t("vacanza.appuntiSegnaposto")}
-                  placeholderTextColor={c.testoSecondario}
-                  multiline
-                />
               </View>
             );
           })}
@@ -348,6 +510,22 @@ export default function CreaVacanzaScreen({ navigation, route }) {
             <Ionicons name="add" size={18} color={c.primario} />
             <Text style={styles.bottoneGiornoTesto}>{t("vacanza.aggiungiGiorno")}</Text>
           </Pressable>
+
+          {/* 4. ARRIVO FINALE */}
+          {casellaEstremo({ ruolo: "arrivo", luogo: vacanza.arrivo, colore: c.pericolo, lettera: "A", titolo: t("vacanza.arrivoFinale"), scegli: t("vacanza.scegliArrivo"), etichetta: t("vacanza.arrivoEtichetta") })}
+
+          {/* 5. TOTALE, sempre in fondo */}
+          <View style={styles.riquadroTotale}>
+            <Text style={styles.totaleTitolo}>{t("vacanza.totaleVacanza")}</Text>
+            <Text style={styles.totaleValore}>
+              {calcolando ? t("vacanza.calcolo") : rotta ? `${formattaKm(rotta.distanzaKm)} · ${formattaTempo(rotta.minuti)}` : "—"}
+            </Text>
+            <Text style={styles.totaleSotto}>
+              {rotta || calcolando
+                ? t("vacanza.totaleSub", { giorni: vacanza.giorni.length, posti: numeroPostiTotali })
+                : t("vacanza.totaleNonDisponibile")}
+            </Text>
+          </View>
 
           <Text style={styles.etichetta}>{t("vacanza.appuntiViaggio")}</Text>
           <TextInput
@@ -363,7 +541,9 @@ export default function CreaVacanzaScreen({ navigation, route }) {
             <View style={styles.salvatoRiquadro}>
               <View style={styles.salvatoRiga}>
                 <Ionicons name="checkmark-circle" size={20} color={c.successo} />
-                <Text style={styles.salvatoTesto}>{t("pianoMappa.salvato")}</Text>
+                <Text style={styles.salvatoTesto}>
+                  {vacanza.titolo.trim() ? t("vacanza.salvataComeNome", { nome: vacanza.titolo.trim() }) : t("pianoMappa.salvato")}
+                </Text>
               </View>
               <Pressable
                 style={styles.bottoneSecondario}
@@ -390,8 +570,17 @@ export default function CreaVacanzaScreen({ navigation, route }) {
 
       <CercaLuogoModal
         visibile={!!ricerca}
-        titolo={ricerca?.ruolo === "dormire" ? t("vacanza.scegliDormire") : ricerca?.ruolo === "partenza" ? t("vacanza.scegliPartenza") : t("vacanza.aggiungiPosto")}
+        titolo={
+          ricerca?.ruolo === "dormire"
+            ? t("vacanza.scegliDormire")
+            : ricerca?.ruolo === "partenza"
+              ? t("vacanza.scegliPartenza")
+              : ricerca?.ruolo === "arrivo"
+                ? t("vacanza.scegliArrivo")
+                : t("vacanza.aggiungiPosto")
+        }
         onScegli={luogoScelto}
+        onApriScheda={apriSchedaDaRicerca}
         onChiudi={() => setRicerca(null)}
       />
       <SelettoreDate
@@ -431,26 +620,28 @@ function useEstili(c) {
       borderWidth: 1,
       borderColor: c.separatore,
     },
-    rigaData: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      backgroundColor: c.sfondoGruppo,
-      borderRadius: 12,
-      padding: 14,
-    },
+    rigaData: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.sfondoGruppo, borderRadius: 12, padding: 14 },
     rigaDataTesto: { flex: 1, fontSize: 15, fontWeight: "600", color: c.testo },
-    riquadroTotale: {
+    sezioneTitolo: { fontSize: 18, fontWeight: "800", color: c.testo, marginTop: 4 },
+    cardEstremo: { backgroundColor: c.sfondoGruppo, borderRadius: 16, padding: 14, gap: 8 },
+    cardRiepilogo: { backgroundColor: c.sfondoGruppo, borderRadius: 16, padding: 14, gap: 2 },
+    rigaRiepilogoEstremo: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
+    numeroPostoPiccolo: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+    riepilogoNome: { flex: 1, fontSize: 14, fontWeight: "700", color: c.testo },
+    rigaRiepilogo: {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      backgroundColor: c.primario,
+      backgroundColor: c.primarioChiaro,
       borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
     },
-    riquadroTotaleTesto: { flex: 1, color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
-    cardPartenza: { backgroundColor: c.sfondoGruppo, borderRadius: 16, padding: 14, gap: 8 },
+    riepilogoGiorno: { fontSize: 15, fontWeight: "800", color: c.testo },
+    riepilogoSotto: { fontSize: 12, color: c.testoSecondario, marginTop: 2 },
+    connettore: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 10, paddingVertical: 5 },
+    connettoreLinea: { width: 2, height: 16, backgroundColor: c.separatore, marginRight: 4 },
+    connettoreTesto: { fontSize: 12, fontWeight: "700", color: c.testoSecondario },
     cardGiorno: { backgroundColor: c.sfondoGruppo, borderRadius: 16, padding: 14, gap: 8 },
     giornoIntestazione: { flexDirection: "row", alignItems: "center", gap: 10 },
     giornoTitolo: { fontSize: 17, fontWeight: "800", color: c.testo },
@@ -458,17 +649,11 @@ function useEstili(c) {
     vuoto: { fontSize: 13, color: c.testoSecondario },
     tratto: { flexDirection: "row", alignItems: "center", gap: 5, paddingLeft: 12, paddingVertical: 4 },
     trattoTesto: { fontSize: 12, color: c.testoSecondario, fontWeight: "600" },
-    rigaPosto: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      backgroundColor: c.primarioChiaro,
-      borderRadius: 12,
-      padding: 10,
-    },
+    rigaPosto: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.primarioChiaro, borderRadius: 12, padding: 10 },
     numeroPosto: { width: 26, height: 26, borderRadius: 13, backgroundColor: c.primario, alignItems: "center", justifyContent: "center" },
     numeroPostoTesto: { color: "#FFFFFF", fontWeight: "800", fontSize: 12 },
     postoNome: { fontSize: 15, fontWeight: "700", color: c.testo },
+    apriScheda: { fontSize: 12, fontWeight: "700", color: c.primario, marginTop: 3 },
     postoSotto: { fontSize: 12, color: c.testoSecondario, marginTop: 1 },
     azioniPosto: { flexDirection: "row", alignItems: "center", gap: 10 },
     bottoneAggiungi: {
@@ -484,8 +669,6 @@ function useEstili(c) {
     },
     bottoneAggiungiTesto: { fontSize: 14, fontWeight: "700", color: c.primario },
     etichetta: { fontSize: 12, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase", marginTop: 4 },
-    totaleGiorno: { backgroundColor: c.primarioChiaro, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
-    totaleGiornoTesto: { fontSize: 13, fontWeight: "700", color: c.primario },
     appunti: {
       minHeight: 70,
       fontSize: 15,
@@ -497,6 +680,8 @@ function useEstili(c) {
       borderColor: c.separatore,
       textAlignVertical: "top",
     },
+    rimuoviGiorno: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 8 },
+    rimuoviGiornoTesto: { fontSize: 13, fontWeight: "700", color: c.pericolo },
     bottoneGiorno: {
       flexDirection: "row",
       alignItems: "center",
@@ -508,6 +693,10 @@ function useEstili(c) {
       borderColor: c.primario,
     },
     bottoneGiornoTesto: { fontSize: 15, fontWeight: "700", color: c.primario },
+    riquadroTotale: { backgroundColor: c.primario, borderRadius: 16, padding: 16, gap: 4, alignItems: "center" },
+    totaleTitolo: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", textTransform: "uppercase", opacity: 0.9 },
+    totaleValore: { color: "#FFFFFF", fontSize: 26, fontWeight: "800" },
+    totaleSotto: { color: "#FFFFFF", fontSize: 13, opacity: 0.9, textAlign: "center" },
     bottoneSalva: {
       flexDirection: "row",
       alignItems: "center",
