@@ -140,3 +140,51 @@ export function intervalloDate(piano) {
   const anno = dataDaIso(fine).getFullYear();
   return giorni > 1 ? `${etichettaData(piano.dataInizio)} – ${etichettaData(fine)} ${anno}` : `${etichettaData(piano.dataInizio)} ${anno}`;
 }
+
+// --- Google Maps ---------------------------------------------------------
+// Link per aprire Google Maps vicino a un punto, già con la ricerca giusta.
+export function urlGoogleMaps(centro, ruolo) {
+  const cosa = ruolo === "dormire" ? "campeggio area sosta camper" : "cosa visitare";
+  const base = `https://www.google.com/maps/search/${encodeURIComponent(cosa)}`;
+  return centro ? `${base}/@${centro.lat.toFixed(5)},${centro.lng.toFixed(5)},12z` : base;
+}
+
+// Da un link COMPLETO di Google Maps ricava nome e coordinate (null se non
+// è un link di Google Maps o non ha coordinate).
+export function leggiLinkGoogleMaps(testo) {
+  const url = (testo || "").trim();
+  if (!/^https?:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+)/i.test(url)) return null;
+  const numero = "(-?\\d+(?:\\.\\d+)?)";
+  const m =
+    url.match(new RegExp(`!3d${numero}!4d${numero}`)) ||
+    url.match(new RegExp(`@${numero},${numero}`)) ||
+    url.match(new RegExp(`[?&](?:q|query|ll|destination)=${numero}(?:,|%2C)${numero}`));
+  if (!m) return null;
+  const lat = Number(m[1]);
+  const lng = Number(m[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  const nomeGrezzo = url.match(/\/maps\/place\/([^/@?]+)/i)?.[1];
+  let nome = "";
+  try {
+    nome = nomeGrezzo ? decodeURIComponent(nomeGrezzo.replace(/\+/g, " ")) : "";
+  } catch {
+    nome = nomeGrezzo ? nomeGrezzo.replace(/\+/g, " ") : "";
+  }
+  return { lat, lng, nome: nome || "Posto da Google Maps" };
+}
+
+// Come sopra, ma accetta anche i link abbreviati (maps.app.goo.gl,
+// goo.gl/maps): sull'app si possono seguire (la richiesta arriva al link
+// completo). Se non si riesce, null.
+export async function risolviLinkGoogleMaps(testo) {
+  const diretto = leggiLinkGoogleMaps(testo);
+  if (diretto) return diretto;
+  const url = (testo || "").trim();
+  if (!/^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps)\//i.test(url)) return null;
+  try {
+    const risposta = await fetch(url);
+    return leggiLinkGoogleMaps(risposta.url);
+  } catch {
+    return null;
+  }
+}

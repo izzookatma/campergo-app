@@ -49,6 +49,10 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const [salvato, setSalvato] = useState(!!pianoIniziale);
   const [salvando, setSalvando] = useState(false);
   const [ricerca, setRicerca] = useState(null); // { giorno, ruolo }
+  // Ricerca da riaprire al ritorno da una scheda aperta dai risultati.
+  const ricercaInSospeso = useRef(null);
+  const [testoRicerca, setTestoRicerca] = useState("");
+  const [versioneRicerca, setVersioneRicerca] = useState(0);
   const [selettoreDate, setSelettoreDate] = useState(false);
   // Giorni aperti: ognuno resta com'è finché non lo cambia chi usa l'app.
   const [aperti, setAperti] = useState(() => new Set([1]));
@@ -142,6 +146,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   // quando arriva da un'altra schermata con lo stato già cambiato.
   const applicaLuogo = useCallback(({ giorno, ruolo }, luogo) => {
     if (!luogo) return;
+    ricercaInSospeso.current = null;
     setVacanza((prec) => {
       if (ruolo === "partenza") return { ...prec, partenza: luogo };
       if (ruolo === "arrivo") return { ...prec, arrivo: luogo };
@@ -158,6 +163,19 @@ export default function CreaVacanzaScreen({ navigation, route }) {
 
   useEffect(() => iscriviAggiuntaLuogo(applicaLuogo), [applicaLuogo]);
 
+  // Tornando dalla scheda senza aver aggiunto nulla, si riapre la ricerca di
+  // prima con lo stesso testo (la scheda che aggiunge svuota il "sospeso").
+  useEffect(() => {
+    return navigation.addListener("focus", () => {
+      const sospesa = ricercaInSospeso.current;
+      if (!sospesa) return;
+      ricercaInSospeso.current = null;
+      setTestoRicerca(sospesa.testo || "");
+      setVersioneRicerca((v) => v + 1);
+      setRicerca(sospesa.richiesta);
+    });
+  }, [navigation]);
+
   const luogoScelto = (luogo) => {
     const richiesta = ricerca;
     setRicerca(null);
@@ -166,8 +184,9 @@ export default function CreaVacanzaScreen({ navigation, route }) {
 
   // Dalla ricerca: apre la scheda del posto, con il pulsante «Aggiungi al
   // percorso». Si aspetta che il pannello di ricerca si sia chiuso.
-  const apriSchedaDaRicerca = ({ tipo, oggetto }) => {
+  const apriSchedaDaRicerca = ({ tipo, oggetto, testo }) => {
     const richiesta = ricerca;
+    ricercaInSospeso.current = { richiesta, testo };
     setRicerca(null);
     setTimeout(() => {
       if (tipo === "struttura") navigation.navigate("Scheda", { struttura: oggetto, aggiungiAlPercorso: richiesta });
@@ -239,6 +258,20 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const numeroPosto = (k) => k + (vacanza.partenza ? 0 : 1);
   const trattoPer = (k) => (rotta && k > 0 ? rotta.tratte[k - 1] : null);
   const numeroPostiTotali = vacanza.giorni.reduce((n, g) => n + g.luoghi.length + (g.dormire ? 1 : 0), 0);
+
+  // Punto da cui guardare la mappa di scelta: l'ultimo posto del viaggio fino
+  // a quel giorno (es. Bologna), altrimenti la partenza.
+  const centroRicerca = (() => {
+    if (!ricerca) return null;
+    const fino = ricerca.ruolo === "arrivo" ? Infinity : ricerca.giorno;
+    for (let i = punti.length - 1; i >= 0; i--) {
+      const p = punti[i];
+      if (p.ruolo !== "arrivo" && (p.giorno <= fino || p.ruolo === "partenza")) {
+        return { lat: p.luogo.lat, lng: p.luogo.lng, nome: (p.luogo.localita || "").split(",")[0].trim() || p.luogo.nome };
+      }
+    }
+    return null;
+  })();
 
   const testoTratto = (tratto) => t("vacanza.tratta", { km: formattaKm(tratto.km), tempo: formattaTempo(tratto.minuti) });
   const connettore = (tratto) =>
@@ -569,6 +602,11 @@ export default function CreaVacanzaScreen({ navigation, route }) {
       </KeyboardAvoidingView>
 
       <CercaLuogoModal
+        key={`ricerca-${versioneRicerca}`}
+        richiesta={ricerca}
+        centro={centroRicerca ? { lat: centroRicerca.lat, lng: centroRicerca.lng } : null}
+        centroNome={centroRicerca?.nome || ""}
+        iniziale={testoRicerca}
         visibile={!!ricerca}
         titolo={
           ricerca?.ruolo === "dormire"

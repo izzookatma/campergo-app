@@ -1,4 +1,4 @@
-import { intervalloDate, nuovaVacanza, giornoVuoto, dataDelGiorno, sequenzaPunti, totaliPerGiorno, pianoDaVacanza, vacanzaDaPiano, formattaKm, formattaTempo } from "../vacanza";
+import { leggiLinkGoogleMaps, urlGoogleMaps, intervalloDate, nuovaVacanza, giornoVuoto, dataDelGiorno, sequenzaPunti, totaliPerGiorno, pianoDaVacanza, vacanzaDaPiano, formattaKm, formattaTempo } from "../vacanza";
 
 const luogo = (nome, lat, lng) => ({ tipo: "libero", id: null, nome, localita: "", lat, lng });
 
@@ -84,5 +84,18 @@ describe("vacanza personale", () => {
     expect(formattaKm(120.4)).toBe("120 km");
     expect(formattaTempo(95)).toBe("1 h 35 min");
     expect(formattaTempo(40)).toBe("40 min");
+  });
+
+  test("link di Google Maps: coordinate e nome", () => {
+    const r = leggiLinkGoogleMaps("https://www.google.com/maps/place/Ristorante+Da+Mario/@44.4949,11.3426,17z/data=!3d44.4950!4d11.3427");
+    expect(r).toEqual({ lat: 44.495, lng: 11.3427, nome: "Ristorante Da Mario" });
+    expect(leggiLinkGoogleMaps("https://www.google.com/maps?q=45.1,9.2")).toEqual({ lat: 45.1, lng: 9.2, nome: "Posto da Google Maps" });
+    expect(leggiLinkGoogleMaps("https://esempio.it/non-maps")).toBeNull();
+    expect(leggiLinkGoogleMaps("https://www.google.com/maps/place/Roma")).toBeNull();
+  });
+
+  test("apertura di Google Maps vicino al punto", () => {
+    expect(urlGoogleMaps({ lat: 44.4949, lng: 11.3426 }, "dormire")).toContain("/@44.49490,11.34260,12z");
+    expect(urlGoogleMaps(null, "visita")).toContain("cosa%20visitare");
   });
 });

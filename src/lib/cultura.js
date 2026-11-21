@@ -17,10 +17,10 @@ export const CATEGORIA_CULTURALE_META = {
 // Stesso raggio del sito (RAGGIO_CULTURA_STRUTTURA_KM in App.jsx).
 const RAGGIO_CULTURA_STRUTTURA_KM = 50;
 
-const COLONNE_CULTURA =
+export const COLONNE_CULTURA =
   "id, titolo, descrizione, categoria, regione, citta, foto_url, foto_generica, lat, lng, orari, giorni_apertura, sito_web, link_biglietti, data_ora";
 
-function normalizzaSchedaCulturale(e) {
+export function normalizzaSchedaCulturale(e) {
   return {
     id: e.id,
     titolo: e.titolo,

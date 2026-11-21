@@ -1,68 +1,172 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, Modal, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, Modal, ScrollView, ActivityIndicator, StyleSheet, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../../theme/tema";
 import { useT } from "../../i18n/i18n";
-import { cercaStrutture } from "../../lib/strutture";
-import { caricaSchedeCulturali } from "../../lib/cultura";
 import { suggerimentiLuogo } from "../../lib/geocodifica";
 import { luogoDaStruttura, luogoDaSchedaCulturale } from "../../lib/bozzaVacanza";
+import { risolviLinkGoogleMaps, urlGoogleMaps } from "../../lib/vacanza";
+import { areaCercata, formattaDistanza } from "../../lib/ricercaPosti";
+import { culturaPerNome, culturaPressoPunto, strutturePressoPunto, struttureperNome } from "../../lib/cercaPosti";
+import MappaScegliPosto from "./MappaScegliPosto";
 
-// Cerca un posto da aggiungere alla vacanza: strutture NaturaGo, musei/
-// borghi/attività e qualsiasi luogo (Nominatim). Chi sceglie riceve un
-// oggetto semplice { tipo, id, nome, localita, lat, lng }.
-// Toccando un risultato si APRE LA SUA SCHEDA (da lì «Aggiungi al percorso»,
-// e in futuro la prenotazione); con il + a destra lo si aggiunge subito.
-export default function CercaLuogoModal({ visibile, titolo, onScegli, onApriScheda, onChiudi }) {
+// Cerca un posto per la vacanza, con la logica di chi pianifica:
+//  - senza scrivere nulla l'ELENCO mostra i posti VICINI al punto in cui sei
+//    nel viaggio (es. dove dormire dopo Lodi → strutture intorno a Lodi),
+//    dal più vicino, con i km;
+//  - scrivendo una città ("Lodi") si vedono i posti vicini a quella città e
+//    quelli che hanno quel nome (parole che COMINCIANO così, non "Clodia");
+//  - toccando un posto si APRE LA SUA SCHEDA (poi «Aggiungi al percorso»);
+//    con il + a destra lo si aggiunge subito.
+const NUMERO_PER_SEZIONE = 12;
+
+function pulisci(testo) {
+  return testo.trim().replace(/[,(){}%]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const VUOTO = { chiave: null, vicinoStrutture: [], vicinoCultura: [], perNomeStrutture: [], perNomeCultura: [], luoghi: [], area: null };
+
+export default function CercaLuogoModal({ visibile, titolo, richiesta, centro, centroNome = "", iniziale = "", onScegli, onApriScheda, onChiudi }) {
   const { c } = useTema();
   const styles = useEstili(c);
   const t = useT();
-  const [testo, setTesto] = useState("");
-  const [strutture, setStrutture] = useState([]);
-  const [cultura, setCultura] = useState([]);
-  const [luoghi, setLuoghi] = useState([]);
-  const [cercando, setCercando] = useState(false);
+  const [testo, setTesto] = useState(iniziale);
+  const [vista, setVista] = useState("elenco"); // "elenco" | "mappa"
+  const [linkGoogle, setLinkGoogle] = useState("");
+  const [erroreLink, setErroreLink] = useState("");
+  const [leggendoLink, setLeggendoLink] = useState(false);
+  // Risultati con la chiave della ricerca a cui appartengono: se non
+  // corrispondono più a testo e punto attuali sono vecchi (si mostra "Cerco…").
+  const [esito, setEsito] = useState(VUOTO);
+
+  const ruolo = richiesta?.ruolo;
+  const termine = pulisci(testo);
+  const chiave = `${termine}|${centro ? `${centro.lat},${centro.lng}` : ""}|${ruolo}|${visibile ? 1 : 0}`;
+  const cercando = visibile && esito.chiave !== chiave && (termine.length >= 3 || !!centro);
 
   useEffect(() => {
-    const termine = testo.trim();
-    if (termine.length < 3) return undefined;
+    if (!visibile || !ruolo) return undefined;
     let attivo = true;
-    const id = setTimeout(async () => {
-      setCercando(true);
-      const [s, k, l] = await Promise.all([
-        cercaStrutture({ termine, limite: 8 }).catch(() => []),
-        caricaSchedeCulturali({ termine }).catch(() => []),
-        suggerimentiLuogo(termine).catch(() => []),
-      ]);
-      if (!attivo) return;
-      setStrutture(s.filter((x) => x.lat != null && x.lng != null).slice(0, 6));
-      setCultura(k.filter((x) => x.lat != null && x.lng != null).slice(0, 6));
-      setLuoghi(l);
-      setCercando(false);
-    }, 350);
+    const timer = setTimeout(
+      async () => {
+        try {
+          if (termine.length < 3) {
+            // Elenco della zona: i posti vicini al punto del viaggio.
+            if (!centro || (ruolo !== "dormire" && ruolo !== "visita")) {
+              if (attivo) setEsito({ ...VUOTO, chiave });
+              return;
+            }
+            const [s, k] = await Promise.all([
+              ruolo === "dormire" ? strutturePressoPunto(centro) : Promise.resolve([]),
+              ruolo === "visita" ? culturaPressoPunto(centro) : Promise.resolve([]),
+            ]);
+            if (attivo) setEsito({ ...VUOTO, chiave, vicinoStrutture: s, vicinoCultura: k, area: centroNome ? { nome: centroNome, lat: centro.lat, lng: centro.lng } : null });
+            return;
+          }
+          const [perNomeStrutture, perNomeCultura, luoghi] = await Promise.all([
+            struttureperNome(termine, centro).catch(() => []),
+            ruolo === "visita" ? culturaPerNome(termine, centro).catch(() => []) : Promise.resolve([]),
+            suggerimentiLuogo(termine).catch(() => []),
+          ]);
+          // "Lodi" → l'area è Lodi: si mostrano i posti vicini a quella città.
+          const area = areaCercata(luoghi, termine);
+          let vicinoStrutture = [];
+          let vicinoCultura = [];
+          if (area && ruolo === "dormire") vicinoStrutture = await strutturePressoPunto(area).catch(() => []);
+          if (area && ruolo === "visita") vicinoCultura = await culturaPressoPunto(area).catch(() => []);
+          if (attivo) setEsito({ chiave, vicinoStrutture, vicinoCultura, perNomeStrutture, perNomeCultura, luoghi: luoghi || [], area });
+        } catch (e) {
+          console.error("Errore nella ricerca dei posti:", e);
+          if (attivo) setEsito({ ...VUOTO, chiave });
+        }
+      },
+      termine.length < 3 ? 0 : 350
+    );
     return () => {
       attivo = false;
-      clearTimeout(id);
+      clearTimeout(timer);
     };
-  }, [testo]);
+    // La chiave riassume testo, punto, ruolo e apertura: è l'unica cosa che fa ripartire la ricerca.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chiave]);
+
+  const vedi = esito.chiave === chiave ? esito : VUOTO;
+  // Quelli già mostrati nell'elenco "vicino" non si ripetono in "con questo nome".
+  const giaVicini = new Set(vedi.vicinoStrutture.map((s) => s.id));
+  const perNomeStruttureNuove = vedi.perNomeStrutture.filter((s) => !giaVicini.has(s.id));
+  const giaViciniCultura = new Set(vedi.vicinoCultura.map((k) => k.id));
+  const perNomeCulturaNuova = vedi.perNomeCultura.filter((k) => !giaViciniCultura.has(k.id));
+  const nomeArea = vedi.area?.nome?.split(",")[0];
+  const totale = vedi.vicinoStrutture.length + vedi.vicinoCultura.length + perNomeStruttureNuove.length + perNomeCulturaNuova.length + vedi.luoghi.length;
+  // La mappa si apre dove si sta cercando: la città scritta, altrimenti il punto del viaggio.
+  const centroMappa = vedi.area?.lat != null ? { lat: vedi.area.lat, lng: vedi.area.lng } : centro;
+  const luoghiPrima = ruolo === "partenza" || ruolo === "arrivo";
 
   const chiudi = () => {
     setTesto("");
-    setStrutture([]);
-    setCultura([]);
-    setLuoghi([]);
+    setVista("elenco");
     onChiudi();
   };
   const scegli = (luogo) => {
+    if (!luogo) return;
     onScegli(luogo);
     setTesto("");
-    setStrutture([]);
-    setCultura([]);
-    setLuoghi([]);
   };
-  const pochiCaratteri = testo.trim().length < 3;
-  const nessunRisultato = !pochiCaratteri && !cercando && strutture.length + cultura.length + luoghi.length === 0;
+
+  const messaggioVuoto = () => {
+    if (termine.length < 3 && !centro) return t("vacanza.scriviCitta");
+    if (termine.length < 3 && luoghiPrima) return t("vacanza.scriviCitta");
+    return termine.length < 3 ? t("vacanza.nessunPostoVicino") : t("vacanza.nessunRisultatoMappa");
+  };
+
+  const sezioneStrutture = (lista, titoloSezione, chiavePrefisso) =>
+    lista.length > 0 ? (
+      <Sezione key={chiavePrefisso} icona="bed-outline" titolo={titoloSezione} c={c} styles={styles}>
+        {lista.slice(0, NUMERO_PER_SEZIONE).map((s) => (
+          <Riga
+            key={`${chiavePrefisso}-${s.id}`}
+            styles={styles}
+            nome={s.nome}
+            sotto={[s.tipo, s.localita, formattaDistanza(s.distanzaKm)].filter(Boolean).join(" · ")}
+            onPress={() => onApriScheda({ tipo: "struttura", oggetto: s, testo })}
+            onAggiungi={() => scegli(luogoDaStruttura(s))}
+          />
+        ))}
+      </Sezione>
+    ) : null;
+
+  const sezioneCultura = (lista, titoloSezione, chiavePrefisso) =>
+    lista.length > 0 ? (
+      <Sezione key={chiavePrefisso} icona="library-outline" titolo={titoloSezione} c={c} styles={styles}>
+        {lista.slice(0, NUMERO_PER_SEZIONE).map((k) => (
+          <Riga
+            key={`${chiavePrefisso}-${k.id}`}
+            styles={styles}
+            nome={k.titolo}
+            sotto={[k.citta, formattaDistanza(k.distanzaKm)].filter(Boolean).join(" · ")}
+            onPress={() => onApriScheda({ tipo: "cultura", oggetto: k, testo })}
+            onAggiungi={() => scegli(luogoDaSchedaCulturale(k))}
+          />
+        ))}
+      </Sezione>
+    ) : null;
+
+  const sezioneLuoghi =
+    vedi.luoghi.length > 0 ? (
+      <Sezione key="luoghi" icona="location-outline" titolo={t("vacanza.sezioneLuoghi")} c={c} styles={styles}>
+        {vedi.luoghi.map((l, i) => (
+          <Riga
+            key={`l-${i}`}
+            styles={styles}
+            nome={l.nome}
+            sotto=""
+            onPress={() => scegli({ tipo: "libero", id: null, nome: l.nome, localita: "", lat: l.lat, lng: l.lng })}
+            onAggiungi={null}
+          />
+        ))}
+      </Sezione>
+    ) : null;
 
   return (
     <Modal visible={visibile} animationType="slide" presentationStyle="pageSheet" onRequestClose={chiudi}>
@@ -81,60 +185,89 @@ export default function CercaLuogoModal({ visibile, titolo, onScegli, onApriSche
             onChangeText={setTesto}
             placeholder={t("vacanza.cerca")}
             placeholderTextColor={c.testoSecondario}
-            autoFocus
             autoCorrect={false}
           />
           {cercando && <ActivityIndicator size="small" color={c.primario} />}
         </View>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.lista}>
-          <Sezione titolo={t("vacanza.sezioneStrutture")} icona="bed-outline" c={c} styles={styles}>
-            {strutture.map((s) => (
-              <Riga
-                key={`s-${s.id}`}
-                styles={styles}
-                nome={s.nome}
-                sotto={[s.tipo, s.localita].filter(Boolean).join(" · ")}
-                onPress={() => onApriScheda({ tipo: "struttura", oggetto: s })}
-                onAggiungi={() => scegli(luogoDaStruttura(s))}
-              />
-            ))}
-          </Sezione>
-          <Sezione titolo={t("vacanza.sezioneCultura")} icona="library-outline" c={c} styles={styles}>
-            {cultura.map((k) => (
-              <Riga
-                key={`k-${k.id}`}
-                styles={styles}
-                nome={k.titolo}
-                sotto={[k.citta, k.regione].filter(Boolean).join(", ")}
-                onPress={() => onApriScheda({ tipo: "cultura", oggetto: k })}
-                onAggiungi={() => scegli(luogoDaSchedaCulturale(k))}
-              />
-            ))}
-          </Sezione>
-          <Sezione titolo={t("vacanza.sezioneLuoghi")} icona="location-outline" c={c} styles={styles}>
-            {luoghi.map((l, i) => (
-              <Riga
-                key={`l-${i}`}
-                styles={styles}
-                nome={l.nome}
-                sotto=""
-                onPress={() => scegli({ tipo: "libero", id: null, nome: l.nome, localita: "", lat: l.lat, lng: l.lng })}
-                onAggiungi={null}
-              />
-            ))}
-          </Sezione>
-          {pochiCaratteri && <Text style={styles.vuoto}>{t("vacanza.scrivi3")}</Text>}
-          {!pochiCaratteri && !nessunRisultato && <Text style={styles.vuoto}>{t("vacanza.suggerimentoRicerca")}</Text>}
-          {nessunRisultato && <Text style={styles.vuoto}>{t("vacanza.nessunRisultato")}</Text>}
-        </ScrollView>
+        <View style={styles.tab}>
+          {[
+            ["elenco", t("vacanza.elenco")],
+            ["mappa", t("vacanza.scegliSullaMappa")],
+          ].map(([chiaveVista, etichetta]) => (
+            <Pressable key={chiaveVista} style={[styles.tabVoce, vista === chiaveVista && styles.tabVoceAttiva]} onPress={() => setVista(chiaveVista)} accessibilityRole="button">
+              <Text style={[styles.tabTesto, vista === chiaveVista && styles.tabTestoAttivo]}>{etichetta}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {vista === "mappa" ? (
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.lista}>
+            <MappaScegliPosto
+              key={centroMappa ? `${centroMappa.lat.toFixed(3)},${centroMappa.lng.toFixed(3)}` : "italia"}
+              centro={centroMappa}
+              richiesta={richiesta}
+              onScegli={onScegli}
+              onApriScheda={(dati) => onApriScheda({ ...dati, testo })}
+            />
+            <Text style={styles.vuoto}>{t("vacanza.spiegaMappa")}</Text>
+            <View style={styles.riquadroGoogle}>
+              <Pressable onPress={() => Linking.openURL(urlGoogleMaps(centroMappa, ruolo))} accessibilityRole="link">
+                <Text style={styles.linkGoogle}>{t("vacanza.cercaSuGoogle")}</Text>
+              </Pressable>
+              <Text style={styles.rigaSotto}>{t("vacanza.incollaSpiega")}</Text>
+              <View style={styles.rigaLink}>
+                <TextInput
+                  style={styles.inputLink}
+                  value={linkGoogle}
+                  onChangeText={(v) => {
+                    setLinkGoogle(v);
+                    setErroreLink("");
+                  }}
+                  placeholder={t("vacanza.incollaQui")}
+                  placeholderTextColor={c.testoSecondario}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <Pressable
+                  style={styles.bottoneUsa}
+                  disabled={leggendoLink}
+                  onPress={async () => {
+                    setLeggendoLink(true);
+                    const r = await risolviLinkGoogleMaps(linkGoogle);
+                    setLeggendoLink(false);
+                    if (!r) {
+                      setErroreLink(t("vacanza.linkNonRiconosciuto"));
+                      return;
+                    }
+                    onScegli({ tipo: "libero", id: null, nome: r.nome, localita: "", lat: r.lat, lng: r.lng });
+                  }}
+                  accessibilityRole="button"
+                >
+                  {leggendoLink ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.bottoneUsaTesto}>{t("vacanza.usa")}</Text>}
+                </Pressable>
+              </View>
+              {erroreLink ? <Text style={[styles.rigaSotto, { color: c.pericolo }]}>{erroreLink}</Text> : null}
+            </View>
+          </ScrollView>
+        ) : (
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.lista}>
+            {luoghiPrima ? sezioneLuoghi : null}
+            {sezioneStrutture(vedi.vicinoStrutture, nomeArea ? t("vacanza.doveDormireVicino", { luogo: nomeArea }) : t("vacanza.doveDormireQuiVicino"), "vs")}
+            {sezioneCultura(vedi.vicinoCultura, nomeArea ? t("vacanza.cosaVedereVicino", { luogo: nomeArea }) : t("vacanza.cosaVedereQuiVicino"), "vk")}
+            {sezioneCultura(perNomeCulturaNuova, t("vacanza.culturaConNome"), "nk")}
+            {sezioneStrutture(perNomeStruttureNuove, t("vacanza.struttureConNome"), "ns")}
+            {luoghiPrima ? null : sezioneLuoghi}
+            {cercando && totale === 0 && <Text style={styles.vuoto}>{t("vacanza.cerco")}</Text>}
+            {!cercando && totale === 0 && <Text style={styles.vuoto}>{messaggioVuoto()}</Text>}
+            {totale > 0 && <Text style={styles.vuoto}>{t("vacanza.suggerimentoRicerca")}</Text>}
+          </ScrollView>
+        )}
       </SafeAreaView>
     </Modal>
   );
 }
 
 function Sezione({ titolo, icona, children, c, styles }) {
-  const figli = Array.isArray(children) ? children : [children];
-  if (figli.length === 0) return null;
   return (
     <View style={{ gap: 6 }}>
       <View style={styles.sezioneTitolo}>
@@ -154,17 +287,17 @@ function Riga({ nome, sotto, onPress, onAggiungi, styles }) {
           {nome}
         </Text>
         {sotto ? (
-          <Text style={styles.rigaSotto} numberOfLines={1}>
+          <Text style={styles.rigaSotto} numberOfLines={2}>
             {sotto}
           </Text>
         ) : null}
       </Pressable>
       {onAggiungi ? (
         <Pressable onPress={onAggiungi} hitSlop={8} accessibilityRole="button" accessibilityLabel="Aggiungi subito">
-          <Ionicons name="add-circle" size={26} color="#00587C" />
+          <Ionicons name="add-circle" size={28} color="#00587C" />
         </Pressable>
       ) : (
-        <Ionicons name="add-circle" size={26} color="#00587C" />
+        <Ionicons name="add-circle" size={28} color="#00587C" />
       )}
     </View>
   );
@@ -189,6 +322,7 @@ function useEstili(c) {
       alignItems: "center",
       gap: 8,
       margin: 16,
+      marginBottom: 10,
       paddingHorizontal: 12,
       paddingVertical: 10,
       borderRadius: 12,
@@ -197,19 +331,23 @@ function useEstili(c) {
       borderColor: c.separatore,
     },
     input: { flex: 1, fontSize: 16, color: c.testo },
+    tab: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
+    tabVoce: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 18, backgroundColor: c.sfondoGruppo },
+    tabVoceAttiva: { backgroundColor: c.primario },
+    tabTesto: { fontSize: 14, fontWeight: "700", color: c.testoSecondario },
+    tabTestoAttivo: { color: "#FFFFFF" },
     lista: { paddingHorizontal: 16, paddingBottom: 30, gap: 14 },
+    riquadroGoogle: { backgroundColor: c.sfondoGruppo, borderRadius: 14, padding: 12, gap: 8 },
+    linkGoogle: { fontSize: 14, fontWeight: "700", color: c.primario, textDecorationLine: "underline" },
+    rigaLink: { flexDirection: "row", alignItems: "center", gap: 8 },
+    inputLink: { flex: 1, height: 40, borderRadius: 10, paddingHorizontal: 10, backgroundColor: c.sfondoCampo, borderWidth: 1, borderColor: c.separatore, color: c.testo, fontSize: 14 },
+    bottoneUsa: { backgroundColor: c.primario, borderRadius: 10, paddingHorizontal: 16, height: 40, alignItems: "center", justifyContent: "center", minWidth: 60 },
+    bottoneUsaTesto: { color: "#fff", fontWeight: "700", fontSize: 14 },
     sezioneTitolo: { flexDirection: "row", alignItems: "center", gap: 6 },
     sezioneTitoloTesto: { fontSize: 12, fontWeight: "700", color: c.testoSecondario, textTransform: "uppercase" },
-    riga: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      backgroundColor: c.sfondoGruppo,
-      borderRadius: 12,
-      padding: 12,
-    },
+    riga: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: c.sfondoGruppo, borderRadius: 12, padding: 12 },
     rigaNome: { fontSize: 15, fontWeight: "700", color: c.testo },
     rigaSotto: { fontSize: 13, color: c.testoSecondario, marginTop: 2 },
-    vuoto: { textAlign: "center", color: c.testoSecondario, marginTop: 20, fontSize: 14 },
+    vuoto: { textAlign: "center", color: c.testoSecondario, marginTop: 10, fontSize: 14 },
   });
 }
