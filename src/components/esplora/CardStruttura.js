@@ -6,6 +6,7 @@ import ImmagineConRiserva from "../ImmagineConRiserva";
 import BollinoPromo from "../BollinoPromo";
 import CuoreAnimato from "../ui/CuoreAnimato";
 import VeloSfumato from "../ui/VeloSfumato";
+import PrezzoScontato from "../ui/PrezzoScontato";
 import { BlurView } from "expo-blur";
 import { vibraLeggera } from "../../lib/vibrazione";
 import { sipuoSalvare } from "../../lib/preferiti";
@@ -41,7 +42,7 @@ function iconeServizi(servizi) {
 // ecc.), con foto, badge tipo, promo, preferito, servizi principali e
 // prezzo. Estratta da EsploraScreen.js (era inline nel renderItem della
 // FlatList) perché non ha stato proprio: riceve tutto da fuori.
-export default function CardStruttura({ item, preferito, onPress, onToggleFavorito }) {
+export default function CardStruttura({ item, preferito, onPress, onToggleFavorito, promo = null }) {
   const { c } = useTema();
   const t = useT();
   const styles = useEstili(c);
@@ -69,7 +70,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
         <VeloSfumato altezza={110} forza={0.6} />
         {item.prezzo ? (
           <BlurView intensity={35} tint="dark" style={styles.cardPrezzoFoto}>
-            <Text style={styles.cardPrezzoFotoTesto}>da {item.prezzo}€</Text>
+            <Text style={styles.cardPrezzoFotoTesto}>da {promo ? promo.scontato : item.prezzo}€</Text>
           </BlurView>
         ) : null}
         {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
@@ -107,6 +108,11 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
           {item.localita}
           {item.distanzaKm != null ? ` · a ${item.distanzaKm.toFixed(1)} km` : ""}
         </Text>
+        {promo && (
+          <View style={styles.cardPromo}>
+            <PrezzoScontato promo={promo} />
+          </View>
+        )}
         {visibili.length > 0 && (
           <View style={styles.cardServizi}>
             {visibili.map((sv) => (
@@ -169,6 +175,7 @@ function useEstili(c) {
     cardLocalita: { fontSize: 14, color: c.testoSecondario },
     cardRatingRiga: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
     cardRatingTesto: { fontSize: 13.5, fontWeight: "700", color: c.testo },
+    cardPromo: { marginTop: 6, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E5E7EB" },
     cardServizi: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 4 },
     cardServizioPill: {
       flexDirection: "row",

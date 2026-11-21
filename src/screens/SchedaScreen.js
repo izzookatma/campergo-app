@@ -25,7 +25,8 @@ import GalleriaFullscreen from "../components/scheda/GalleriaFullscreen";
 import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
 import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
 import OffertePromoScheda from "../components/scheda/OffertePromoScheda";
-import { caricaOffertePromo } from "../lib/offertePromo";
+import { caricaOffertePromo, caricaPeriodiStruttura, miglioreOffertaStruttura } from "../lib/offertePromo";
+import PrezzoScontato from "../components/ui/PrezzoScontato";
 import { useT } from "../i18n/i18n";
 
 const ALTEZZA_HERO = 340;
@@ -88,6 +89,7 @@ export default function SchedaScreen({ route, navigation }) {
   const [culturaVicina, setCulturaVicina] = useState([]);
   const [piazzole, setPiazzole] = useState([]);
   const [offerte, setOfferte] = useState([]);
+  const [periodi, setPeriodi] = useState([]);
 
   useEffect(() => {
     if (sipuoSalvare(struttura)) {
@@ -118,6 +120,9 @@ export default function SchedaScreen({ route, navigation }) {
     caricaOffertePromo(struttura.idOriginale)
       .then(setOfferte)
       .catch((e) => console.error("Errore nel caricare le offerte promo:", e));
+    caricaPeriodiStruttura(struttura.idOriginale)
+      .then(setPeriodi)
+      .catch((e) => console.error("Errore nel caricare i periodi di prezzo:", e));
   }, [struttura.origine, struttura.idOriginale]);
 
   const caricaRecensioniStruttura = () => {
@@ -146,6 +151,8 @@ export default function SchedaScreen({ route, navigation }) {
       .then(setCulturaVicina)
       .catch((e) => console.error("Errore nel caricare cosa visitare nei dintorni:", e));
   }, [struttura.lat, struttura.lng, struttura.origine, struttura.idOriginale]);
+
+  const promoStruttura = miglioreOffertaStruttura(piazzole, periodi, offerte);
 
   const miaRecensione = session?.user?.id ? recensioni.find((r) => r.clienteId === session.user.id) : null;
 
@@ -443,7 +450,7 @@ export default function SchedaScreen({ route, navigation }) {
 
           <OffertePromoScheda offerte={offerte} piazzole={piazzole} />
 
-          <PiazzoleGrid piazzole={piazzole} offerte={offerte} />
+          <PiazzoleGrid piazzole={piazzole} offerte={offerte} periodi={periodi} />
 
           <CulturaViciniLista
             culturaVicina={culturaVicina}
@@ -539,7 +546,9 @@ export default function SchedaScreen({ route, navigation }) {
       {fotoAperta !== null && <GalleriaFullscreen foto={fotoHero} indiceIniziale={fotoAperta} visibile onChiudi={() => setFotoAperta(null)} />}
 
       <SafeAreaView edges={["bottom"]} style={styles.barraAzioni}>
-        {struttura.prezzo ? (
+        {promoStruttura ? (
+          <PrezzoScontato promo={promoStruttura} conScadenza={false} />
+        ) : struttura.prezzo ? (
           <Text style={styles.prezzo}>
             {`${struttura.prezzo}€`}
             <Text style={styles.prezzoNotte}> /notte</Text>

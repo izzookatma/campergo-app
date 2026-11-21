@@ -5,17 +5,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../../theme/tema";
 import { ETICHETTA_TIPO_ALLOGGIO } from "../../lib/strutture";
 import ImmagineConRiserva from "../ImmagineConRiserva";
-import { offertaVale, etichettaSconto, descriviRegola, dataBreve } from "../../lib/offertePromo";
+import { offertaVale, etichettaSconto, descriviRegola, dataBreve, miglioreOffertaUnita, prezzoRiferimento } from "../../lib/offertePromo";
+import PrezzoScontato from "../ui/PrezzoScontato";
 import { Molla } from "../ui/Molla";
 import { vibraLeggera } from "../../lib/vibrazione";
 
 // "Piazzole e alloggi": piazzole/alloggi fissi della struttura, sempre
 // visibili (vedi caricaPiazzoleStruttura in src/lib/strutture.js). Estratta
 // da SchedaScreen.js: riceve solo l'elenco già caricato, nessuno stato proprio.
-export default function PiazzoleGrid({ piazzole, offerte = [] }) {
+export default function PiazzoleGrid({ piazzole, offerte = [], periodi = [] }) {
   const { c } = useTema();
   const styles = useEstili(c);
   const [aperta, setAperta] = useState(null);
+  const oggi = new Date().toISOString().slice(0, 10);
+  const promoDi = (pz) => miglioreOffertaUnita(pz, periodi, offerte, oggi);
+  const rifDi = (pz) => prezzoRiferimento(pz, periodi, oggi);
 
   if (piazzole.length === 0) return null;
 
@@ -73,7 +77,14 @@ export default function PiazzoleGrid({ piazzole, offerte = [] }) {
                   <Text style={styles.titolo} numberOfLines={1}>
                     {titolo}
                   </Text>
-                  {pz.prezzo != null && <Text style={styles.prezzo}>{pz.prezzo}€/notte</Text>}
+                  {promoDi(pz) ? (
+                    <Text style={styles.prezzo}>
+                      <Text style={styles.prezzoBarrato}>{promoDi(pz).pieno}€ </Text>
+                      {promoDi(pz).scontato}€
+                    </Text>
+                  ) : rifDi(pz) != null ? (
+                    <Text style={styles.prezzo}>da {rifDi(pz)}€</Text>
+                  ) : null}
                 </View>
                 {dettagli && <Text style={styles.dettagli}>{dettagli}</Text>}
                 {pz.descrizione && (
@@ -99,7 +110,11 @@ export default function PiazzoleGrid({ piazzole, offerte = [] }) {
               <ImmagineConRiserva uri={aperta.fotoUrl} larghezza={1000} style={styles.fotoGrande} icona="image-outline" iconaDimensione={40} iconaColore={c.testoSecondario} />
               <View style={{ padding: 18, gap: 8 }}>
                 <Text style={styles.modaleTitolo}>{titoloDi(aperta)}</Text>
-                {aperta.prezzo != null && <Text style={styles.modalePrezzo}>{aperta.prezzo}€ a notte</Text>}
+                {promoDi(aperta) ? (
+                  <PrezzoScontato promo={promoDi(aperta)} grande />
+                ) : rifDi(aperta) != null ? (
+                  <Text style={styles.modalePrezzo}>da {rifDi(aperta)}€ a notte</Text>
+                ) : null}
                 {dettagliDi(aperta) ? <Text style={styles.modaleDettagli}>{dettagliDi(aperta)}</Text> : null}
                 {aperta.descrizione ? <Text style={styles.modaleDescrizione}>{aperta.descrizione}</Text> : null}
                 {offerte
@@ -137,7 +152,8 @@ function useEstili(c) {
     info: { padding: 8, gap: 2 },
     rigaTitolo: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 4 },
     titolo: { flex: 1, fontSize: 13, fontWeight: "700", color: c.testo },
-    prezzo: { fontSize: 13, fontWeight: "700", color: c.testo },
+    prezzo: { fontSize: 14, fontWeight: "800", color: "#1A1A1A" },
+    prezzoBarrato: { fontSize: 12, fontWeight: "600", color: "#D4111E", textDecorationLine: "line-through" },
     dettagli: { fontSize: 13, color: c.testoSecondario },
     descrizione: { fontSize: 13, color: "#4b5563", marginTop: 2 },
     bollinoPromo: { position: "absolute", top: 6, left: 6, backgroundColor: "#C62828", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },

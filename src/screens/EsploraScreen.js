@@ -25,6 +25,7 @@ import IconaFluttuante from "../components/ui/IconaFluttuante";
 import ScheletroCard from "../components/ScheletroCard";
 import { Molla, Comparsa } from "../components/ui/Molla";
 import { vibraLeggera } from "../lib/vibrazione";
+import { caricaPromoStrutture } from "../lib/offertePromo";
 import Chip from "../components/ui/Chip";
 import { vibraConferma } from "../lib/vibrazione";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
@@ -370,6 +371,20 @@ export default function EsploraScreen({ navigation, route }) {
   // Il database ne ha migliaia ma ne carichiamo 60 per volta: finché ce ne
   // sono altre da caricare il numero è "almeno", non il totale.
   const altreDaCaricare = !fineLista && !posizione && !ricercaAttiva;
+  // Prezzi scontati (barrato + nuovo) per le sole strutture con offerta attiva.
+  const idsPromo = risultati
+    .filter((r) => r.haPromoAttiva && r.origine === "campeggi_pubblici")
+    .map((r) => r.idOriginale)
+    .sort((a, b) => a - b)
+    .join(",");
+  const [promoPerStruttura, setPromoPerStruttura] = useState({});
+  useEffect(() => {
+    if (!idsPromo) return;
+    caricaPromoStrutture(idsPromo.split(",").map(Number))
+      .then((m) => setPromoPerStruttura((prev) => ({ ...prev, ...m })))
+      .catch((e) => console.error("Errore nel caricare i prezzi scontati:", e));
+  }, [idsPromo]);
+
   const testoConteggio = `${risultati.length}${altreDaCaricare ? "+" : ""}`;
   const filtriAttiviNumero = filtriServizi.length + (prezzoMax != null ? 1 : 0);
 
@@ -691,6 +706,7 @@ export default function EsploraScreen({ navigation, route }) {
               <CardStruttura
                 item={item}
                 preferito={preferitiIds.has(item.idOriginale)}
+                promo={item.haPromoAttiva ? promoPerStruttura[item.idOriginale] : null}
                 onPress={() => navigation.navigate("Scheda", { struttura: item })}
                 onToggleFavorito={() => onToggleFavorito(item)}
               />

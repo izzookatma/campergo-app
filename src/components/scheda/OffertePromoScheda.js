@@ -2,8 +2,8 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { descriviRegola, etichettaSconto, dataBreve, perChiVale, offertaVale } from "../../lib/offertePromo";
 
-const ROSSO = "#C62828";
-const ROSSO_SCURO = "#B71C1C";
+const ROSSO = "#D4111E";
+const ROSSO_SCURO = "#C00000";
 
 // Offerte promo dell'host, come sul sito: riquadro rosso con lo sconto, a chi
 // vale, le regole, la descrizione e il periodo di validità.

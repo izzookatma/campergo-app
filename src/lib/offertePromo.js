@@ -50,3 +50,82 @@ export function perChiVale(o, piazzole) {
   const u = piazzole.find((p) => p.id === o.piazzola_id);
   return u ? `${u.tipo === "alloggio" ? "Alloggio" : "Piazzola"}${u.numero ? ` ${u.numero}` : ""}` : "Una unità";
 }
+
+// ---------------------------------------------------------------------------
+// Prezzo con sconto (barrato + nuovo), come sul sito: ogni unità ha un
+// prezzo "pieno" di riferimento = prezzo base, oppure il più basso tra i
+// periodi stagionali non ancora scaduti (stessa regola di prezzoRiferimento
+// nella scheda del sito). Vale l'offerta che fa pagare di meno.
+// ---------------------------------------------------------------------------
+
+export function prezzoConSconto(prezzo, percentuale) {
+  const centesimi = Math.round(Number(prezzo) * 100);
+  return Math.floor((centesimi * (100 - Number(percentuale)) + 50) / 100) / 100;
+}
+
+export function prezzoRiferimento(unita, periodi, oggiIso) {
+  if (unita.prezzo != null && Number(unita.prezzo) > 0) return Number(unita.prezzo);
+  const validi = (periodi || [])
+    .filter((p) => p.piazzola_id === unita.id && !p.chiuso && p.prezzo_notte != null && p.data_fine >= oggiIso)
+    .map((p) => Number(p.prezzo_notte))
+    .filter((n) => n > 0);
+  return validi.length ? Math.min(...validi) : null;
+}
+
+// { offerta, pieno, scontato } dell'offerta più conveniente per l'unità, o null.
+export function miglioreOffertaUnita(unita, periodi, offerte, oggiIso) {
+  const pieno = prezzoRiferimento(unita, periodi, oggiIso);
+  if (!pieno) return null;
+  let migliore = null;
+  for (const o of offerte) {
+    if (!offertaVale(o, unita)) continue;
+    const scontato = o.tipo_prezzo === "percentuale" ? prezzoConSconto(pieno, o.sconto_percentuale) : Number(o.prezzo_notte);
+    if (!(scontato < pieno)) continue;
+    if (!migliore || scontato < migliore.scontato) migliore = { offerta: o, pieno, scontato };
+  }
+  return migliore;
+}
+
+// Per la card/intestazione: l'unità con il prezzo scontato più basso.
+export function miglioreOffertaStruttura(piazzole, periodi, offerte) {
+  const oggi = new Date().toISOString().slice(0, 10);
+  let migliore = null;
+  for (const u of piazzole) {
+    const r = miglioreOffertaUnita(u, periodi, offerte, oggi);
+    if (r && (!migliore || r.scontato < migliore.scontato)) migliore = r;
+  }
+  return migliore;
+}
+
+const cachePromo = new Map();
+
+// Carica (una volta sola per struttura) offerte, unità e periodi di più
+// strutture insieme e restituisce { [campeggioId]: miglioreOfferta|null }.
+export async function caricaPromoStrutture(ids) {
+  const mancanti = ids.filter((id) => !cachePromo.has(id));
+  if (mancanti.length) {
+    const oggi = new Date().toISOString().slice(0, 10);
+    const [of, pz, pe] = await Promise.all([
+      supabase.from("offerte_promo").select("*").in("campeggio_id", mancanti).eq("attiva", true).gte("data_fine", oggi),
+      supabase.from("piazzole_pubbliche").select("id, campeggio_id, tipo, prezzo").in("campeggio_id", mancanti),
+      supabase.from("periodi_piazzola").select("piazzola_id, campeggio_id, prezzo_notte, data_fine, chiuso").in("campeggio_id", mancanti),
+    ]);
+    if (of.error) throw of.error;
+    for (const id of mancanti) {
+      const offerte = (of.data || []).filter((o) => o.campeggio_id === id);
+      const unita = (pz.data || []).filter((p) => p.campeggio_id === id);
+      const periodi = (pe.data || []).filter((p) => p.campeggio_id === id);
+      cachePromo.set(id, offerte.length ? miglioreOffertaStruttura(unita, periodi, offerte) : null);
+    }
+  }
+  return Object.fromEntries(ids.map((id) => [id, cachePromo.get(id) || null]));
+}
+
+export async function caricaPeriodiStruttura(campeggioId) {
+  const { data, error } = await supabase
+    .from("periodi_piazzola")
+    .select("piazzola_id, prezzo_notte, data_fine, chiuso")
+    .eq("campeggio_id", campeggioId);
+  if (error) throw error;
+  return data || [];
+}
