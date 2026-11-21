@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { inviaDomanda } from "../lib/domanda";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { useT } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 
 const EMAIL_VALIDA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MIN_MESSAGGIO = 10;
@@ -101,7 +102,7 @@ export default function NuovaDomandaScreen({ navigation }) {
 
             <Text style={styles.privacy}>
               {t("domanda.privacyAccetti")}{" "}
-              <Text style={styles.link} onPress={() => Linking.openURL("https://www.naturago.it/privacy")}>
+              <Text style={styles.link} onPress={() => apriLink("https://www.naturago.it/privacy", t("comune.linkNonApribile"))}>
                 {t("domanda.privacyLink")}
               </Text>
               .
@@ -117,7 +118,7 @@ export default function NuovaDomandaScreen({ navigation }) {
                 {t("domanda.domandeFrequenti")}
               </Text>{" "}
               {t("domanda.oScriviA")}{" "}
-              <Text style={styles.link} onPress={() => Linking.openURL("mailto:info@naturago.it")}>
+              <Text style={styles.link} onPress={() => apriLink("mailto:info@naturago.it", t("comune.linkNonApribile"))}>
                 info@naturago.it
               </Text>
             </Text>

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, Linking } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import { urlMappa } from "../lib/mappa";
 import AccediScreen from "./AccediScreen";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import { useT } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 
 // Non esiste ancora una prenotazione vera da nessuna parte (il pulsante
 // "Prenota subito" nella Scheda non è collegato a nulla, per scelta:
@@ -36,7 +37,7 @@ function CardPrenotazione({ prenotazione, navigation, motoreMappa }) {
 
   const apriMappa = () => {
     const url = urlMappa(struttura, motoreMappa);
-    if (url) Linking.openURL(url);
+    if (url) apriLink(url);
   };
 
   return (

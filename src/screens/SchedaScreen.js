@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Linking, ScrollView, Alert, ActivityIndicator, Share } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator, Share, Animated } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +8,7 @@ import { usePreferenze } from "../context/PreferenzeContext";
 import { caricaIdPreferiti, toggleFavorito, sipuoSalvare } from "../lib/preferiti";
 import { vibraConferma } from "../lib/vibrazione";
 import { urlMappa } from "../lib/mappa";
+import { apriLink } from "../lib/linkEsterni";
 import { caricaRecensioni, inviaRecensioneStruttura } from "../lib/recensioni";
 import { caricaDettaglioStruttura, caricaPiazzoleStruttura } from "../lib/strutture";
 import { ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
@@ -20,9 +21,12 @@ import RigaStelle from "../components/ui/RigaStelle";
 import CuoreAnimato from "../components/ui/CuoreAnimato";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import GalleriaHero from "../components/scheda/GalleriaHero";
+import GalleriaFullscreen from "../components/scheda/GalleriaFullscreen";
 import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
 import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
 import { useT } from "../i18n/i18n";
+
+const ALTEZZA_HERO = 340;
 
 const MESI = [
   "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -71,6 +75,9 @@ export default function SchedaScreen({ route, navigation }) {
   const { struttura } = route.params;
   const { session } = useAuth();
   const { motoreMappa } = usePreferenze();
+  const insets = useSafeAreaInsets();
+  const [scrollY] = useState(() => new Animated.Value(0));
+  const [fotoAperta, setFotoAperta] = useState(null);
   const [preferito, setPreferito] = useState(false);
   const [recensioni, setRecensioni] = useState([]);
   const [caricandoRecensioni, setCaricandoRecensioni] = useState(false);
@@ -165,20 +172,20 @@ export default function SchedaScreen({ route, navigation }) {
 
   const apriChiamata = () => {
     const tel = struttura.telefono || dettaglio?.telefono;
-    if (tel) Linking.openURL(`tel:${tel}`);
+    if (tel) apriLink(`tel:${String(tel).replace(/\s+/g, "")}`, t("comune.linkNonApribile"));
   };
 
   const apriMappa = () => {
     const url = urlMappa(struttura, motoreMappa);
-    if (url) Linking.openURL(url);
+    if (url) apriLink(url, t("comune.linkNonApribile"));
   };
 
   const apriSito = () => {
-    if (dettaglio?.sitoWeb) Linking.openURL(dettaglio.sitoWeb.startsWith("http") ? dettaglio.sitoWeb : `https://${dettaglio.sitoWeb}`);
+    if (dettaglio?.sitoWeb) apriLink(dettaglio.sitoWeb.startsWith("http") ? dettaglio.sitoWeb : `https://${dettaglio.sitoWeb}`, t("comune.linkNonApribile"));
   };
 
   const apriRivendica = () => {
-    Linking.openURL(`https://www.naturago.it/host?modo=registrati&nome=${encodeURIComponent(struttura.nome)}`);
+    apriLink(`https://www.naturago.it/host?modo=registrati&nome=${encodeURIComponent(struttura.nome)}`, t("comune.linkNonApribile"));
   };
 
   const periodoApertura = (() => {
@@ -191,36 +198,29 @@ export default function SchedaScreen({ route, navigation }) {
     return null;
   })();
 
+  const fotoHero = [struttura.fotoUrl, ...(dettaglio?.fotoExtra || [])].filter(Boolean);
   const serviziPresenti = (dettaglio?.amenities || []).map((chiave) => ETICHETTA_SERVIZIO[chiave]).filter(Boolean);
 
   return (
     <View style={styles.schermo}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        <SafeAreaView edges={["top"]} style={styles.hero}>
-          <GalleriaHero foto={[struttura.fotoUrl, ...(dettaglio?.fotoExtra || [])].filter(Boolean)} />
-          <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={18} color={c.testo} />
-          </Pressable>
-          <Pressable
-            style={[styles.preferitoBottone, sipuoSalvare(struttura) && { right: 58 }]}
-            onPress={condividi}
-            accessibilityRole="button"
-            accessibilityLabel={t("comune.condividi")}
-          >
-            <Ionicons name="share-outline" size={18} color={c.primario} />
-          </Pressable>
-          {sipuoSalvare(struttura) && (
-            <Pressable
-              style={styles.preferitoBottone}
-              onPress={onPreferito}
-              accessibilityRole="button"
-              accessibilityLabel={preferito ? t("comune.preferitoRimuovi") : t("comune.preferitoSalva")}
-            >
-              <CuoreAnimato attivo={preferito} size={18} colore={c.pericolo} />
-            </Pressable>
-          )}
-        </SafeAreaView>
-
+      <Animated.ScrollView
+        contentContainerStyle={{ paddingBottom: 20 }}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+      >
+        <Animated.View
+          style={[
+            styles.hero,
+            {
+              transform: [
+                { translateY: scrollY.interpolate({ inputRange: [-300, 0, ALTEZZA_HERO], outputRange: [-150, 0, ALTEZZA_HERO * 0.45], extrapolateRight: "clamp" }) },
+                { scale: scrollY.interpolate({ inputRange: [-300, 0], outputRange: [2, 1], extrapolateRight: "clamp" }) },
+              ],
+            },
+          ]}
+        >
+          <GalleriaHero foto={fotoHero} altezza={ALTEZZA_HERO} onApri={(i) => setFotoAperta(i)} />
+        </Animated.View>
         <View style={styles.contenuto}>
           <View style={styles.rigaBadge}>
             <Badge testo={struttura.tipo} tono="neutro" />
@@ -499,7 +499,30 @@ export default function SchedaScreen({ route, navigation }) {
             )}
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <View style={[styles.barraSuperiore, { top: insets.top + 8 }]} pointerEvents="box-none">
+        <Pressable style={styles.bottoneRotondo} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={t("comune.indietro")}>
+          <Ionicons name="chevron-back" size={20} color={c.testo} />
+        </Pressable>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Pressable style={styles.bottoneRotondo} onPress={condividi} accessibilityRole="button" accessibilityLabel={t("comune.condividi")}>
+            <Ionicons name="share-outline" size={20} color={c.primario} />
+          </Pressable>
+          {sipuoSalvare(struttura) && (
+            <Pressable
+              style={styles.bottoneRotondo}
+              onPress={onPreferito}
+              accessibilityRole="button"
+              accessibilityLabel={preferito ? t("comune.preferitoRimuovi") : t("comune.preferitoSalva")}
+            >
+              <CuoreAnimato attivo={preferito} size={20} colore={c.pericolo} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {fotoAperta !== null && <GalleriaFullscreen foto={fotoHero} indiceIniziale={fotoAperta} visibile onChiudi={() => setFotoAperta(null)} />}
 
       <SafeAreaView edges={["bottom"]} style={styles.barraAzioni}>
         {struttura.prezzo ? (
@@ -536,35 +559,17 @@ export default function SchedaScreen({ route, navigation }) {
 function useEstili(c) {
   return StyleSheet.create({
   schermo: { flex: 1, backgroundColor: c.sfondoGruppo },
-  hero: {
-    height: 230,
-    backgroundColor: c.primarioChiaro,
+  hero: { height: ALTEZZA_HERO, backgroundColor: c.primarioChiaro },
+  barraSuperiore: { position: "absolute", left: 16, right: 16, flexDirection: "row", justifyContent: "space-between" },
+  bottoneRotondo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.94)",
     alignItems: "center",
     justifyContent: "center",
   },
-  tornaIndietro: {
-    position: "absolute",
-    top: 52,
-    left: 16,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  preferitoBottone: {
-    position: "absolute",
-    top: 52,
-    right: 16,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  contenuto: { padding: 20, gap: 10 },
+  contenuto: { padding: 20, gap: 10, marginTop: -28, backgroundColor: c.sfondoGruppo, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   rigaBadge: { flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" },
   titolo: { fontSize: 28, lineHeight: 34, fontWeight: "700", color: c.testo },
   rigaInfo: { flexDirection: "row", alignItems: "center", gap: 10 },

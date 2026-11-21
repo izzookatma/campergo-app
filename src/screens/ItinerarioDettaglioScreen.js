@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,12 +19,14 @@ import {
 } from "../lib/itinerari";
 import { vibraLeggera, vibraConferma } from "../lib/vibrazione";
 import { caricaRecensioniItinerario, inviaRecensioneItinerario } from "../lib/recensioni";
-import { urlMappa } from "../lib/mappa";
+import { urlMappa, urlPercorso } from "../lib/mappa";
+import Pulsante from "../components/ui/Pulsante";
 import MappaItinerario from "../components/MappaItinerario";
 import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import RigaStelle from "../components/ui/RigaStelle";
 import { useT } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -204,6 +206,18 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
 
           <MappaItinerario tappe={tappe} colore={coloreAccento} />
 
+          {tappe.some((tp) => tp.lat != null && tp.lng != null) && (
+            <Pulsante
+              titolo={t("itinerario.avviaNavigazione")}
+              icona={<Ionicons name="navigate" size={18} color={c.sulPrimario} />}
+              sfondoPersonalizzato={coloreAccento}
+              onPress={() => {
+                const url = urlPercorso(tappe, motoreMappa);
+                if (url) apriLink(url, t("comune.linkNonApribile"));
+              }}
+            />
+          )}
+
           {tappe.length > 0 && (
             <View style={styles.sezioneTappe}>
               <Text style={styles.sezioneTitolo}>{t("itinerario.tappe")}</Text>
@@ -231,7 +245,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
                         style={styles.tappaMappaLink}
                         onPress={() => {
                           const url = urlMappa(tappa, motoreMappa);
-                          if (url) Linking.openURL(url);
+                          if (url) apriLink(url, t("comune.linkNonApribile"));
                         }}
                       >
                         <Ionicons name="navigate-outline" size={12} color={coloreAccento} />

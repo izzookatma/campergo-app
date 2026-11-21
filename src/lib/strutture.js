@@ -345,12 +345,33 @@ async function eseguiRicercaStrutture({
   ];
 }
 
+// Ordine per prezzo e prezzo massimo applicati dal database (non sulle sole
+// schede già scaricate): così "più economici" e "fino a X €" valgono su tutto
+// l'elenco. Solo i campeggi hanno un prezzo: rifugi e camper service restano
+// fuori quando si fissa un prezzo massimo.
+function conPrezzoMax(query, prezzoMax) {
+  return prezzoMax != null ? query.lte("prezzo", prezzoMax) : query;
+}
+
+function ordinaCampeggi(query, ordine) {
+  let q = query;
+  if (ordine === "prezzo") q = q.order("prezzo", { ascending: true, nullsFirst: false });
+  return q
+    .order("ha_promo_attiva", { ascending: false })
+    .order("punteggio_ordinamento", { ascending: false })
+    .order("recensioni", { ascending: false })
+    .order("ha_servizi", { ascending: false })
+    .order("id", { ascending: true });
+}
+
 // Ricerca unificata su tutte le tipologie di struttura (campeggi, agriturismi,
 // agricampeggi, rifugi), come richiesto per la ricerca dell'app - stessa
 // logica dietro /esplora sul sito (campeggi_pubblici + rifugi).
-export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], tipi = [] } = {}) {
+export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], tipi = [], ordine, prezzoMax = null } = {}) {
   const selezione = risolviSelezioneTipi(tipi);
-  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const salto = risolviSaltoServizi(servizi, selezione);
+  const saltaRifugiDelTutto = salto.saltaRifugiDelTutto || prezzoMax != null;
+  const saltaCamperServiceDelTutto = salto.saltaCamperServiceDelTutto || prezzoMax != null;
   const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi, soloRifugi, soloCamperService } = selezione;
 
   const daCampeggi = pagina * limite;
@@ -378,14 +399,10 @@ export async function caricaStrutture({ limite = 40, pagina = 0, servizi = [], t
   // 328_campeggi_pubblici_ha_promo_attiva) sale prima di tutti, prima
   // ancora del punteggio - stesso criterio del sito (confrontaOrdinamento
   // in src/App.jsx).
-  let queryCampeggi = supabase
+  let queryCampeggi = ordinaCampeggi(supabase
     .from("campeggi_pubblici")
-    .select(COLONNE_CAMPEGGIO)
-    .order("ha_promo_attiva", { ascending: false })
-    .order("punteggio_ordinamento", { ascending: false })
-    .order("recensioni", { ascending: false })
-    .order("ha_servizi", { ascending: false })
-    .order("id", { ascending: true });
+    .select(COLONNE_CAMPEGGIO), ordine);
+  queryCampeggi = conPrezzoMax(queryCampeggi, prezzoMax);
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).range(daCampeggi, daCampeggi + limite - 1);
 
@@ -466,14 +483,16 @@ function paroleRicercaStruttura(pulito) {
   return parole.length > 0 ? parole : [pulito];
 }
 
-export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi = [] } = {}) {
+export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi = [], ordine, prezzoMax = null } = {}) {
   const pulito = termine.trim().replace(/[,(){}%]/g, " ").trim();
   if (!pulito) return [];
   const parole = paroleRicercaStruttura(pulito);
   const ambiente = PAROLE_AMBIENTE[pulito.toLowerCase()];
 
   const selezione = risolviSelezioneTipi(tipi);
-  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const salto = risolviSaltoServizi(servizi, selezione);
+  const saltaRifugiDelTutto = salto.saltaRifugiDelTutto || prezzoMax != null;
+  const saltaCamperServiceDelTutto = salto.saltaCamperServiceDelTutto || prezzoMax != null;
   const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi, soloRifugi, soloCamperService } = selezione;
   const limiteRifugi = soloRifugi ? limite : Math.round(limite / 4);
   const limiteCamperService = soloCamperService ? limite : Math.round(limite / 4);
@@ -481,14 +500,10 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
   // Stesso ordinamento di caricaStrutture sopra (vedi il commento lì),
   // stessa fonte: le colonne calcolate punteggio_ordinamento/ha_servizi/
   // ha_promo_attiva della vista campeggi_pubblici.
-  let queryCampeggi = supabase
+  let queryCampeggi = ordinaCampeggi(supabase
     .from("campeggi_pubblici")
-    .select(COLONNE_CAMPEGGIO)
-    .order("ha_promo_attiva", { ascending: false })
-    .order("punteggio_ordinamento", { ascending: false })
-    .order("recensioni", { ascending: false })
-    .order("ha_servizi", { ascending: false })
-    .order("id", { ascending: true });
+    .select(COLONNE_CAMPEGGIO), ordine);
+  queryCampeggi = conPrezzoMax(queryCampeggi, prezzoMax);
   parole.forEach((parola) => {
     const p = `%${parola}%`;
     let cond = `nome.ilike.${p},localita.ilike.${p},zona_turistica.ilike.${p},cap.ilike.${p}`;
@@ -546,12 +561,14 @@ export async function cercaStrutture({ termine, limite = 100, servizi = [], tipi
 // lato app solo i primi ~37 rifugi del riquadro (150/4, qualunque tipo),
 // quindi poteva mostrarne pochissimi o nessuno anche se ce n'erano di più
 // più lontani nello stesso riquadro ma tagliati fuori dal limite.
-export async function caricaStruttureVicine({ lat, lng, raggioKm = 80, limite = 150, servizi = [], tipi = [] } = {}) {
+export async function caricaStruttureVicine({ lat, lng, raggioKm = 80, limite = 150, servizi = [], tipi = [], prezzoMax = null } = {}) {
   const deltaLat = raggioKm / 111;
   const deltaLng = raggioKm / (111 * Math.cos((lat * Math.PI) / 180) || 1);
 
   const selezione = risolviSelezioneTipi(tipi);
-  const { saltaRifugiDelTutto, saltaCamperServiceDelTutto } = risolviSaltoServizi(servizi, selezione);
+  const salto = risolviSaltoServizi(servizi, selezione);
+  const saltaRifugiDelTutto = salto.saltaRifugiDelTutto || prezzoMax != null;
+  const saltaCamperServiceDelTutto = salto.saltaCamperServiceDelTutto || prezzoMax != null;
   const { tipiCampeggioScelti, tipiRifugioScelti, saltaCampeggi, soloRifugi, soloCamperService } = selezione;
   const limiteRifugi = soloRifugi ? limite : Math.round(limite / 4);
   const limiteCamperService = soloCamperService ? limite : Math.round(limite / 4);
@@ -563,6 +580,7 @@ export async function caricaStruttureVicine({ lat, lng, raggioKm = 80, limite = 
     .lte("lat", lat + deltaLat)
     .gte("lng", lng - deltaLng)
     .lte("lng", lng + deltaLng);
+  queryCampeggi = conPrezzoMax(queryCampeggi, prezzoMax);
   if (tipiCampeggioScelti.length > 0) queryCampeggi = queryCampeggi.in("tipo_struttura", tipiCampeggioScelti);
   queryCampeggi = conServizi(queryCampeggi, servizi).limit(limite);
 

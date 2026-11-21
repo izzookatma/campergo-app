@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useState } from "react";
+import { View, Text, Pressable, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../../theme/tema";
 import ImmagineConRiserva from "../ImmagineConRiserva";
@@ -43,11 +44,16 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
   const styles = useEstili(c);
   const servizi = iconeServizi(item.servizi);
   const visibili = servizi.slice(0, 4);
+  const [scala] = useState(() => new Animated.Value(1));
+  const molla = (a) => Animated.spring(scala, { toValue: a, useNativeDriver: true, speed: 40, bounciness: 5 }).start();
   const altri = servizi.length - visibili.length;
 
   return (
+    <Animated.View style={{ transform: [{ scale: scala }] }}>
     <Pressable
       style={styles.card}
+      onPressIn={() => molla(0.98)}
+      onPressOut={() => molla(1)}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${item.tipo} ${item.nome}, ${item.localita || ""}${item.prezzo ? `, da ${item.prezzo} euro a notte` : ""}`}
@@ -57,6 +63,12 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
         <View style={styles.cardBadgeTipo}>
           <Text style={styles.cardBadgeTipoTesto}>{item.tipo}</Text>
         </View>
+        <View style={styles.cardVelo} pointerEvents="none" />
+        {item.prezzo ? (
+          <View style={styles.cardPrezzoFoto}>
+            <Text style={styles.cardPrezzoFotoTesto}>da {item.prezzo}€</Text>
+          </View>
+        ) : null}
         {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
         {sipuoSalvare(item) && (
           <Pressable
@@ -100,13 +112,9 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
             {altri > 0 && <Text style={styles.cardServiziAltri}>+{altri}</Text>}
           </View>
         )}
-        {item.prezzo ? (
-          <Text style={styles.cardPrezzoRiga}>
-            da <Text style={styles.cardPrezzo}>{item.prezzo}€</Text> / notte
-          </Text>
-        ) : null}
       </View>
     </Pressable>
+    </Animated.View>
   );
 }
 
@@ -115,7 +123,7 @@ function useEstili(c) {
     card: { backgroundColor: c.sfondoGruppo, borderRadius: 20, overflow: "hidden", ...ombra(c) },
     cardFoto: {
       width: "100%",
-      height: 180,
+      height: 240,
       backgroundColor: c.primarioChiaro,
       alignItems: "center",
       justifyContent: "center",
@@ -134,6 +142,9 @@ function useEstili(c) {
     },
     cardBadgeTipoTesto: { fontSize: 12, fontWeight: "800", color: c.primario },
     cardBollinoPromo: { position: "absolute", bottom: 12, left: 12 },
+    cardVelo: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, backgroundColor: "rgba(8,24,36,0.22)" },
+    cardPrezzoFoto: { position: "absolute", bottom: 12, right: 12, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 14, paddingHorizontal: 11, paddingVertical: 5 },
+    cardPrezzoFotoTesto: { color: "#fff", fontSize: 14, fontWeight: "800" },
     cardCuore: {
       position: "absolute",
       top: 8,

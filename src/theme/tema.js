@@ -1,4 +1,5 @@
 import { useColorScheme } from "react-native";
+import { usePreferenze } from "../context/PreferenzeContext";
 
 // Sistema di stile unico di NaturaGo (ispirato alle linee guida Apple:
 // gerarchia chiara, pochi pesi, spazi a multipli di 4/8, colori "semantici"
@@ -89,12 +90,15 @@ export function paletteTema(schema) {
 }
 
 // Colori correnti (chiaro/scuro) + il resto del sistema in un solo oggetto.
+// Il tema scuro è una scelta dell'utente (Profilo > Aspetto), chiaro di
+// default: le schermate con colori fissi (giochi) restano chiare.
 export function useTema() {
   const schema = useColorScheme();
-  const c = paletteTema(schema);
-  return { c, spazio, raggio, tipo, scuro: TEMA_SCURO_ATTIVO && schema === "dark" };
+  const aspetto = usePreferenze()?.aspetto ?? "chiaro";
+  const scuroAttivo = aspetto === "scuro" || (aspetto === "sistema" && schema === "dark") || (TEMA_SCURO_ATTIVO && schema === "dark");
+  const c = scuroAttivo ? scuro : chiaro;
+  return { c, spazio, raggio, tipo, scuro: scuroAttivo };
 }
-
 // Ombra morbida unica per card sollevate.
 export function ombra(c) {
   return { shadowColor: c.ombra, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 };

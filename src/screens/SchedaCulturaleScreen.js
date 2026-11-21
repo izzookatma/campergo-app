@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
@@ -12,6 +12,9 @@ import ModuloRecensione from "../components/ModuloRecensione";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import RigaStelle from "../components/ui/RigaStelle";
 import { useT } from "../i18n/i18n";
+import { urlMappa } from "../lib/mappa";
+import { apriLink } from "../lib/linkEsterni";
+import { usePreferenze } from "../context/PreferenzeContext";
 
 function formattaDataEvento(iso) {
   const d = new Date(iso);
@@ -40,6 +43,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   const { c, spazio, raggio } = useTema();
   const styles = useEstili(c, spazio, raggio);
   const t = useT();
+  const { motoreMappa } = usePreferenze();
   const { id } = route.params;
   const { session } = useAuth();
   const [scheda, setScheda] = useState(null);
@@ -93,9 +97,10 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   if (!scheda) return null;
 
   const meta = CATEGORIA_CULTURALE_META[scheda.categoria];
-  const apriSito = (url) => Linking.openURL(url.startsWith("http") ? url : `https://${url}`);
+  const apriSito = (url) => apriLink(url.startsWith("http") ? url : `https://${url}`, t("comune.linkNonApribile"));
   const apriMappa = () => {
-    if (scheda.lat && scheda.lng) Linking.openURL(`https://maps.apple.com/?q=${encodeURIComponent(scheda.titolo)}&ll=${scheda.lat},${scheda.lng}`);
+    const url = urlMappa({ lat: scheda.lat, lng: scheda.lng, nome: scheda.titolo }, motoreMappa);
+    if (url) apriLink(url, t("comune.linkNonApribile"));
   };
 
   return (

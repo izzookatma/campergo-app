@@ -19,6 +19,10 @@ import CreaPercorso from "../components/CreaPercorso";
 import TendinaSuggerimentiMappa from "../components/mappa/TendinaSuggerimentiMappa";
 import ModalePianoMappa from "../components/mappa/ModalePianoMappa";
 import { distanzaKmPunti } from "../lib/percorsoStradale";
+import AnteprimaMappa from "../components/mappa/AnteprimaMappa";
+import { usePreferenze } from "../context/PreferenzeContext";
+import { urlMappa } from "../lib/mappa";
+import { apriLink } from "../lib/linkEsterni";
 import { useT } from "../i18n/i18n";
 
 // react-native-maps richiede moduli nativi non presenti in Expo Go: in attesa
@@ -66,6 +70,12 @@ const PAROLE_CATEGORIA_ITINERARIO = {
   trekking: "sentiero",
   escursioni: "sentiero",
 };
+
+function voceAnteprima({ tipo, dato }, t) {
+  if (tipo === "cultura") return { titolo: dato.titolo, sottotitolo: dato.citta, fotoUrl: dato.fotoUrl, etichetta: null };
+  if (tipo === "itinerario") return { titolo: dato.titolo, sottotitolo: dato.regione, fotoUrl: dato.fotoUrl, etichetta: null };
+  return { titolo: dato.nome, sottotitolo: dato.localita, fotoUrl: dato.fotoUrl, etichetta: dato.tipo };
+}
 
 function MappaPlaceholder() {
   const { c } = useTema();
@@ -129,6 +139,21 @@ function MappaVera({ navigation, route }) {
   const [regione, setRegione] = useState(REGIONE_ITALIA);
   const [cultura, setCultura] = useState([]);
   const [itinerari, setItinerari] = useState([]);
+  const { motoreMappa } = usePreferenze();
+  // Segnaposto toccato: { tipo, dato } -> scheda anteprima in basso.
+  const [selezionato, setSelezionato] = useState(null);
+  const seleziona = (tipo, dato) => {
+    setSelezionato({ tipo, dato });
+    mappaRef.current?.animateToRegion(
+      {
+        latitude: dato.lat - regione.latitudeDelta * 0.18,
+        longitude: dato.lng,
+        latitudeDelta: Math.min(regione.latitudeDelta, 0.5),
+        longitudeDelta: Math.min(regione.longitudeDelta, 0.5),
+      },
+      350
+    );
+  };
 
   // "Creami un percorso": percorso stradale vero (tappe nominate + tappe
   // intermedie, src/lib/percorsoStradale.js) disegnato sopra la mappa già
@@ -157,6 +182,18 @@ function MappaVera({ navigation, route }) {
     if (!routePercorso) return null;
     const passo = Math.max(1, Math.ceil(routePercorso.length / 300));
     return routePercorso.filter((_, i) => i % passo === 0);
+  }, [routePercorso]);
+
+  // Lunghezza del percorso e tempo stimato (media prudente da camper, 60 km/h):
+  // è una stima, non il tempo reale del traffico, e l'etichetta lo dice.
+  const riepilogoPercorso = useMemo(() => {
+    if (!routePercorso || routePercorso.length < 2) return null;
+    let km = 0;
+    for (let i = 1; i < routePercorso.length; i++) km += distanzaKmPunti(routePercorso[i - 1], routePercorso[i]);
+    const minuti = Math.round((km / 60) * 60);
+    const ore = Math.floor(minuti / 60);
+    const tempo = ore > 0 ? `${ore} h ${String(minuti % 60).padStart(2, "0")} min` : `${minuti} min`;
+    return { km: Math.round(km), tempo };
   }, [routePercorso]);
 
   const RAGGIO_STRUTTURE_TOCCATE_KM = 6;
@@ -470,6 +507,7 @@ function MappaVera({ navigation, route }) {
         initialRegion={REGIONE_ITALIA}
         onRegionChangeComplete={setRegione}
         showsUserLocation
+        onPress={() => setSelezionato(null)}
       >
         {routePercorso && (
           <Polyline
@@ -513,9 +551,7 @@ function MappaVera({ navigation, route }) {
               <Marker
                 key={`c-${voce.id}`}
                 coordinate={{ latitude: voce.lat, longitude: voce.lng }}
-                title={voce.titolo}
-                description={voce.citta}
-                onCalloutPress={() => navigation.navigate("SchedaCulturale", { id: voce.id })}
+                onPress={() => seleziona("cultura", voce)}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
                   <Ionicons name={meta.icona} size={18} color={"#FFFFFF"} />
@@ -530,9 +566,7 @@ function MappaVera({ navigation, route }) {
               <Marker
                 key={`i-${it.id}`}
                 coordinate={{ latitude: it.lat, longitude: it.lng }}
-                title={it.titolo}
-                description={it.regione}
-                onCalloutPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: it.id })}
+                onPress={() => seleziona("itinerario", it)}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
                   <Ionicons name={meta.icona} size={18} color={"#FFFFFF"} />
@@ -546,11 +580,9 @@ function MappaVera({ navigation, route }) {
             <Marker
               key={`s-${s.id}`}
               coordinate={{ latitude: s.lat, longitude: s.lng }}
-              title={s.nome}
-              description={s.localita}
-              onCalloutPress={() => navigation.navigate("Scheda", { struttura: s })}
+              onPress={() => seleziona("struttura", s)}
             >
-              <View style={[styles.segnaposto, { backgroundColor: stile.colore }]}>
+              <View style={[styles.segnaposto, { backgroundColor: stile.colore }, selezionato?.dato === s && styles.segnapostoSelezionato]}>
                 <Ionicons name={stile.icona} size={18} color={"#FFFFFF"} />
               </View>
             </Marker>
@@ -704,6 +736,14 @@ function MappaVera({ navigation, route }) {
 
       {routePercorso && (
         <SafeAreaView edges={["bottom"]} style={styles.strisciaPercorso} pointerEvents="box-none">
+          {riepilogoPercorso && (
+            <View style={styles.riepilogoPercorso}>
+              <Ionicons name="trail-sign" size={16} color="#FFFFFF" />
+              <Text style={styles.riepilogoPercorsoTesto}>
+                {t("mappa.stimaPercorso", { km: riepilogoPercorso.km, tempo: riepilogoPercorso.tempo })}
+              </Text>
+            </View>
+          )}
           {struttureToccateDalPercorso.length === 0 ? (
             <View style={styles.strutturaPercorsoVuota}>
               <Text style={styles.strutturaPercorsoVuotaTesto}>{t("mappa.nessunaStrutturaSulPercorso")}</Text>
@@ -729,6 +769,27 @@ function MappaVera({ navigation, route }) {
             </ScrollView>
           )}
         </SafeAreaView>
+      )}
+
+      {selezionato && !routePercorso && (
+        <AnteprimaMappa
+          voce={voceAnteprima(selezionato, t)}
+          onChiudi={() => setSelezionato(null)}
+          onApri={() => {
+            const { tipo, dato } = selezionato;
+            if (tipo === "struttura") navigation.navigate("Scheda", { struttura: dato });
+            else if (tipo === "cultura") navigation.navigate("SchedaCulturale", { id: dato.id });
+            else navigation.navigate("ItinerarioDettaglio", { itinerarioId: dato.id });
+          }}
+          onIndicazioni={
+            selezionato.dato.lat != null
+              ? () => {
+                  const url = urlMappa({ nome: selezionato.dato.nome || selezionato.dato.titolo, lat: selezionato.dato.lat, lng: selezionato.dato.lng }, motoreMappa);
+                  if (url) apriLink(url, t("comune.linkNonApribile"));
+                }
+              : undefined
+          }
+        />
       )}
 
       <ModalePianoMappa
@@ -877,6 +938,9 @@ function useEstili(c) {
     borderColor: "#FFFFFF",
   },
   pinTappaTesto: { color: "#FFFFFF", fontWeight: "800", fontSize: 11 },
+  segnapostoSelezionato: { transform: [{ scale: 1.3 }], borderWidth: 3, borderColor: "#FFFFFF" },
+  riepilogoPercorso: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center", backgroundColor: c.primario, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 10 },
+  riepilogoPercorsoTesto: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   strisciaPercorso: { position: "absolute", left: 0, right: 0, bottom: 0 },
   strisciaPercorsoContenuto: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
   pillPiano: {

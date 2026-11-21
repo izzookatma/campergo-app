@@ -16,7 +16,14 @@ import { Gruppo, Riga } from "../components/ui/Gruppo";
 import { caricaMiaStruttura } from "../lib/host";
 import { registraNotifichePush } from "../lib/notifichePush";
 import { useT, useLingua, impostaLingua } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 import { LINGUE } from "../i18n/lingue";
+
+const ASPETTI = [
+  { chiave: "chiaro", chiaveTesto: "aspetto.chiaro" },
+  { chiave: "scuro", chiaveTesto: "aspetto.scuro" },
+  { chiave: "sistema", chiaveTesto: "aspetto.sistema" },
+];
 
 const MOTORI_MAPPA = [
   { chiave: "google", etichetta: "Google" },
@@ -35,6 +42,7 @@ function vociMenu(t) {
       testo: t("profilo.notifiche"),
       azione: "impostazioni",
     },
+    { icona: "help-circle-outline", testo: t("faq.titolo"), azione: "naviga", schermo: "Faq" },
     { icona: "shield-checkmark-outline", testo: t("profilo.privacyPolicy"), azione: "apri", url: "https://www.naturago.it/privacy" },
     { icona: "document-text-outline", testo: t("profilo.termini"), azione: "apri", url: "https://www.naturago.it/termini" },
   ];
@@ -46,7 +54,7 @@ export default function ProfiloScreen({ navigation }) {
   const t = useT();
   const linguaAttuale = useLingua();
   const { session, esci } = useAuth();
-  const { motoreMappa, setMotoreMappa } = usePreferenze();
+  const { motoreMappa, setMotoreMappa, aspetto, setAspetto } = usePreferenze();
 
   // La voce "La mia struttura" compare solo a chi gestisce davvero una
   // scheda (stesso account del sito): per i clienti il Profilo resta
@@ -128,7 +136,7 @@ export default function ProfiloScreen({ navigation }) {
         {!struttura && (
           <Pressable
             style={styles.struttura}
-            onPress={() => Linking.openURL("https://www.naturago.it/host?modo=registrati")}
+            onPress={() => apriLink("https://www.naturago.it/host?modo=registrati", t("comune.linkNonApribile"))}
             accessibilityRole="link"
             accessibilityLabel="Hai una struttura? Registrala su NaturaGo"
           >
@@ -155,7 +163,7 @@ export default function ProfiloScreen({ navigation }) {
               testo={voce.testo}
               onPress={() => {
                 if (voce.azione === "naviga") navigation.navigate(voce.schermo);
-                else if (voce.azione === "apri") Linking.openURL(voce.url);
+                else if (voce.azione === "apri") apriLink(voce.url, t("comune.linkNonApribile"));
                 else if (voce.azione === "impostazioni") Linking.openSettings();
                 else Alert.alert(voce.testo, voce.messaggio);
               }}
@@ -184,6 +192,25 @@ export default function ProfiloScreen({ navigation }) {
                     style={{ fontWeight: "600", color: motoreMappa === m.chiave ? c.sulPrimario : c.testoSecondario }}
                   >
                     {m.etichetta}
+                  </Testo>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={[styles.impostazioneBox, { marginTop: 10 }]}>
+            <Testo v="corpo">{t("profilo.aspetto")}</Testo>
+            <View style={styles.segmentato}>
+              {ASPETTI.map((a) => (
+                <Pressable
+                  key={a.chiave}
+                  style={[styles.segmento, aspetto === a.chiave && styles.segmentoAttivo]}
+                  onPress={() => setAspetto(a.chiave)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t("profilo.aspetto")}: ${t(a.chiaveTesto)}`}
+                  accessibilityState={{ selected: aspetto === a.chiave }}
+                >
+                  <Testo v="secondario" style={{ fontWeight: "600", color: aspetto === a.chiave ? c.sulPrimario : c.testoSecondario }}>
+                    {t(a.chiaveTesto)}
                   </Testo>
                 </Pressable>
               ))}

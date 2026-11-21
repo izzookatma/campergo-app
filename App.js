@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,6 +49,7 @@ import CruciverbaScreen from "./src/screens/CruciverbaScreen";
 import ImpiccatoScreen from "./src/screens/ImpiccatoScreen";
 import OcaScreen from "./src/screens/OcaScreen";
 import { colori } from "./src/theme/colors";
+import { useTema } from "./src/theme/tema";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { PreferenzeProvider } from "./src/context/PreferenzeContext";
 import { segnaApertura, segnaSchermata, attivaSegnalazioneErrori } from "./src/lib/telemetria";
@@ -140,6 +142,8 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="PiazzoleStruttura" component={PiazzoleScreen} />
       <ProfiloStack.Screen name="AvvisiStruttura" component={AvvisiScreen} />
       <ProfiloStack.Screen name="EliminaAccount" component={EliminaAccountScreen} />
+      <ProfiloStack.Screen name="Faq" component={FaqScreen} />
+      <ProfiloStack.Screen name="NuovaDomanda" component={NuovaDomandaScreen} />
       <ProfiloStack.Screen name="GiochiHub" component={GiochiHubScreen} />
       <ProfiloStack.Screen name="Tris" component={TrisScreen} />
       <ProfiloStack.Screen name="Memory" component={MemoryScreen} />
@@ -179,9 +183,34 @@ const CHIAVE_TAB = {
   Profilo: "tab.profilo",
 };
 
+// Icona del tab con "molla" quando viene selezionata.
+function IconaTab({ nome, focused, color }) {
+  const [scala] = useState(() => new Animated.Value(1));
+  const precedente = useRef(focused);
+  useEffect(() => {
+    if (focused && !precedente.current) {
+      Animated.sequence([
+        Animated.timing(scala, { toValue: 1.3, duration: 100, useNativeDriver: true }),
+        Animated.spring(scala, { toValue: 1, friction: 4, tension: 170, useNativeDriver: true }),
+      ]).start();
+    }
+    precedente.current = focused;
+  }, [focused, scala]);
+  return (
+    <Animated.View style={{ transform: [{ scale: scala }] }}>
+      <Ionicons name={focused ? nome : `${nome}-outline`} size={24} color={color} />
+    </Animated.View>
+  );
+}
+
 function ContenutoApp() {
   const { caricamento } = useAuth();
   const t = useT();
+  const { c, scuro } = useTema();
+  const temaNavigazione = {
+    ...(scuro ? DarkTheme : DefaultTheme),
+    colors: { ...(scuro ? DarkTheme : DefaultTheme).colors, background: c.sfondo, card: c.sfondoGruppo, border: c.separatore, text: c.testo, primary: c.primario },
+  };
 
   useEffect(() => {
     segnaApertura();
@@ -197,23 +226,21 @@ function ContenutoApp() {
   return (
     <NavigationContainer
       ref={riferimentoNavigazione}
+      theme={temaNavigazione}
       onReady={segnaSchermataCorrente}
       onStateChange={segnaSchermataCorrente}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={scuro ? "light" : "dark"} />
       <Tab.Navigator
         screenListeners={{ tabPress: () => vibraLeggera() }}
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: colori.blu,
+          tabBarActiveTintColor: scuro ? c.primario : colori.blu,
+          tabBarStyle: { backgroundColor: c.sfondoGruppo, borderTopColor: c.separatore },
           tabBarInactiveTintColor: "#8E97A3",
           tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? ICONE_TAB[route.name] : `${ICONE_TAB[route.name]}-outline`}
-              size={23}
-              color={color}
-            />
+            <IconaTab nome={ICONE_TAB[route.name]} focused={focused} color={color} />
           ),
           tabBarLabel: t(CHIAVE_TAB[route.name]),
         })}

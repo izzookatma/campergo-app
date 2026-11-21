@@ -8,9 +8,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  ActionSheetIOS,
+  Platform,
   Alert,
   ScrollView,
-  Linking,
+ 
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
@@ -18,9 +20,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { caricaStrutture, caricaStruttureVicine, cercaStrutture } from "../lib/strutture";
 import { REGIONI_ITALIANE } from "../lib/regioni";
-import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
+import { CATEGORIE_FILTRI_SERVIZI, ETICHETTA_SERVIZIO } from "../lib/filtriServizi";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
+import IconaFluttuante from "../components/ui/IconaFluttuante";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
 import { vibraConferma } from "../lib/vibrazione";
@@ -34,6 +37,7 @@ import { distanzaKm } from "../lib/geo";
 import SelettoreDate from "../components/SelettoreDate";
 import { apertoNelPeriodo, etichettaData, numeroNotti } from "../lib/periodo";
 import { useT } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 
 const FILTRI = ["Tutti", "Campeggi", "Agriturismi", "Agricampeggi", "Aree sosta", "Camper service", "Rifugi", "Bivacchi"];
 const STRUTTURE_PER_PAGINA = 60;
@@ -115,7 +119,7 @@ export default function EsploraScreen({ navigation, route }) {
 
   const carica = useCallback(async () => {
     try {
-      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: 0, servizi: filtriServizi, tipi: filtriTipo });
+      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: 0, servizi: filtriServizi, tipi: filtriTipo, ordine, prezzoMax });
       setStrutture(dati);
       setPagina(0);
       setFineLista(dati.length < STRUTTURE_PER_PAGINA);
@@ -124,9 +128,9 @@ export default function EsploraScreen({ navigation, route }) {
       // Solo la lista di base (nessun filtro servizi/tipo), così la cache
       // ha sempre un senso ovvio da mostrare offline, non il risultato
       // di una combinazione di filtri che l'utente potrebbe non ricordare.
-      if (filtriServizi.length === 0 && filtriTipo.length === 0) salvaInCache("esplora_lista", dati);
+      if (filtriServizi.length === 0 && filtriTipo.length === 0 && prezzoMax == null && ordine !== "prezzo") salvaInCache("esplora_lista", dati);
     } catch (_e) {
-      const cache = filtriServizi.length === 0 && filtriTipo.length === 0 ? await leggiDaCache("esplora_lista") : null;
+      const cache = filtriServizi.length === 0 && filtriTipo.length === 0 && prezzoMax == null ? await leggiDaCache("esplora_lista") : null;
       if (cache) {
         setStrutture(cache.dati);
         setFineLista(true);
@@ -135,7 +139,7 @@ export default function EsploraScreen({ navigation, route }) {
         setErrore(t("esplora.erroreCaricamento"));
       }
     }
-  }, [filtriServizi, filtriTipo, t]);
+  }, [filtriServizi, filtriTipo, ordine, prezzoMax, t]);
 
   useEffect(() => {
     Promise.resolve()
@@ -167,14 +171,14 @@ export default function EsploraScreen({ navigation, route }) {
       try {
         let dati;
         if (posizione) {
-          dati = await caricaStruttureVicine({ lat: posizione.lat, lng: posizione.lng, servizi: filtriServizi, tipi: filtriTipo });
+          dati = await caricaStruttureVicine({ lat: posizione.lat, lng: posizione.lng, servizi: filtriServizi, tipi: filtriTipo, ordine, prezzoMax });
           // Stesso schema della lista base: solo la versione senza filtri
           // va in cache, così c'è sempre qualcosa di ovvio da mostrare
           // offline (non il risultato di una combinazione di filtri).
           if (filtriServizi.length === 0 && filtriTipo.length === 0) salvaInCache("vicino_a_me", dati);
           setSenzaConnessione(false);
         } else if (termine.length >= 2) {
-          dati = await cercaStrutture({ termine, servizi: filtriServizi, tipi: filtriTipo });
+          dati = await cercaStrutture({ termine, servizi: filtriServizi, tipi: filtriTipo, ordine, prezzoMax });
           salvaRicercaRecente(termine).then(setRicercheRecenti);
           // Promemoria per i gestori che usano l'app senza account: compare
           // una sola volta per apertura dell'app, dopo la prima ricerca.
@@ -205,7 +209,7 @@ export default function EsploraScreen({ navigation, route }) {
       annullato = true;
       clearTimeout(timer);
     };
-  }, [ricerca, filtriServizi, filtriTipo, posizione, carica]);
+  }, [ricerca, filtriServizi, filtriTipo, ordine, prezzoMax, posizione, carica]);
 
   const onRefresh = async () => {
     setAggiornamento(true);
@@ -218,7 +222,7 @@ export default function EsploraScreen({ navigation, route }) {
     setCaricandoAltre(true);
     try {
       const prossimaPagina = pagina + 1;
-      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: prossimaPagina, servizi: filtriServizi, tipi: filtriTipo });
+      const dati = await caricaStrutture({ limite: STRUTTURE_PER_PAGINA, pagina: prossimaPagina, servizi: filtriServizi, tipi: filtriTipo, ordine, prezzoMax });
       setStrutture((prev) => [...prev, ...dati]);
       setPagina(prossimaPagina);
       if (dati.length < STRUTTURE_PER_PAGINA) setFineLista(true);
@@ -369,13 +373,32 @@ export default function EsploraScreen({ navigation, route }) {
   const testoConteggio = `${risultati.length}${altreDaCaricare ? "+" : ""}`;
   const filtriAttiviNumero = filtriServizi.length + (prezzoMax != null ? 1 : 0);
 
+  // Nessuna scheda ha ancora un voto (verificato dal vivo: rating a zero su
+  // tutto il database), quindi "per valutazione" non è proposto finché non ce
+  // ne sono; "Vicino a te" compare solo con la posizione.
   const scegliOrdine = () => {
     const opzioni = [
-      { text: t("esplora.ordineConsigliati"), onPress: () => setOrdine("consigliati") },
-      { text: t("esplora.ordinePrezzo"), onPress: () => setOrdine("prezzo") },
-      { text: t("esplora.ordineValutazioneMigliore"), onPress: () => setOrdine("valutazione") },
+      { text: t("esplora.ordineConsigliati"), chiave: "consigliati" },
+      { text: t("esplora.ordinePrezzo"), chiave: "prezzo" },
     ];
-    Alert.alert(t("esplora.ordinaPerTitolo"), undefined, [...opzioni, { text: t("comune.annulla"), style: "cancel" }]);
+    if (posizione) opzioni.push({ text: t("esplora.ordineDistanza"), chiave: "distanza" });
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: t("esplora.ordinaPerTitolo"),
+          options: [...opzioni.map((o) => o.text), t("comune.annulla")],
+          cancelButtonIndex: opzioni.length,
+        },
+        (i) => {
+          if (i < opzioni.length) setOrdine(opzioni[i].chiave);
+        }
+      );
+      return;
+    }
+    Alert.alert(t("esplora.ordinaPerTitolo"), undefined, [
+      ...opzioni.map((o) => ({ text: o.text, onPress: () => setOrdine(o.chiave) })),
+      { text: t("comune.annulla"), style: "cancel" },
+    ]);
   };
   const etichettaOrdine = {
     consigliati: t("esplora.ordineConsigliati"),
@@ -586,7 +609,7 @@ export default function EsploraScreen({ navigation, route }) {
           </View>
           <Pressable
             style={styles.bannerHostPulsante}
-            onPress={() => Linking.openURL("https://www.naturago.it/host?modo=registrati")}
+            onPress={() => apriLink("https://www.naturago.it/host?modo=registrati", t("comune.linkNonApribile"))}
           >
             <Text style={styles.bannerHostPulsanteTesto}>{t("comune.registrati")}</Text>
           </Pressable>
@@ -629,6 +652,28 @@ export default function EsploraScreen({ navigation, route }) {
               </Text>
               <Ionicons name="chevron-forward" size={14} color={c.testoSecondario} />
             </Pressable>
+            {(filtriServizi.length > 0 || prezzoMax != null) && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRiepilogo} style={{ marginBottom: 8 }}>
+                {prezzoMax != null && (
+                  <Pressable style={styles.chipFiltro} onPress={() => setPrezzoMax(null)} accessibilityRole="button" accessibilityLabel={`Togli prezzo massimo ${prezzoMax} euro`}>
+                    <Text style={styles.chipFiltroTesto}>{`≤ ${prezzoMax}€`}</Text>
+                    <Ionicons name="close-circle" size={16} color={c.primario} />
+                  </Pressable>
+                )}
+                {filtriServizi.map((chiave) => (
+                  <Pressable
+                    key={chiave}
+                    style={styles.chipFiltro}
+                    onPress={() => setFiltriServizi((prev) => prev.filter((x) => x !== chiave))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Togli filtro ${ETICHETTA_SERVIZIO[chiave] || chiave}`}
+                  >
+                    <Text style={styles.chipFiltroTesto}>{ETICHETTA_SERVIZIO[chiave] || chiave}</Text>
+                    <Ionicons name="close-circle" size={16} color={c.primario} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
             <View style={styles.rigaContatore}>
               <Text style={styles.contatore}>{t("esplora.struttureConteggio", { testo: testoConteggio })}</Text>
               <Pressable
@@ -646,7 +691,7 @@ export default function EsploraScreen({ navigation, route }) {
           }
           ListEmptyComponent={
             <View style={styles.vuoto}>
-              <Ionicons name="search-outline" size={34} color={c.testoSecondario} />
+              <IconaFluttuante nome="search-outline" size={40} colore={c.testoSecondario} />
               <Text style={styles.vuotoTitolo}>{t("esplora.nessunaStrutturaTrovata")}</Text>
               <Text style={styles.vuotoTesto}>{t("esplora.provaTogliereFiltri")}</Text>
             </View>
@@ -810,6 +855,9 @@ function useEstili(c) {
   badgeFiltriTesto: { color: c.sulAccento, fontSize: 9, fontWeight: "800" },
   contatore: { fontSize: 13.5, fontWeight: "600", color: c.testoSecondario },
   rigaContatore: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4, minHeight: 36 },
+  chipRiepilogo: { gap: 8, paddingRight: 8 },
+  chipFiltro: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: c.primarioChiaro, borderRadius: 16, paddingLeft: 12, paddingRight: 8, paddingVertical: 7 },
+  chipFiltroTesto: { fontSize: 13.5, fontWeight: "700", color: c.primario },
   pillDate: {
     flexDirection: "row",
     alignItems: "center",

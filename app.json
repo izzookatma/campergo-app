@@ -12,7 +12,7 @@
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "it.naturago.app",
       "appleTeamId": "S534G29VQB",
@@ -31,7 +31,7 @@
     },
     "android": {
       "package": "it.naturago.app",
-      "versionCode": 15,
+      "versionCode": 18,
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {

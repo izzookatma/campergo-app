@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Linking, Share } from "react-native";
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system/legacy";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,6 +16,7 @@ import {
 } from "../lib/blog";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import { useT } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 
 function dataLunga(iso) {
   if (!iso) return null;
@@ -42,7 +43,7 @@ function BloccoTesto({ testo, stile, styles }) {
       <Text
         key={m.index}
         style={styles.link}
-        onPress={() => Linking.openURL(href.startsWith("http") ? href : `https://www.naturago.it${href}`)}
+        onPress={() => apriLink(href.startsWith("http") ? href : `https://www.naturago.it${href}`)}
       >
         {testoLink}
       </Text>
@@ -219,7 +220,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
           </View>
 
           {urlCta && testoCta && (
-            <Pressable style={styles.cta} onPress={() => Linking.openURL(urlCta)}>
+            <Pressable style={styles.cta} onPress={() => apriLink(urlCta, t("comune.linkNonApribile"))}>
               <Text style={styles.ctaTesto}>{testoCta}</Text>
               <Ionicons name="arrow-forward" size={14} color={c.sulAccento} />
             </Pressable>

@@ -208,7 +208,7 @@ export default function EsploraHubScreen({ navigation }) {
       >
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
         <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 2, textAlign: "center" }}>
-          Dove vai?
+          {t("hub.dovevai")}
         </Testo>
 
         <View style={styles.ricercaRapida}>
@@ -218,7 +218,7 @@ export default function EsploraHubScreen({ navigation }) {
                 <Ionicons name="search" size={20} color={c.primario} />
                 <TextInput
                   style={styles.inputRicerca}
-                  placeholder="Dove vuoi andare? Zona, regione…"
+                  placeholder={t("hub.placeholderRicerca")}
                   placeholderTextColor={c.testoSecondario}
                   value={testoRicerca}
                   onChangeText={setTestoRicerca}
@@ -234,18 +234,18 @@ export default function EsploraHubScreen({ navigation }) {
                 style={styles.rigaDate}
                 onPress={apriDate}
                 accessibilityRole="button"
-                accessibilityLabel="Scegli le date del soggiorno"
+                accessibilityLabel={t("hub.aggiungiDate")}
               >
                 <Ionicons name="calendar-outline" size={20} color={c.primario} />
                 <Text style={[styles.testoDate, !haDate && { color: c.testoSecondario, fontWeight: "500" }]}>
                   {haDate
-                    ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} notti`
-                    : "Quando? Aggiungi le date"}
+                    ? `${etichettaData(dateSoggiorno.checkIn)} → ${etichettaData(dateSoggiorno.checkOut)} · ${numeroNotti(dateSoggiorno.checkIn, dateSoggiorno.checkOut)} ${t("hub.notti")}`
+                    : t("hub.aggiungiDate")}
                 </Text>
                 <Ionicons name="chevron-forward" size={15} color={c.testoSecondario} />
               </Pressable>
-              <Pressable style={styles.bottoneCerca} onPress={avviaRicerca} accessibilityRole="button" accessibilityLabel="Cerca">
-                <Text style={styles.bottoneCercaTesto}>Cerca</Text>
+              <Pressable style={styles.bottoneCerca} onPress={avviaRicerca} accessibilityRole="button" accessibilityLabel={t("hub.cerca")}>
+                <Text style={styles.bottoneCercaTesto}>{t("hub.cerca")}</Text>
               </Pressable>
             </View>
 
@@ -254,9 +254,9 @@ export default function EsploraHubScreen({ navigation }) {
                 {mostraRicercheRecenti && (
                   <>
                     <View style={styles.tendinaIntestazione}>
-                      <Text style={styles.tendinaIntestazioneTesto}>Ricerche recenti</Text>
+                      <Text style={styles.tendinaIntestazioneTesto}>{t("hub.ricercheRecenti")}</Text>
                       <Pressable onPress={() => cancellaRicercheRecenti().then(setRicercheRecenti)} hitSlop={8}>
-                        <Text style={styles.tendinaCancella}>Cancella</Text>
+                        <Text style={styles.tendinaCancella}>{t("hub.cancella")}</Text>
                       </Pressable>
                     </View>
                     {ricercheRecenti.map((termine) => (
@@ -271,7 +271,7 @@ export default function EsploraHubScreen({ navigation }) {
                   <Pressable key={`regione-${r}`} style={styles.rigaTendina} onPress={() => scegliLuogo(r)}>
                     <Ionicons name="map-outline" size={15} color={c.primario} />
                     <Text style={styles.rigaTendinaTesto}>{r}</Text>
-                    <Text style={styles.rigaTendinaEtichetta}>Regione</Text>
+                    <Text style={styles.rigaTendinaEtichetta}>{t("hub.regione")}</Text>
                   </Pressable>
                 ))}
                 {suggerimentiStrutture.map((s) => (
@@ -301,7 +301,7 @@ export default function EsploraHubScreen({ navigation }) {
           </View>
 
           <Pulsante
-            titolo="Vicino a te ora"
+            titolo={t("hub.viciniATe")}
             variante="secondario"
             icona={<Ionicons name="navigate" size={18} color={c.primario} />}
             onPress={vaiVicinoAMe}
@@ -314,20 +314,20 @@ export default function EsploraHubScreen({ navigation }) {
           style={styles.bannerPianifica}
           onPress={() => navigation.push("PianificaViaggio")}
           accessibilityRole="button"
-          accessibilityLabel="Pianifica il viaggio con l'IA"
+          accessibilityLabel={t("hub.pianificaIA")}
         >
           <View style={styles.bannerPianificaIcona}>
             <Ionicons name="sparkles" size={20} color={c.primario} />
           </View>
           <View style={{ flex: 1 }}>
-            <Testo v="corpoForte">Pianifica il viaggio con l&apos;IA</Testo>
-            <Testo v="nota">Dì dove e per quanti giorni: ti proponiamo tappe e soste</Testo>
+            <Testo v="corpoForte">{t("hub.pianificaIA")}</Testo>
+            <Testo v="nota">{t("hub.pianificaIASotto")}</Testo>
           </View>
           <Ionicons name="chevron-forward" size={18} color={c.testoSecondario} />
         </Pressable>
 
         <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 10, textAlign: "center" }}>
-          Cosa stai cercando?
+          {t("hub.cosaCerchi")}
         </Testo>
 
         {SEZIONI.map((sezione) => (
@@ -374,7 +374,6 @@ export default function EsploraHubScreen({ navigation }) {
 
         <Gruppo style={{ marginTop: 10 }}>
           <Riga icona="book-outline" testo="Blog NaturaGo Explorer" onPress={() => navigation.push("Blog")} />
-          <Riga icona="help-circle-outline" testo="Domande frequenti" onPress={() => navigation.push("Faq")} />
         </Gruppo>
       </ScrollView>
       <SelettoreDate

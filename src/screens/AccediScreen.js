@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Linking } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
@@ -11,6 +11,7 @@ import Pulsante from "../components/ui/Pulsante";
 import Testo from "../components/ui/Testo";
 import LogoGoogle from "../components/LogoGoogle";
 import { useT } from "../i18n/i18n";
+import { apriLink } from "../lib/linkEsterni";
 
 // `navigation` esiste solo quando questa schermata è aperta da dentro
 // l'app (es. toccando il cuoricino senza account) — all'avvio, prima del
@@ -209,11 +210,11 @@ export default function AccediScreen({ onSaltaAccesso, navigation }) {
 
           <Text style={styles.legale}>
             {t("accedi.legaleContinuando")}{" "}
-            <Text style={styles.legaleLink} onPress={() => Linking.openURL("https://www.naturago.it/privacy")}>
+            <Text style={styles.legaleLink} onPress={() => apriLink("https://www.naturago.it/privacy", t("comune.linkNonApribile"))}>
               {t("profilo.privacyPolicy")}
             </Text>{" "}
             {t("accedi.legaleE")}{" "}
-            <Text style={styles.legaleLink} onPress={() => Linking.openURL("https://www.naturago.it/termini")}>
+            <Text style={styles.legaleLink} onPress={() => apriLink("https://www.naturago.it/termini", t("comune.linkNonApribile"))}>
               {t("profilo.termini")}
             </Text>
           </Text>
