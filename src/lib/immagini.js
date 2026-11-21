@@ -7,6 +7,9 @@
 const URL_ORIGINALE_WIKIMEDIA =
   /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/([0-9a-f])\/([0-9a-f]{2})\/([^/?#]+)$/i;
 
+const URL_MINIATURA_WIKIMEDIA =
+  /^(https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/?#]+))\/(\d+)px-([^/?#]+)$/i;
+
 // Wikimedia non genera più una miniatura a qualunque larghezza si chieda:
 // da qualche tempo accetta solo queste larghezze (richiesta una volta,
 // verificato dal vivo contro più file - altre larghezze "di buon senso"
@@ -20,6 +23,16 @@ function larghezzaValidaWikimedia(larghezza) {
 
 export function urlImmagineRidimensionata(url, larghezza = 400) {
   if (!url) return url;
+
+  // Miniature già salvate nel database (es. ".../thumb/3/31/Atzara.jpg/960px-Atzara.jpg"):
+  // si chiede la larghezza che serve davvero, di solito 500, la più
+  // probabile da trovare già pronta nella cache di Wikimedia (con le altre
+  // la miniatura va generata al momento e le raffiche vengono rifiutate).
+  const miniatura = url.match(URL_MINIATURA_WIKIMEDIA);
+  if (miniatura) {
+    const [, cartella, , , nomeFileMiniatura] = miniatura;
+    return `${cartella}/${larghezzaValidaWikimedia(larghezza)}px-${nomeFileMiniatura}`;
+  }
 
   const corrispondenza = url.match(URL_ORIGINALE_WIKIMEDIA);
   if (!corrispondenza) return url;
