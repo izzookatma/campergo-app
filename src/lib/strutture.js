@@ -89,6 +89,7 @@ const COLONNE_DETTAGLIO_CAMPEGGIO = [
   "lingue_parlate",
   "attivita_vicinanze",
   "badge_culturale_anno",
+  "spazio_barbecue",
   "zona_turistica",
   "tipo_ambiente",
   "categorie_interesse",
@@ -779,6 +780,7 @@ export async function caricaDettaglioStruttura({ origine, idOriginale }) {
     camperServiceCorrente: data.camper_service_non_ospiti_corrente,
     camperServiceAltro: data.camper_service_non_ospiti_altro,
     camperServiceCosto: data.camper_service_non_ospiti_costo,
+    spazioBarbecue: data.spazio_barbecue || null,
   };
 }
 

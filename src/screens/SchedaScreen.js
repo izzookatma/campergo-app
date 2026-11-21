@@ -24,6 +24,8 @@ import GalleriaHero from "../components/scheda/GalleriaHero";
 import GalleriaFullscreen from "../components/scheda/GalleriaFullscreen";
 import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
 import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
+import { EventiStruttura, SpazioBarbecue, AltreStrutture } from "../components/scheda/SezioniExtraScheda";
+import { caricaEventiStruttura, caricaStruttureSimili } from "../lib/schedaExtra";
 import OffertePromoScheda from "../components/scheda/OffertePromoScheda";
 import { caricaOffertePromo, caricaPeriodiStruttura, miglioreOffertaStruttura } from "../lib/offertePromo";
 import PrezzoScontato from "../components/ui/PrezzoScontato";
@@ -90,6 +92,8 @@ export default function SchedaScreen({ route, navigation }) {
   const [piazzole, setPiazzole] = useState([]);
   const [offerte, setOfferte] = useState([]);
   const [periodi, setPeriodi] = useState([]);
+  const [eventi, setEventi] = useState([]);
+  const [simili, setSimili] = useState([]);
 
   useEffect(() => {
     if (sipuoSalvare(struttura)) {
@@ -124,6 +128,16 @@ export default function SchedaScreen({ route, navigation }) {
       .then(setPeriodi)
       .catch((e) => console.error("Errore nel caricare i periodi di prezzo:", e));
   }, [struttura.origine, struttura.idOriginale]);
+
+  useEffect(() => {
+    if (struttura.origine !== "campeggi_pubblici") return;
+    caricaEventiStruttura(struttura.idOriginale)
+      .then(setEventi)
+      .catch((e) => console.error("Errore nel caricare gli eventi della struttura:", e));
+    caricaStruttureSimili({ idOriginale: struttura.idOriginale, tipo: struttura.tipo, localita: struttura.localita })
+      .then(setSimili)
+      .catch((e) => console.error("Errore nel caricare le strutture simili:", e));
+  }, [struttura.origine, struttura.idOriginale, struttura.tipo, struttura.localita]);
 
   const caricaRecensioniStruttura = () => {
     if (struttura.origine !== "campeggi_pubblici") return;
@@ -450,7 +464,17 @@ export default function SchedaScreen({ route, navigation }) {
 
           <OffertePromoScheda offerte={offerte} piazzole={piazzole} />
 
+          <SpazioBarbecue cfg={dettaglio?.spazioBarbecue} />
+
+          <EventiStruttura eventi={eventi} />
+
           <PiazzoleGrid piazzole={piazzole} offerte={offerte} periodi={periodi} />
+
+          <AltreStrutture
+            strutture={simili}
+            regione={(struttura.localita || "").split(",").pop().trim()}
+            onApri={(s) => navigation.push("Scheda", { struttura: s })}
+          />
 
           <CulturaViciniLista
             culturaVicina={culturaVicina}
