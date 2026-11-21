@@ -269,6 +269,9 @@ export default {
   "vacanza.aggiungi": "Add",
   "vacanza.puntoScelto": "Point chosen on the map",
   "vacanza.usaQuestoPunto": "Use this point",
+  "vacanza.naviga": "Navigate",
+  "vacanza.navigaCon": "Navigate with:",
+  "vacanza.wazeUnaTappa": "Waze takes a single destination: it starts from the first stop, then continue stop by stop with the Navigate button.",
   "itinerario.avviaNavigazione": "Start navigation",
   "comune.fatto": "Done",
 

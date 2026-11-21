@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CHIAVE_MOTORE_MAPPA = "naturago_motore_mappa";
@@ -7,7 +8,7 @@ const CHIAVE_ASPETTO = "naturago_aspetto";
 const PreferenzeContext = createContext(undefined);
 
 export function PreferenzeProvider({ children }) {
-  const [motoreMappa, setMotoreMappaState] = useState("apple");
+  const [motoreMappa, setMotoreMappaState] = useState(Platform.OS === "android" ? "google" : "apple");
   // "chiaro" (predefinito), "scuro" (anteprima) o "sistema".
   const [aspetto, setAspettoState] = useState("chiaro");
   const [musicaGiochiAttiva, setMusicaGiochiAttivaState] = useState(true);

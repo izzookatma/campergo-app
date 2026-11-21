@@ -272,6 +272,9 @@ export default {
   "vacanza.aggiungi": "Aggiungi",
   "vacanza.puntoScelto": "Punto scelto sulla mappa",
   "vacanza.usaQuestoPunto": "Usa questo punto",
+  "vacanza.naviga": "Naviga",
+  "vacanza.navigaCon": "Naviga con:",
+  "vacanza.wazeUnaTappa": "Waze accetta una sola destinazione: parte dalla prima tappa, poi prosegui tappa per tappa con il tasto Naviga.",
   "itinerario.avviaNavigazione": "Avvia navigazione",
   "comune.fatto": "Fatto",
 

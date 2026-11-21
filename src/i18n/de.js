@@ -269,6 +269,9 @@ export default {
   "vacanza.aggiungi": "Hinzufügen",
   "vacanza.puntoScelto": "Auf der Karte gewählter Punkt",
   "vacanza.usaQuestoPunto": "Diesen Punkt nutzen",
+  "vacanza.naviga": "Navigieren",
+  "vacanza.navigaCon": "Navigieren mit:",
+  "vacanza.wazeUnaTappa": "Waze nimmt nur ein Ziel: Es startet bei der ersten Etappe, danach geht es Etappe für Etappe mit der Schaltfläche Navigieren weiter.",
   "itinerario.avviaNavigazione": "Navigation starten",
   "comune.fatto": "Fertig",
 

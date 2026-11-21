@@ -269,6 +269,9 @@ export default {
   "vacanza.aggiungi": "Toevoegen",
   "vacanza.puntoScelto": "Gekozen punt op de kaart",
   "vacanza.usaQuestoPunto": "Gebruik dit punt",
+  "vacanza.naviga": "Navigeren",
+  "vacanza.navigaCon": "Navigeren met:",
+  "vacanza.wazeUnaTappa": "Waze neemt maar één bestemming: het start bij de eerste stop, ga daarna stop voor stop verder met de knop Navigeren.",
   "itinerario.avviaNavigazione": "Navigatie starten",
   "comune.fatto": "Klaar",
 

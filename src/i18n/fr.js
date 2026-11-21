@@ -269,6 +269,9 @@ export default {
   "vacanza.aggiungi": "Ajouter",
   "vacanza.puntoScelto": "Point choisi sur la carte",
   "vacanza.usaQuestoPunto": "Utiliser ce point",
+  "vacanza.naviga": "Naviguer",
+  "vacanza.navigaCon": "Naviguer avec :",
+  "vacanza.wazeUnaTappa": "Waze n'accepte qu'une destination : il part de la première étape, puis continuez étape par étape avec le bouton Naviguer.",
   "itinerario.avviaNavigazione": "Démarrer la navigation",
   "comune.fatto": "Terminé",
 

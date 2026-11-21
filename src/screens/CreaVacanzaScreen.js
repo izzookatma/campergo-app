@@ -5,6 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { useT } from "../i18n/i18n";
 import { useAuth } from "../context/AuthContext";
+import { usePreferenze } from "../context/PreferenzeContext";
+import { urlNavigazione, urlViaggio } from "../lib/mappa";
+import { apriLink } from "../lib/linkEsterni";
 import SelettoreDate from "../components/SelettoreDate";
 import CercaLuogoModal from "../components/vacanza/CercaLuogoModal";
 import MappaVacanza from "../components/vacanza/MappaVacanza";
@@ -47,6 +50,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
   const styles = useEstili(c);
   const t = useT();
   const { session } = useAuth();
+  const { motoreMappa, setMotoreMappa } = usePreferenze();
 
   const pianoIniziale = route?.params?.pianoSalvato;
   const [vacanza, setVacanza] = useState(() => (pianoIniziale ? vacanzaDaPiano(pianoIniziale) : nuovaVacanza()));
@@ -344,6 +348,21 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     return null;
   })();
 
+  // Navigazione nell'app di mappe scelta (Google Maps, Apple Mappe o Waze).
+  const navigaA = (luogo) => {
+    const url = urlNavigazione(luogo, motoreMappa);
+    if (url) apriLink(url, t("comune.linkNonApribile"));
+  };
+  const avviaViaggio = () => {
+    const url = urlViaggio(punti.map((p) => p.luogo), motoreMappa);
+    if (url) apriLink(url, t("comune.linkNonApribile"));
+  };
+  const motoriMappa = [
+    { chiave: "google", etichetta: "Google Maps" },
+    ...(Platform.OS === "ios" ? [{ chiave: "apple", etichetta: "Apple Mappe" }] : []),
+    { chiave: "waze", etichetta: "Waze" },
+  ];
+
   const testoTratto = (tratto) => t("vacanza.tratta", { km: formattaKm(tratto.km), tempo: formattaTempo(tratto.minuti) });
   const connettore = (tratto) =>
     tratto ? (
@@ -374,6 +393,9 @@ export default function CreaVacanzaScreen({ navigation, route }) {
             </Text>
             <Text style={styles.postoSotto}>{etichetta}</Text>
           </View>
+          <Pressable onPress={() => navigaA(luogo)} hitSlop={8} accessibilityLabel={t("vacanza.naviga")}>
+            <Ionicons name="navigate-circle" size={22} color={c.primario} />
+          </Pressable>
           <Pressable onPress={() => setRicerca({ giorno: 0, ruolo })} hitSlop={8} accessibilityLabel={scegli}>
             <Ionicons name="create-outline" size={18} color={c.primario} />
           </Pressable>
@@ -436,6 +458,29 @@ export default function CreaVacanzaScreen({ navigation, route }) {
           {casellaEstremo({ ruolo: "partenza", luogo: vacanza.partenza, colore: c.successo, lettera: "P", titolo: t("vacanza.daDoveParti"), scegli: t("vacanza.scegliPartenza"), etichetta: t("vacanza.partenzaEtichetta") })}
 
           <MappaVacanza punti={punti} tracciato={rotta?.punti} />
+
+          {punti.length > 0 && (
+            <View style={styles.cardNavigazione}>
+              <Pressable style={styles.bottoneNavigazione} onPress={avviaViaggio} accessibilityRole="button">
+                <Ionicons name="navigate" size={18} color={c.sulPrimario} />
+                <Text style={styles.bottoneNavigazioneTesto}>{t("itinerario.avviaNavigazione")}</Text>
+              </Pressable>
+              <Text style={styles.navigaCon}>{t("vacanza.navigaCon")}</Text>
+              <View style={styles.rigaMotori}>
+                {motoriMappa.map((m) => (
+                  <Pressable
+                    key={m.chiave}
+                    onPress={() => setMotoreMappa(m.chiave)}
+                    style={[styles.chipMotore, motoreMappa === m.chiave && styles.chipMotoreAttivo]}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.chipMotoreTesto, motoreMappa === m.chiave && { color: c.sulPrimario }]}>{m.etichetta}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {motoreMappa === "waze" && <Text style={styles.navigaCon}>{t("vacanza.wazeUnaTappa")}</Text>}
+            </View>
+          )}
 
           {/* 2. RIEPILOGO dei giorni, con i km tra un giorno e l'altro */}
           <View style={styles.cardRiepilogo}>
@@ -556,6 +601,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
                               traslazione,
                             }}
                             onApriScheda={() => apriSchedaDelPosto(l)}
+                            onNaviga={() => navigaA(l)}
                             onTogli={() => togliLuogo(g.numero, i)}
                             onSposta={(verso) => sposta(g.numero, i, verso)}
                             onSpostaAlGiorno={(n) => modifica(spostaLuogo(vacanza, { giorno: g.numero, indice: i }, { giorno: n, indice: 1e9 }))}
@@ -603,6 +649,7 @@ export default function CreaVacanzaScreen({ navigation, route }) {
                           haScheda={haScheda(g.dormire)}
                           stato={null}
                           onApriScheda={() => apriSchedaDelPosto(g.dormire)}
+                          onNaviga={() => navigaA(g.dormire)}
                           onTogli={() => aggiornaGiorno(g.numero, () => ({ dormire: null }))}
                           onSposta={() => {}}
                           onSpostaAlGiorno={() => {}}
@@ -737,6 +784,14 @@ export default function CreaVacanzaScreen({ navigation, route }) {
 
 function useEstili(c) {
   return StyleSheet.create({
+    cardNavigazione: { gap: 8 },
+    bottoneNavigazione: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: c.primario, borderRadius: 14, paddingVertical: 14 },
+    bottoneNavigazioneTesto: { color: c.sulPrimario, fontSize: 16, fontWeight: "800" },
+    navigaCon: { fontSize: 12, color: c.testoSecondario },
+    rigaMotori: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    chipMotore: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: c.separatore, backgroundColor: c.sfondoGruppo },
+    chipMotoreAttivo: { backgroundColor: c.primario, borderColor: c.primario },
+    chipMotoreTesto: { fontSize: 12, fontWeight: "700", color: c.testoSecondario },
     schermo: { flex: 1, backgroundColor: c.sfondo },
     intestazione: {
       flexDirection: "row",

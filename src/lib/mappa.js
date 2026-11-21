@@ -32,3 +32,24 @@ export function urlPercorso(tappe, motoreMappa) {
   const destinazioni = [...intermedie, ultima].map(ll).join("+to:");
   return `https://maps.apple.com/?saddr=${ll(prima)}&daddr=${destinazioni}&dirflg=d`;
 }
+
+// Navigazione guidata verso UN punto (non solo "mostra sulla mappa"): Google e
+// Apple aprono il percorso dalla posizione attuale, Waze parte subito.
+export function urlNavigazione(punto, motoreMappa) {
+  if (punto?.lat == null || punto?.lng == null) return null;
+  const ll = `${punto.lat},${punto.lng}`;
+  if (motoreMappa === "waze") return `https://waze.com/ul?ll=${ll}&navigate=yes`;
+  if (motoreMappa === "google") return `https://www.google.com/maps/dir/?api=1&destination=${ll}&travelmode=driving`;
+  return `https://maps.apple.com/?daddr=${ll}&dirflg=d`;
+}
+
+// Navigazione dell'intero viaggio dalla partenza all'arrivo con le tappe in
+// mezzo. Waze accetta una sola destinazione: porta alla prima tappa dopo la
+// partenza (poi si prosegue tappa per tappa).
+export function urlViaggio(luoghi, motoreMappa) {
+  const punti = (luoghi || []).filter((p) => p?.lat != null && p?.lng != null);
+  if (punti.length === 0) return null;
+  if (motoreMappa === "waze") return urlNavigazione(punti[punti.length > 1 ? 1 : 0], "waze");
+  if (punti.length === 1) return urlNavigazione(punti[0], motoreMappa);
+  return urlPercorso(punti, motoreMappa);
+}

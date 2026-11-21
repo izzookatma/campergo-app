@@ -26,6 +26,7 @@ export default function RigaPostoVacanza({
   haScheda,
   stato: statoTrascinamento, // { eQuesta, bersaglioSopra, bersaglioSotto, traslazione }
   onApriScheda,
+  onNaviga, // () => apre la navigazione verso questo posto
   onTogli,
   onSposta, // (verso: -1|1)
   onSpostaAlGiorno, // (numeroGiorno)
@@ -109,6 +110,11 @@ export default function RigaPostoVacanza({
             {infoLuogo(luogo, t) ? <Text style={styles.info}>{infoLuogo(luogo, t)}</Text> : null}
             {haScheda ? <Text style={styles.apri}>{t("vacanza.apriScheda")}</Text> : null}
           </Pressable>
+          {onNaviga ? (
+            <Pressable onPress={onNaviga} hitSlop={6} style={styles.naviga} accessibilityRole="button" accessibilityLabel={t("vacanza.naviga")}>
+              <Ionicons name="navigate" size={16} color="#FFFFFF" />
+            </Pressable>
+          ) : null}
           <View style={styles.azioni}>
             {!dormire && (
               <>
@@ -178,6 +184,7 @@ function useEstili(c) {
     sotto: { fontSize: 12, color: c.testoSecondario, marginTop: 1 },
     info: { fontSize: 12, fontWeight: "700", color: c.primario, marginTop: 1 },
     apri: { fontSize: 12, fontWeight: "700", color: c.primario, marginTop: 3 },
+    naviga: { width: 34, height: 34, borderRadius: 17, backgroundColor: c.primario, alignItems: "center", justifyContent: "center" },
     azioni: { flexDirection: "row", alignItems: "center", gap: 10 },
     rigaPrenotazione: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 12 },
     chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: c.separatore, backgroundColor: c.sfondoGruppo },
