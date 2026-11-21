@@ -24,6 +24,8 @@ import GalleriaHero from "../components/scheda/GalleriaHero";
 import GalleriaFullscreen from "../components/scheda/GalleriaFullscreen";
 import CulturaViciniLista from "../components/scheda/CulturaViciniLista";
 import PiazzoleGrid from "../components/scheda/PiazzoleGrid";
+import OffertePromoScheda from "../components/scheda/OffertePromoScheda";
+import { caricaOffertePromo } from "../lib/offertePromo";
 import { useT } from "../i18n/i18n";
 
 const ALTEZZA_HERO = 340;
@@ -85,6 +87,7 @@ export default function SchedaScreen({ route, navigation }) {
   const [dettaglio, setDettaglio] = useState(null);
   const [culturaVicina, setCulturaVicina] = useState([]);
   const [piazzole, setPiazzole] = useState([]);
+  const [offerte, setOfferte] = useState([]);
 
   useEffect(() => {
     if (sipuoSalvare(struttura)) {
@@ -106,6 +109,15 @@ export default function SchedaScreen({ route, navigation }) {
     caricaPiazzoleStruttura(struttura.idOriginale)
       .then(setPiazzole)
       .catch((e) => console.error("Errore nel caricare piazzole e alloggi:", e));
+  }, [struttura.origine, struttura.idOriginale]);
+
+  // Offerte promo dell'host (stessa tabella del sito): errori ignorati,
+  // senza offerte la scheda resta com'era.
+  useEffect(() => {
+    if (struttura.origine !== "campeggi_pubblici") return;
+    caricaOffertePromo(struttura.idOriginale)
+      .then(setOfferte)
+      .catch((e) => console.error("Errore nel caricare le offerte promo:", e));
   }, [struttura.origine, struttura.idOriginale]);
 
   const caricaRecensioniStruttura = () => {
@@ -429,7 +441,9 @@ export default function SchedaScreen({ route, navigation }) {
             </View>
           )}
 
-          <PiazzoleGrid piazzole={piazzole} />
+          <OffertePromoScheda offerte={offerte} piazzole={piazzole} />
+
+          <PiazzoleGrid piazzole={piazzole} offerte={offerte} />
 
           <CulturaViciniLista
             culturaVicina={culturaVicina}
