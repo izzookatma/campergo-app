@@ -524,6 +524,10 @@ function MappaVera({ navigation, route }) {
           vera), e cambiare "provider" su una MapView già montata mandava in
           crash l'app — segnalato dal vivo. Resta solo Apple Maps, l'unica
           che funzionava davvero. */}
+      {/* I segnaposto hanno stopPropagation: su iPhone il tocco su un
+          segnaposto arrivava ANCHE alla mappa, il cui onPress azzera la
+          selezione un istante dopo averla fatta, e l'anteprima non
+          compariva mai. */}
       <MapView
         ref={mappaRef}
         style={styles.mappa}
@@ -554,6 +558,7 @@ function MappaVera({ navigation, route }) {
               <Marker
                 key={`cluster-${c.id}`}
                 coordinate={{ latitude: lat, longitude: lng }}
+                stopPropagation
                 onPress={() => vaiAlCluster(c)}
               >
                 <View style={[styles.cluster, misuraCluster(c.properties.point_count)]}>
@@ -573,6 +578,7 @@ function MappaVera({ navigation, route }) {
               <Marker
                 key={`c-${voce.id}`}
                 coordinate={{ latitude: voce.lat, longitude: voce.lng }}
+                stopPropagation
                 onPress={() => seleziona("cultura", voce)}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
@@ -588,6 +594,7 @@ function MappaVera({ navigation, route }) {
               <Marker
                 key={`i-${it.id}`}
                 coordinate={{ latitude: it.lat, longitude: it.lng }}
+                stopPropagation
                 onPress={() => seleziona("itinerario", it)}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
@@ -602,6 +609,7 @@ function MappaVera({ navigation, route }) {
             <Marker
               key={`s-${s.id}`}
               coordinate={{ latitude: s.lat, longitude: s.lng }}
+              stopPropagation
               onPress={() => seleziona("struttura", s)}
             >
               <View style={[styles.segnaposto, { backgroundColor: stile.colore }, selezionato?.dato === s && styles.segnapostoSelezionato]}>
