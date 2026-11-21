@@ -7,10 +7,14 @@ import { useTema, ombra } from "../theme/tema";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import Testo from "../components/ui/Testo";
 import Pulsante from "../components/ui/Pulsante";
+import { Molla, Comparsa } from "../components/ui/Molla";
+import VeloSfumato from "../components/ui/VeloSfumato";
+import { vibraLeggera } from "../lib/vibrazione";
 import { Gruppo, Riga } from "../components/ui/Gruppo";
 import SelettoreDate from "../components/SelettoreDate";
 import { etichettaData, numeroNotti } from "../lib/periodo";
-import { cercaStrutture } from "../lib/strutture";
+import CaroselloInEvidenza from "../components/CaroselloInEvidenza";
+import { cercaStrutture, caricaStrutture } from "../lib/strutture";
 import { REGIONI_ITALIANE } from "../lib/regioni";
 import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } from "../lib/ricercheRecenti";
 import { useT } from "../i18n/i18n";
@@ -89,6 +93,22 @@ export default function EsploraHubScreen({ navigation }) {
   const [testoRicerca, setTestoRicerca] = useState("");
   const [inputAFocus, setInputAFocus] = useState(false);
   const [ricercheRecenti, setRicercheRecenti] = useState([]);
+  const [inEvidenza, setInEvidenza] = useState([]);
+  const ora = new Date().getHours();
+  const saluto = t(ora < 12 ? "hub.saluto.mattina" : ora < 18 ? "hub.saluto.pomeriggio" : "hub.saluto.sera");
+
+  // Luoghi in evidenza: le strutture meglio piazzate che hanno una foto.
+  useEffect(() => {
+    let annullato = false;
+    caricaStrutture({ limite: 24 })
+      .then((dati) => {
+        if (!annullato) setInEvidenza(dati.filter((d) => d.fotoUrl && d.lat != null).slice(0, 8));
+      })
+      .catch((e) => console.error("Errore nel caricare i luoghi in evidenza:", e));
+    return () => {
+      annullato = true;
+    };
+  }, []);
   const [suggerimentiStrutture, setSuggerimentiStrutture] = useState([]);
 
   useEffect(() => {
@@ -142,6 +162,7 @@ export default function EsploraHubScreen({ navigation }) {
   const haDate = !!(dateSoggiorno.checkIn && dateSoggiorno.checkOut);
 
   const avviaRicerca = () => {
+    vibraLeggera();
     const pulito = testoRicerca.trim();
     if (pulito) salvaRicercaRecente(pulito).then(setRicercheRecenti);
     setInputAFocus(false);
@@ -156,6 +177,7 @@ export default function EsploraHubScreen({ navigation }) {
   };
 
   const vaiA = (tessera) => {
+    vibraLeggera();
     if (tessera.inArrivo) {
       Alert.alert(tessera.etichetta, "Questa sezione arriverà in una prossima versione dell'app.");
       return;
@@ -210,6 +232,11 @@ export default function EsploraHubScreen({ navigation }) {
         <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 2, textAlign: "center" }}>
           {t("hub.dovevai")}
         </Testo>
+        <Comparsa>
+          <Testo v="secondario" style={{ textAlign: "center", color: c.testoSecondario }}>
+            {saluto}
+          </Testo>
+        </Comparsa>
 
         <View style={styles.ricercaRapida}>
           <View style={styles.contenitoreRicerca}>
@@ -326,15 +353,29 @@ export default function EsploraHubScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={18} color={c.testoSecondario} />
         </Pressable>
 
+        {inEvidenza.length > 0 && (
+          <>
+            <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 10 }}>
+              {t("hub.inEvidenza")}
+            </Testo>
+            <Comparsa ritardo={80}>
+              <CaroselloInEvidenza strutture={inEvidenza} onApri={(struttura) => navigation.push("Scheda", { struttura })} />
+            </Comparsa>
+          </>
+        )}
+
         <Testo v="titolo" accessibilityRole="header" style={{ marginTop: 10, textAlign: "center" }}>
           {t("hub.cosaCerchi")}
         </Testo>
 
-        {SEZIONI.map((sezione) => (
-          <View key={sezione.chiave} style={styles.sezione}>
-            <Pressable
-              onPress={() => vaiASezione(sezione)}
-              style={({ pressed }) => pressed && styles.sezionePremuta}
+        {SEZIONI.map((sezione, i) => (
+          <Comparsa key={sezione.chiave} ritardo={120 + i * 140} style={styles.sezione}>
+            <Molla
+              scala={0.975}
+              onPress={() => {
+                vibraLeggera();
+                vaiASezione(sezione);
+              }}
               accessibilityRole="button"
               accessibilityLabel={sezione.titolo}
             >
@@ -346,28 +387,29 @@ export default function EsploraHubScreen({ navigation }) {
                   transition={200}
                   accessibilityIgnoresInvertColors
                 />
-                <View style={styles.sezioneVelo} />
+                <VeloSfumato forza={0.7} />
                 <View style={styles.sezioneTestiFoto}>
                   <Ionicons name={sezione.icona} size={22} color="#fff" />
                   <Text style={styles.sezioneTitolo}>{sezione.titolo}</Text>
                 </View>
               </View>
-            </Pressable>
+            </Molla>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRiga}>
               {sezione.tessere.map((tessera) => (
-                <Pressable
+                <Molla
                   key={tessera.etichetta}
-                  style={({ pressed }) => [styles.chip, pressed && { opacity: 0.7 }]}
+                  style={styles.chip}
+                  scala={0.93}
                   onPress={() => vaiA(tessera)}
                   accessibilityRole="button"
                   accessibilityLabel={tessera.etichetta}
                 >
                   <Ionicons name={tessera.icona} size={18} color={tessera.colore || sezione.colore} />
                   <Text style={styles.chipTesto}>{tessera.etichetta}</Text>
-                </Pressable>
+                </Molla>
               ))}
             </ScrollView>
-          </View>
+          </Comparsa>
         ))}
 
         <Pulsante titolo={t("hub.vediTutteLeStrutture")} variante="secondario" onPress={() => navigation.push("EsploraLista")} style={{ marginTop: 6 }} />

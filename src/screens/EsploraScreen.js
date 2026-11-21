@@ -8,8 +8,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  ActionSheetIOS,
-  Platform,
   Alert,
   ScrollView,
  
@@ -25,6 +23,8 @@ import { caricaRicercheRecenti, salvaRicercaRecente, cancellaRicercheRecenti } f
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import IconaFluttuante from "../components/ui/IconaFluttuante";
 import ScheletroCard from "../components/ScheletroCard";
+import { Molla, Comparsa } from "../components/ui/Molla";
+import { vibraLeggera } from "../lib/vibrazione";
 import Chip from "../components/ui/Chip";
 import { vibraConferma } from "../lib/vibrazione";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
@@ -376,37 +376,6 @@ export default function EsploraScreen({ navigation, route }) {
   // Nessuna scheda ha ancora un voto (verificato dal vivo: rating a zero su
   // tutto il database), quindi "per valutazione" non è proposto finché non ce
   // ne sono; "Vicino a te" compare solo con la posizione.
-  const scegliOrdine = () => {
-    const opzioni = [
-      { text: t("esplora.ordineConsigliati"), chiave: "consigliati" },
-      { text: t("esplora.ordinePrezzo"), chiave: "prezzo" },
-    ];
-    if (posizione) opzioni.push({ text: t("esplora.ordineDistanza"), chiave: "distanza" });
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          title: t("esplora.ordinaPerTitolo"),
-          options: [...opzioni.map((o) => o.text), t("comune.annulla")],
-          cancelButtonIndex: opzioni.length,
-        },
-        (i) => {
-          if (i < opzioni.length) setOrdine(opzioni[i].chiave);
-        }
-      );
-      return;
-    }
-    Alert.alert(t("esplora.ordinaPerTitolo"), undefined, [
-      ...opzioni.map((o) => ({ text: o.text, onPress: () => setOrdine(o.chiave) })),
-      { text: t("comune.annulla"), style: "cancel" },
-    ]);
-  };
-  const etichettaOrdine = {
-    consigliati: t("esplora.ordineConsigliati"),
-    prezzo: t("esplora.ordinePrezzo"),
-    valutazione: t("esplora.ordineValutazione"),
-    distanza: t("esplora.ordineDistanza"),
-  }[ordine];
-
   const apriMappa = () => {
     navigation.getParent()?.navigate("Mappa", {
       screen: "MappaVista",
@@ -676,17 +645,33 @@ export default function EsploraScreen({ navigation, route }) {
             )}
             <View style={styles.rigaContatore}>
               <Text style={styles.contatore}>{t("esplora.struttureConteggio", { testo: testoConteggio })}</Text>
-              <Pressable
-                onPress={scegliOrdine}
-                hitSlop={10}
-                style={styles.pulsanteOrdina}
-                accessibilityRole="button"
-                accessibilityLabel={t("esplora.ordinaLabel", { etichetta: etichettaOrdine })}
-              >
-                <Ionicons name="swap-vertical" size={15} color={c.primario} />
-                <Text style={styles.pulsanteOrdinaTesto}>{etichettaOrdine}</Text>
-              </Pressable>
             </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRiepilogo} style={{ marginBottom: 10 }}>
+              {[
+                { chiave: "consigliati", icona: "sparkles", testo: t("esplora.ordineConsigliati") },
+                { chiave: "prezzo", icona: "pricetag", testo: t("esplora.ordinePrezzo") },
+                ...(posizione ? [{ chiave: "distanza", icona: "navigate", testo: t("esplora.ordineDistanza") }] : []),
+              ].map((o) => {
+                const attivo = ordine === o.chiave;
+                return (
+                  <Molla
+                    key={o.chiave}
+                    scala={0.94}
+                    style={[styles.chipOrdine, attivo && styles.chipOrdineAttivo]}
+                    onPress={() => {
+                      vibraLeggera();
+                      setOrdine(o.chiave);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: attivo }}
+                    accessibilityLabel={t("esplora.ordinaLabel", { etichetta: o.testo })}
+                  >
+                    <Ionicons name={o.icona} size={14} color={attivo ? c.sulPrimario : c.primario} />
+                    <Text style={[styles.chipOrdineTesto, attivo && { color: c.sulPrimario }]}>{o.testo}</Text>
+                  </Molla>
+                );
+              })}
+            </ScrollView>
             </>
           }
           ListEmptyComponent={
@@ -701,13 +686,15 @@ export default function EsploraScreen({ navigation, route }) {
           ListFooterComponent={
             caricandoAltre ? <ActivityIndicator style={{ marginVertical: 14 }} color={c.primario} /> : null
           }
-          renderItem={({ item }) => (
-            <CardStruttura
-              item={item}
-              preferito={preferitiIds.has(item.idOriginale)}
-              onPress={() => navigation.navigate("Scheda", { struttura: item })}
-              onToggleFavorito={() => onToggleFavorito(item)}
-            />
+          renderItem={({ item, index }) => (
+            <Comparsa ritardo={Math.min(index, 5) * 70}>
+              <CardStruttura
+                item={item}
+                preferito={preferitiIds.has(item.idOriginale)}
+                onPress={() => navigation.navigate("Scheda", { struttura: item })}
+                onToggleFavorito={() => onToggleFavorito(item)}
+              />
+            </Comparsa>
           )}
         />
       )}
@@ -724,7 +711,10 @@ export default function EsploraScreen({ navigation, route }) {
         }}
       />
       {!caricamento && !errore && (
-        <Pressable style={styles.bottoneMappa} onPress={apriMappa} accessibilityRole="button" accessibilityLabel={t("esplora.mostraSuMappaLabel")}>
+        <Pressable style={styles.bottoneMappa} onPress={() => {
+            vibraLeggera();
+            apriMappa();
+          }} accessibilityRole="button" accessibilityLabel={t("esplora.mostraSuMappaLabel")}>
           <Ionicons name="map" size={18} color={c.sulPrimario} />
           <Text style={styles.bottoneMappaTesto}>{t("tab.mappa")}</Text>
         </Pressable>
@@ -892,6 +882,9 @@ function useEstili(c) {
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
+  chipOrdine: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: 999, backgroundColor: c.primarioChiaro },
+  chipOrdineAttivo: { backgroundColor: c.primario },
+  chipOrdineTesto: { fontSize: 14, fontWeight: "700", color: c.primario },
   bottoneMappaTesto: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
   bannerHost: {
     flexDirection: "row",

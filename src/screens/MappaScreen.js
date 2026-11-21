@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MAPPA_VERA_NON_DISPONIBILE } from "../lib/mappaDisponibile";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
+import { vibraLeggera } from "../lib/vibrazione";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { caricaTutteLePosizioni, cercaStrutture, STILE_PER_TIPO, STILE_DEFAULT } from "../lib/strutture";
@@ -143,6 +144,7 @@ function MappaVera({ navigation, route }) {
   // Segnaposto toccato: { tipo, dato } -> scheda anteprima in basso.
   const [selezionato, setSelezionato] = useState(null);
   const seleziona = (tipo, dato) => {
+    vibraLeggera();
     setSelezionato({ tipo, dato });
     mappaRef.current?.animateToRegion(
       {
@@ -195,6 +197,27 @@ function MappaVera({ navigation, route }) {
     const tempo = ore > 0 ? `${ore} h ${String(minuti % 60).padStart(2, "0")} min` : `${minuti} min`;
     return { km: Math.round(km), tempo };
   }, [routePercorso]);
+
+  // Il tracciato si "disegna" da solo (in circa un secondo) invece di
+  // comparire di colpo; a fine animazione si usa il percorso completo.
+  const [passiTracciato, setPassiTracciato] = useState(0);
+  useEffect(() => {
+    if (!puntiPercorsoCampionati) return undefined;
+    const n = puntiPercorsoCampionati.length;
+    let i = 0;
+    const id = setInterval(() => {
+      i = Math.min(n, i + Math.max(2, Math.ceil(n / 28)));
+      setPassiTracciato(i);
+      if (i >= n) clearInterval(id);
+    }, 35);
+    return () => clearInterval(id);
+  }, [puntiPercorsoCampionati]);
+  const tracciatoVisibile = useMemo(() => {
+    if (!routePercorso || !puntiPercorsoCampionati) return null;
+    const n = puntiPercorsoCampionati.length;
+    const pezzo = passiTracciato >= n ? routePercorso : puntiPercorsoCampionati.slice(0, passiTracciato);
+    return pezzo.length >= 2 ? pezzo.map((p) => ({ latitude: p.lat, longitude: p.lng })) : null;
+  }, [routePercorso, puntiPercorsoCampionati, passiTracciato]);
 
   const RAGGIO_STRUTTURE_TOCCATE_KM = 6;
   // Strutture (tra quelle già mostrate/filtrate sulla mappa) che il
@@ -509,12 +532,11 @@ function MappaVera({ navigation, route }) {
         showsUserLocation
         onPress={() => setSelezionato(null)}
       >
-        {routePercorso && (
-          <Polyline
-            coordinates={routePercorso.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
-            strokeColor="#C1663A"
-            strokeWidth={4}
-          />
+        {tracciatoVisibile && (
+          <>
+            <Polyline coordinates={tracciatoVisibile} strokeColor="#FFFFFF" strokeWidth={9} lineCap="round" lineJoin="round" />
+            <Polyline coordinates={tracciatoVisibile} strokeColor="#C1663A" strokeWidth={5} lineCap="round" lineJoin="round" />
+          </>
         )}
         {routeTappe &&
           routeTappe.map((tp, i) => (

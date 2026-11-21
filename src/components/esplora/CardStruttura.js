@@ -5,6 +5,9 @@ import { useTema, ombra } from "../../theme/tema";
 import ImmagineConRiserva from "../ImmagineConRiserva";
 import BollinoPromo from "../BollinoPromo";
 import CuoreAnimato from "../ui/CuoreAnimato";
+import VeloSfumato from "../ui/VeloSfumato";
+import { BlurView } from "expo-blur";
+import { vibraLeggera } from "../../lib/vibrazione";
 import { sipuoSalvare } from "../../lib/preferiti";
 import { useT } from "../../i18n/i18n";
 
@@ -60,19 +63,22 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
     >
       <View style={styles.cardFoto}>
         <ImmagineConRiserva uri={item.fotoUrl} larghezza={640} style={styles.cardImmagine} iconaColore={c.primario} iconaDimensione={34} />
-        <View style={styles.cardBadgeTipo}>
+        <BlurView intensity={40} tint="light" style={styles.cardBadgeTipo}>
           <Text style={styles.cardBadgeTipoTesto}>{item.tipo}</Text>
-        </View>
-        <View style={styles.cardVelo} pointerEvents="none" />
+        </BlurView>
+        <VeloSfumato altezza={110} forza={0.6} />
         {item.prezzo ? (
-          <View style={styles.cardPrezzoFoto}>
+          <BlurView intensity={35} tint="dark" style={styles.cardPrezzoFoto}>
             <Text style={styles.cardPrezzoFotoTesto}>da {item.prezzo}€</Text>
-          </View>
+          </BlurView>
         ) : null}
         {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
         {sipuoSalvare(item) && (
           <Pressable
-            onPress={onToggleFavorito}
+            onPress={() => {
+              vibraLeggera();
+              onToggleFavorito?.();
+            }}
             hitSlop={6}
             style={styles.cardCuore}
             accessibilityRole="button"
@@ -135,15 +141,16 @@ function useEstili(c) {
       position: "absolute",
       top: 12,
       left: 12,
-      backgroundColor: "rgba(255,255,255,0.94)",
+      backgroundColor: "rgba(255,255,255,0.55)",
       borderRadius: 14,
+      overflow: "hidden",
       paddingHorizontal: 10,
       paddingVertical: 5,
     },
     cardBadgeTipoTesto: { fontSize: 12, fontWeight: "800", color: c.primario },
     cardBollinoPromo: { position: "absolute", bottom: 12, left: 12 },
     cardVelo: { position: "absolute", left: 0, right: 0, bottom: 0, height: 70, backgroundColor: "rgba(8,24,36,0.22)" },
-    cardPrezzoFoto: { position: "absolute", bottom: 12, right: 12, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 14, paddingHorizontal: 11, paddingVertical: 5 },
+    cardPrezzoFoto: { position: "absolute", bottom: 12, right: 12, backgroundColor: "rgba(0,0,0,0.35)", overflow: "hidden", borderRadius: 14, paddingHorizontal: 11, paddingVertical: 5 },
     cardPrezzoFotoTesto: { color: "#fff", fontSize: 14, fontWeight: "800" },
     cardCuore: {
       position: "absolute",

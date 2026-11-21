@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ImmagineConRiserva from "../ImmagineConRiserva";
+import VeloSfumato from "../ui/VeloSfumato";
 
 // Galleria a scorrimento orizzontale in testa alla Scheda. Un tocco su una
 // foto la apre a tutto schermo (onApri). Sopra la foto: velo scuro in basso
@@ -30,7 +31,7 @@ export default function GalleriaHero({ foto, altezza = 340, onApri }) {
           {foto.map(corpo)}
         </ScrollView>
       )}
-      <View style={styles.velo} pointerEvents="none" />
+      <VeloSfumato altezza={150} forza={0.6} />
       {foto.length > 1 && (
         <>
           <View style={styles.heroPuntini} pointerEvents="none">
