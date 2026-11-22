@@ -625,6 +625,10 @@ export default function EsploraScreen({ navigation, route }) {
         <FlatList
           data={risultati}
           keyExtractor={(item) => item.id}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          removeClippedSubviews
           contentContainerStyle={{ padding: 20, paddingBottom: 100, gap: 16 }}
           refreshControl={<RefreshControl refreshing={aggiornamento} onRefresh={onRefresh} />}
           ListHeaderComponent={

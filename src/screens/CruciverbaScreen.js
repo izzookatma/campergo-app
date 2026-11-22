@@ -1,3 +1,4 @@
+import { useT } from "../i18n/i18n";
 import { useEffect, useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +23,7 @@ const LIVELLI = [
 ];
 
 export default function CruciverbaScreen() {
+  const t = useT();
   const { musicaGiochiAttiva, setMusicaGiochiAttiva } = usePreferenze();
   const [fase, setFase] = useState("caricamento"); // caricamento | scelta | gioco
   const [livelloScelto, setLivelloScelto] = useState("facile");
@@ -79,7 +81,7 @@ export default function CruciverbaScreen() {
   const nuovoSchema = (livello) => {
     const generato = generaSchema(BANCA_CRUCIVERBA, livello);
     if (!generato) {
-      Alert.alert("Non ci sono riuscita", "Riprova: a volte capita di non trovare abbastanza incroci al primo colpo.");
+      Alert.alert(t("gioco.schemaFallitoTitolo"), t("gioco.schemaFallitoMsg"));
       return;
     }
     setSchema({ livello, dimensione: generato.dimensione, parole: generato.parole });
@@ -121,7 +123,7 @@ export default function CruciverbaScreen() {
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Cruciverba</Text>
+          <Text style={styles.titolo}>{t("gioco.titoloCruciverba")}</Text>
           <Pressable style={styles.bottoneMusica} onPress={() => setMusicaGiochiAttiva(!musicaGiochiAttiva)} hitSlop={8}>
             <Ionicons
               name={musicaGiochiAttiva ? "musical-notes" : "musical-notes-outline"}
@@ -136,7 +138,7 @@ export default function CruciverbaScreen() {
 
       {fase === "scelta" && (
         <View style={styles.scelta}>
-          <Text style={styles.sceltaDomanda}>Che livello vuoi?</Text>
+          <Text style={styles.sceltaDomanda}>{t("gioco.chiediLivello")}</Text>
           <View style={styles.selettoreLivello}>
             {LIVELLI.map((l) => (
               <Pressable
@@ -145,16 +147,16 @@ export default function CruciverbaScreen() {
                 onPress={() => setLivelloScelto(l.chiave)}
               >
                 <Text style={[styles.pillLivelloTesto, livelloScelto === l.chiave && styles.pillLivelloTestoAttivo]}>
-                  {l.etichetta}
+                  {t("gioco.livello." + l.chiave)}
                 </Text>
               </Pressable>
             ))}
           </View>
           <Pressable style={styles.bottoneNuovo} onPress={() => nuovoSchema(livelloScelto)}>
             <Ionicons name="shuffle" size={18} color={colori.bianco} />
-            <Text style={styles.bottoneNuovoTesto}>Genera uno schema nuovo</Text>
+            <Text style={styles.bottoneNuovoTesto}>{t("gioco.schemaNuovo")}</Text>
           </Pressable>
-          {risoltiTotale > 0 && <Text style={styles.contatoreRisolti}>Schemi completati finora: {risoltiTotale}</Text>}
+          {risoltiTotale > 0 && <Text style={styles.contatoreRisolti}>{t("gioco.schemiCompletati", { n: risoltiTotale })}</Text>}
         </View>
       )}
 
@@ -163,12 +165,12 @@ export default function CruciverbaScreen() {
           <View style={styles.rigaAzioni}>
             <Pressable style={styles.bottoneIndietro} onPress={abbandona}>
               <Ionicons name="chevron-back" size={16} color={colori.blu} />
-              <Text style={styles.bottoneIndietroTesto}>Abbandona</Text>
+              <Text style={styles.bottoneIndietroTesto}>{t("gioco.abbandona")}</Text>
             </Pressable>
             <Text style={styles.livelloEtichetta}>{LIVELLI.find((l) => l.chiave === schema.livello)?.etichetta}</Text>
             {!tutteCorrette && (
               <Pressable onPress={mostraSoluzione}>
-                <Text style={styles.bottoneSoluzioneTesto}>Soluzione</Text>
+                <Text style={styles.bottoneSoluzioneTesto}>{t("gioco.soluzione")}</Text>
               </Pressable>
             )}
           </View>
@@ -176,7 +178,7 @@ export default function CruciverbaScreen() {
           {tutteCorrette && (
             <View style={styles.bannerCompletato}>
               <Text style={styles.bannerCompletatoTesto}>
-                {rivelato ? "Ecco la soluzione" : "Hai completato lo schema! 🎉"}
+                {rivelato ? t("gioco.eccoSoluzione") : t("gioco.schemaCompletato")}
               </Text>
             </View>
           )}
@@ -212,7 +214,7 @@ export default function CruciverbaScreen() {
           </View>
 
           <View style={styles.indizi}>
-            <Text style={styles.indiziTitolo}>Orizzontali</Text>
+            <Text style={styles.indiziTitolo}>{t("gioco.orizzontali")}</Text>
             {schema.parole
               .filter((p) => p.direzione === "orizz")
               .map((p) => (
@@ -220,7 +222,7 @@ export default function CruciverbaScreen() {
                   {p.numero}. {p.indizio}
                 </Text>
               ))}
-            <Text style={[styles.indiziTitolo, { marginTop: 10 }]}>Verticali</Text>
+            <Text style={[styles.indiziTitolo, { marginTop: 10 }]}>{t("gioco.verticali")}</Text>
             {schema.parole
               .filter((p) => p.direzione === "vert")
               .map((p) => (
@@ -233,7 +235,7 @@ export default function CruciverbaScreen() {
           {tutteCorrette && (
             <Pressable style={styles.bottoneProssimo} onPress={() => nuovoSchema(schema.livello)}>
               <Ionicons name="arrow-forward" size={16} color={colori.bianco} />
-              <Text style={styles.bottoneProssimoTesto}>Schema successivo</Text>
+              <Text style={styles.bottoneProssimoTesto}>{t("gioco.schemaSuccessivo")}</Text>
             </Pressable>
           )}
         </ScrollView>

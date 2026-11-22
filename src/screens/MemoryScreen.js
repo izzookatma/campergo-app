@@ -1,3 +1,4 @@
+import { useT } from "../i18n/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Animated, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,6 +33,7 @@ const LARGHEZZA_CARTA = 84;
 const ALTEZZA_CARTA = 105;
 
 export default function MemoryScreen() {
+  const t = useT();
   const { musicaGiochiAttiva, setMusicaGiochiAttiva } = usePreferenze();
   const [fase, setFase] = useState("scelta");
   const [modalita, setModalita] = useState(null); // "computer" | "due"
@@ -148,29 +150,29 @@ export default function MemoryScreen() {
   const cambiaModalita = () => setFase("scelta");
 
   const etichettaGiocatore = (n) => {
-    if (modalita === "computer") return n === 1 ? "Tu" : "Computer";
-    return `Giocatore ${n}`;
+    if (modalita === "computer") return n === 1 ? t("gioco.tu") : t("gioco.computer");
+    return t("gioco.giocatoreN", { n });
   };
 
   const testoEsito = () => {
     if (punteggi[1] === punteggi[2]) return "Pareggio!";
     const chiVince = punteggi[1] > punteggi[2] ? 1 : 2;
-    if (modalita === "computer") return chiVince === 1 ? "Hai vinto! 🎉" : "Ha vinto il computer";
-    return `Ha vinto ${etichettaGiocatore(chiVince)}! 🎉`;
+    if (modalita === "computer") return chiVince === 1 ? t("gioco.haiVinto") : t("gioco.vinceComputer");
+    return t("gioco.haVinto", { nome: etichettaGiocatore(chiVince) });
   };
 
   const testoTurno = tutteAbbinate
     ? testoEsito()
     : modalita === "computer" && turno === 2
-      ? "Il computer sta pensando…"
-      : `Tocca a ${etichettaGiocatore(turno)}`;
+      ? t("gioco.computerPensa")
+      : t("gioco.toccaA", { nome: etichettaGiocatore(turno) });
 
   return (
     <SafeAreaView style={styles.schermo} edges={["top"]}>
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Gioco delle coppie</Text>
+          <Text style={styles.titolo}>{t("gioco.titoloCoppie")}</Text>
           <Pressable
             style={styles.bottoneMusica}
             onPress={() => setMusicaGiochiAttiva(!musicaGiochiAttiva)}
@@ -187,7 +189,7 @@ export default function MemoryScreen() {
 
       {fase === "scelta" ? (
         <View style={styles.scelta}>
-          <Text style={styles.sceltaDomanda}>Quante coppie?</Text>
+          <Text style={styles.sceltaDomanda}>{t("gioco.quanteCoppie")}</Text>
           <View style={styles.selettoreLivello}>
             {["facile", "difficile"].map((opzione) => (
               <Pressable
@@ -196,26 +198,26 @@ export default function MemoryScreen() {
                 onPress={() => setLivello(opzione)}
               >
                 <Text style={[styles.pillLivelloTesto, livello === opzione && styles.pillLivelloTestoAttivo]}>
-                  {opzione === "facile" ? "Facile · 6 coppie" : "Difficile · 8 coppie"}
+                  {opzione === "facile" ? t("gioco.facileCoppie") : t("gioco.difficileCoppie")}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={styles.sceltaDomanda}>Con chi giochi?</Text>
+          <Text style={styles.sceltaDomanda}>{t("gioco.conChi")}</Text>
           <Pressable
             style={[styles.bottoneModalita, { backgroundColor: temaGiochi.viola }]}
             onPress={() => nuovaPartita("computer", livello)}
           >
             <Ionicons name="hardware-chip-outline" size={22} color={colori.bianco} />
-            <Text style={styles.bottoneModalitaTesto}>Contro il computer</Text>
+            <Text style={styles.bottoneModalitaTesto}>{t("gioco.controComputer")}</Text>
           </Pressable>
           <Pressable
             style={[styles.bottoneModalita, { backgroundColor: temaGiochi.rosa }]}
             onPress={() => nuovaPartita("due", livello)}
           >
             <Ionicons name="people-outline" size={22} color={colori.bianco} />
-            <Text style={styles.bottoneModalitaTesto}>In due, a turni sul telefono</Text>
+            <Text style={styles.bottoneModalitaTesto}>{t("gioco.inDueTelefono")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -263,10 +265,10 @@ export default function MemoryScreen() {
             <View style={styles.rigaBottoni}>
               <Pressable style={[styles.bottoneEsito, { backgroundColor: temaGiochi.viola }]} onPress={rivincita}>
                 <Ionicons name="refresh" size={16} color={colori.bianco} />
-                <Text style={styles.bottoneEsitoTesto}>Rivincita</Text>
+                <Text style={styles.bottoneEsitoTesto}>{t("gioco.rivincita")}</Text>
               </Pressable>
               <Pressable style={[styles.bottoneEsito, styles.bottoneEsitoSecondario]} onPress={cambiaModalita}>
-                <Text style={[styles.bottoneEsitoTesto, { color: colori.testo }]}>Cambia modalità</Text>
+                <Text style={[styles.bottoneEsitoTesto, { color: colori.testo }]}>{t("gioco.cambiaModalita")}</Text>
               </Pressable>
             </View>
           )}

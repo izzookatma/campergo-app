@@ -1,3 +1,4 @@
+import { useT } from "../i18n/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,9 +23,9 @@ const LIVELLI = {
 
 const TABELLONE = generaTabellone();
 
-function nomeGiocatore(modalita, turno) {
-  if (turno === 0) return "Tu";
-  return modalita === "computer" ? "Computer" : "Giocatore 2";
+function nomeGiocatore(modalita, turno, t) {
+  if (turno === 0) return t("gioco.tu");
+  return modalita === "computer" ? t("gioco.computer") : t("gioco.giocatore2");
 }
 
 function statoIniziale(modalita, livello) {
@@ -40,6 +41,7 @@ function statoIniziale(modalita, livello) {
 }
 
 export default function OcaScreen() {
+  const t = useT();
   const { musicaGiochiAttiva, setMusicaGiochiAttiva } = usePreferenze();
   const [fase, setFase] = useState("caricamento"); // caricamento | scelta | gioco
   const [modalitaScelta, setModalitaScelta] = useState("computer");
@@ -180,7 +182,7 @@ export default function OcaScreen() {
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Sentiero del campeggio</Text>
+          <Text style={styles.titolo}>{t("gioco.titoloOca")}</Text>
           <Pressable style={styles.bottoneMusica} onPress={() => setMusicaGiochiAttiva(!musicaGiochiAttiva)} hitSlop={8}>
             <Ionicons
               name={musicaGiochiAttiva ? "musical-notes" : "musical-notes-outline"}
@@ -195,11 +197,11 @@ export default function OcaScreen() {
 
       {fase === "scelta" && (
         <View style={styles.scelta}>
-          <Text style={styles.sceltaDomanda}>Come vuoi giocare?</Text>
+          <Text style={styles.sceltaDomanda}>{t("gioco.comeGiocare")}</Text>
           <View style={styles.selettoreLivello}>
             {[
-              { chiave: "computer", etichetta: "Contro il computer" },
-              { chiave: "duo", etichetta: "In due, a turni" },
+              { chiave: "computer", etichetta: t("gioco.controComputer") },
+              { chiave: "duo", etichetta: t("gioco.inDueATurni") },
             ].map((m) => (
               <Pressable
                 key={m.chiave}
@@ -215,7 +217,7 @@ export default function OcaScreen() {
 
           {modalitaScelta === "computer" && (
             <>
-              <Text style={styles.sceltaDomanda}>Che livello vuoi?</Text>
+              <Text style={styles.sceltaDomanda}>{t("gioco.chiediLivello")}</Text>
               <View style={styles.selettoreLivello}>
                 {Object.entries(LIVELLI).map(([chiave, l]) => (
                   <Pressable
@@ -224,7 +226,7 @@ export default function OcaScreen() {
                     onPress={() => setLivelloScelto(chiave)}
                   >
                     <Text style={[styles.pillLivelloTesto, livelloScelto === chiave && styles.pillLivelloTestoAttivo]}>
-                      {l.etichetta}
+                      {t("gioco.livello." + chiave)}
                     </Text>
                   </Pressable>
                 ))}
@@ -234,9 +236,9 @@ export default function OcaScreen() {
 
           <Pressable style={styles.bottoneNuovo} onPress={() => nuovaPartita(modalitaScelta, livelloScelto)}>
             <Ionicons name="shuffle" size={18} color={colori.bianco} />
-            <Text style={styles.bottoneNuovoTesto}>Inizia la partita</Text>
+            <Text style={styles.bottoneNuovoTesto}>{t("gioco.iniziaPartita")}</Text>
           </Pressable>
-          {vinteTotale > 0 && <Text style={styles.contatore}>Partite vinte finora: {vinteTotale}</Text>}
+          {vinteTotale > 0 && <Text style={styles.contatore}>{t("gioco.partiteVinte", { n: vinteTotale })}</Text>}
         </View>
       )}
 
@@ -245,10 +247,10 @@ export default function OcaScreen() {
           <View style={styles.rigaAzioni}>
             <Pressable style={styles.bottoneIndietro} onPress={abbandona}>
               <Ionicons name="chevron-back" size={16} color={colori.blu} />
-              <Text style={styles.bottoneIndietroTesto}>Abbandona</Text>
+              <Text style={styles.bottoneIndietroTesto}>{t("gioco.abbandona")}</Text>
             </Pressable>
             <Text style={styles.livelloEtichetta}>
-              {partita.modalita === "computer" ? LIVELLI[partita.livello].etichetta : "In due"}
+              {partita.modalita === "computer" ? t("gioco.livello." + partita.livello) : t("gioco.inDue")}
             </Text>
           </View>
 
@@ -285,12 +287,12 @@ export default function OcaScreen() {
           {finito ? (
             <View style={[styles.bannerEsito, { backgroundColor: temaGiochi.azzurroChiaro }]}>
               <Text style={[styles.bannerEsitoTesto, { color: temaGiochi.azzurro }]}>
-                {nomeGiocatore(partita.modalita, partita.vincitore)} ha vinto! 🎉
+                {t("gioco.haVintoOca", { nome: nomeGiocatore(partita.modalita, partita.vincitore, t) })}
               </Text>
             </View>
           ) : (
             <Text style={styles.turnoTesto}>
-              Turno di: <Text style={{ fontWeight: "800" }}>{nomeGiocatore(partita.modalita, partita.turno)}</Text>
+              {t("gioco.turnoDi")} <Text style={{ fontWeight: "800" }}>{nomeGiocatore(partita.modalita, partita.turno, t)}</Text>
             </Text>
           )}
 
@@ -309,7 +311,7 @@ export default function OcaScreen() {
                   </Pressable>
                 ))}
               </View>
-              {turnoComputer && <Text style={styles.attesaComputer}>Il computer sta pensando…</Text>}
+              {turnoComputer && <Text style={styles.attesaComputer}>{t("gioco.computerPensa")}</Text>}
             </View>
           )}
 
@@ -322,7 +324,7 @@ export default function OcaScreen() {
                 disabled={rotolando || turnoComputer}
               >
                 <Ionicons name="dice-outline" size={18} color={colori.bianco} />
-                <Text style={styles.bottoneDadoTesto}>{turnoComputer ? "Attendi…" : "Lancia il dado"}</Text>
+                <Text style={styles.bottoneDadoTesto}>{turnoComputer ? t("gioco.attendi") : t("gioco.lanciaDado")}</Text>
               </Pressable>
             </View>
           )}
@@ -330,7 +332,7 @@ export default function OcaScreen() {
           {finito && (
             <Pressable style={styles.bottoneProssimo} onPress={() => nuovaPartita(partita.modalita, partita.livello)}>
               <Ionicons name="arrow-forward" size={16} color={colori.bianco} />
-              <Text style={styles.bottoneProssimoTesto}>Nuova partita</Text>
+              <Text style={styles.bottoneProssimoTesto}>{t("gioco.nuovaPartita")}</Text>
             </Pressable>
           )}
         </ScrollView>

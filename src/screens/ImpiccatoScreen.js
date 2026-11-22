@@ -1,3 +1,4 @@
+import { useT } from "../i18n/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,6 +34,7 @@ function scegliParola(livello, giaUsate) {
 }
 
 export default function ImpiccatoScreen() {
+  const t = useT();
   const { musicaGiochiAttiva, setMusicaGiochiAttiva } = usePreferenze();
   const [fase, setFase] = useState("caricamento"); // caricamento | scelta | gioco
   const [livelloScelto, setLivelloScelto] = useState("facile");
@@ -108,7 +110,7 @@ export default function ImpiccatoScreen() {
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Impiccato</Text>
+          <Text style={styles.titolo}>{t("gioco.titoloImpiccato")}</Text>
           <Pressable style={styles.bottoneMusica} onPress={() => setMusicaGiochiAttiva(!musicaGiochiAttiva)} hitSlop={8}>
             <Ionicons
               name={musicaGiochiAttiva ? "musical-notes" : "musical-notes-outline"}
@@ -123,7 +125,7 @@ export default function ImpiccatoScreen() {
 
       {fase === "scelta" && (
         <View style={styles.scelta}>
-          <Text style={styles.sceltaDomanda}>Che livello vuoi?</Text>
+          <Text style={styles.sceltaDomanda}>{t("gioco.chiediLivello")}</Text>
           <View style={styles.selettoreLivello}>
             {Object.entries(LIVELLI).map(([chiave, l]) => (
               <Pressable
@@ -132,16 +134,16 @@ export default function ImpiccatoScreen() {
                 onPress={() => setLivelloScelto(chiave)}
               >
                 <Text style={[styles.pillLivelloTesto, livelloScelto === chiave && styles.pillLivelloTestoAttivo]}>
-                  {l.etichetta}
+                  {t("gioco.livello." + chiave)}
                 </Text>
               </Pressable>
             ))}
           </View>
           <Pressable style={styles.bottoneNuovo} onPress={() => nuovaPartita(livelloScelto)}>
             <Ionicons name="shuffle" size={18} color={colori.bianco} />
-            <Text style={styles.bottoneNuovoTesto}>Nuova parola</Text>
+            <Text style={styles.bottoneNuovoTesto}>{t("gioco.nuovaParola")}</Text>
           </Pressable>
-          {vinteTotale > 0 && <Text style={styles.contatore}>Parole indovinate finora: {vinteTotale}</Text>}
+          {vinteTotale > 0 && <Text style={styles.contatore}>{t("gioco.paroleIndovinate", { n: vinteTotale })}</Text>}
         </View>
       )}
 
@@ -150,7 +152,7 @@ export default function ImpiccatoScreen() {
           <View style={styles.rigaAzioni}>
             <Pressable style={styles.bottoneIndietro} onPress={abbandona}>
               <Ionicons name="chevron-back" size={16} color={colori.blu} />
-              <Text style={styles.bottoneIndietroTesto}>Abbandona</Text>
+              <Text style={styles.bottoneIndietroTesto}>{t("gioco.abbandona")}</Text>
             </Pressable>
             <Text style={styles.livelloEtichetta}>{LIVELLI[partita.livello].etichetta}</Text>
             <Text style={styles.tentativiTesto}>
@@ -163,7 +165,7 @@ export default function ImpiccatoScreen() {
           {finito && (
             <View style={[styles.bannerEsito, { backgroundColor: vinto ? temaGiochi.verdeChiaro : temaGiochi.rosaChiaro }]}>
               <Text style={[styles.bannerEsitoTesto, { color: vinto ? temaGiochi.verde : temaGiochi.rosa }]}>
-                {vinto ? "Hai vinto! 🎉" : `Hai perso questa volta! Era "${partita.parola}"`}
+                {vinto ? t("gioco.haiVinto") : t("gioco.haiPerso", { parola: partita.parola })}
               </Text>
             </View>
           )}
@@ -206,7 +208,7 @@ export default function ImpiccatoScreen() {
           {finito && (
             <Pressable style={styles.bottoneProssimo} onPress={() => nuovaPartita(partita.livello)}>
               <Ionicons name="arrow-forward" size={16} color={colori.bianco} />
-              <Text style={styles.bottoneProssimoTesto}>Prossima parola</Text>
+              <Text style={styles.bottoneProssimoTesto}>{t("gioco.prossimaParola")}</Text>
             </Pressable>
           )}
         </ScrollView>

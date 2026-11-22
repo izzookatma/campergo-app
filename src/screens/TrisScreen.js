@@ -1,3 +1,4 @@
+import { useT } from "../i18n/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +14,7 @@ const COLORE_X = colori.blu;
 const COLORE_O = temaGiochi.rosa;
 
 export default function TrisScreen() {
+  const t = useT();
   const { musicaGiochiAttiva, setMusicaGiochiAttiva } = usePreferenze();
   // "scelta": si sceglie modalità e, se contro il computer, la difficoltà.
   // "gioco": partita in corso o appena finita (il risultato resta a video
@@ -99,10 +101,10 @@ export default function TrisScreen() {
   };
 
   const testoEsito = () => {
-    if (pareggio) return "Pareggio!";
+    if (pareggio) return t("gioco.pareggio");
     if (!vincita) return null;
-    if (modalita === "computer") return vincita.giocatore === "X" ? "Hai vinto! 🎉" : "Ha vinto il computer";
-    return `Ha vinto ${vincita.giocatore}! 🎉`;
+    if (modalita === "computer") return vincita.giocatore === "X" ? t("gioco.haiVinto") : t("gioco.vinceComputer");
+    return t("gioco.haVinto", { nome: vincita.giocatore });
   };
 
   return (
@@ -110,7 +112,7 @@ export default function TrisScreen() {
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 2 }} />
         <View style={styles.rigaTitolo}>
-          <Text style={styles.titolo}>Tris</Text>
+          <Text style={styles.titolo}>{t("gioco.titoloTris")}</Text>
           <Pressable
             style={styles.bottoneMusica}
             onPress={() => setMusicaGiochiAttiva(!musicaGiochiAttiva)}
@@ -127,10 +129,10 @@ export default function TrisScreen() {
 
       {fase === "scelta" ? (
         <View style={styles.scelta}>
-          <Text style={styles.sceltaDomanda}>Con chi giochi?</Text>
+          <Text style={styles.sceltaDomanda}>{t("gioco.conChi")}</Text>
           <Pressable style={[styles.bottoneModalita, { backgroundColor: temaGiochi.viola }]} onPress={() => avviaPartita("computer")}>
             <Ionicons name="hardware-chip-outline" size={22} color={colori.bianco} />
-            <Text style={styles.bottoneModalitaTesto}>Contro il computer</Text>
+            <Text style={styles.bottoneModalitaTesto}>{t("gioco.controComputer")}</Text>
           </Pressable>
 
           <View style={styles.selettoreLivello}>
@@ -149,7 +151,7 @@ export default function TrisScreen() {
 
           <Pressable style={[styles.bottoneModalita, { backgroundColor: temaGiochi.rosa }]} onPress={() => avviaPartita("due")}>
             <Ionicons name="people-outline" size={22} color={colori.bianco} />
-            <Text style={styles.bottoneModalitaTesto}>In due, a turni sul telefono</Text>
+            <Text style={styles.bottoneModalitaTesto}>{t("gioco.inDueTelefono")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -158,8 +160,8 @@ export default function TrisScreen() {
             {finita
               ? testoEsito()
               : modalita === "computer"
-                ? turno === "X" ? "Tocca a te" : "Il computer sta pensando…"
-                : `Tocca a ${turno}`}
+                ? turno === "X" ? t("gioco.toccaATe") : t("gioco.computerPensa")
+                : t("gioco.toccaA", { nome: turno })}
           </Text>
 
           <View style={styles.tabellone}>
@@ -187,10 +189,10 @@ export default function TrisScreen() {
             <View style={styles.rigaBottoni}>
               <Pressable style={[styles.bottoneEsito, { backgroundColor: temaGiochi.viola }]} onPress={rivincita}>
                 <Ionicons name="refresh" size={16} color={colori.bianco} />
-                <Text style={styles.bottoneEsitoTesto}>Rivincita</Text>
+                <Text style={styles.bottoneEsitoTesto}>{t("gioco.rivincita")}</Text>
               </Pressable>
               <Pressable style={[styles.bottoneEsito, styles.bottoneEsitoSecondario]} onPress={cambiaModalita}>
-                <Text style={[styles.bottoneEsitoTesto, { color: colori.testo }]}>Cambia modalità</Text>
+                <Text style={[styles.bottoneEsitoTesto, { color: colori.testo }]}>{t("gioco.cambiaModalita")}</Text>
               </Pressable>
             </View>
           )}
