@@ -1,5 +1,8 @@
 export default {
   "comune.chiudi": "Close",
+  "comune.erroreCaricamento": "Couldn't load the data. Check your connection.",
+  "comune.riprova": "Try again",
+  "comune.erroreInatteso": "Something went wrong. Please try again.",
   "comune.crea": "Create",
   "comune.nessunRisultatoTrovato": "No results found.",
   "comune.risultati": "{n} results",
@@ -550,6 +553,8 @@ export default {
   "profilo.privacyPolicy": "Privacy policy",
   "profilo.termini": "Terms and conditions",
   "profilo.lingua": "Language",
+  "profilo.statisticheAnonime": "Anonymous usage statistics",
+  "profilo.statisticheAnonimeNota": "They help improve the app: no name, email or location.",
   "profilo.esci": "Log out",
   "profilo.eliminaAccount": "Delete my account",
 };

@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { View, Pressable, StyleSheet, Alert, Linking, ScrollView } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View, Pressable, StyleSheet, Alert, Linking, ScrollView, Switch } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +15,7 @@ import Chip from "../components/ui/Chip";
 import { Gruppo, Riga } from "../components/ui/Gruppo";
 import { caricaMiaStruttura } from "../lib/host";
 import { registraNotifichePush } from "../lib/notifichePush";
+import { telemetriaAttiva, impostaTelemetriaAttiva } from "../lib/telemetria";
 import { useT, useLingua, impostaLingua } from "../i18n/i18n";
 import { apriLink } from "../lib/linkEsterni";
 import { LINGUE } from "../i18n/lingue";
@@ -63,6 +64,10 @@ export default function ProfiloScreen({ navigation }) {
   // compare anche subito dopo un accesso. Se il controllo fallisce (rete)
   // la voce semplicemente non c'è: nessun errore davanti a un cliente.
   const utenteId = session?.user?.id;
+  const [statisticheAttive, setStatisticheAttive] = useState(true);
+  useEffect(() => {
+    telemetriaAttiva().then(setStatisticheAttive);
+  }, []);
   const [struttura, setStruttura] = useState(null);
   useFocusEffect(
     useCallback(() => {
@@ -224,6 +229,20 @@ export default function ProfiloScreen({ navigation }) {
                 <Chip key={l.codice} etichetta={l.nome} compatto attivo={linguaAttuale === l.codice} onPress={() => impostaLingua(l.codice)} />
               ))}
             </ScrollView>
+          </View>
+          <View style={[styles.impostazioneBox, { marginTop: 10, flexDirection: "row", alignItems: "center", gap: 12 }]}>
+            <View style={{ flex: 1 }}>
+              <Testo v="corpo">{t("profilo.statisticheAnonime")}</Testo>
+              <Testo v="nota">{t("profilo.statisticheAnonimeNota")}</Testo>
+            </View>
+            <Switch
+              value={statisticheAttive}
+              onValueChange={(v) => {
+                setStatisticheAttive(v);
+                impostaTelemetriaAttiva(v);
+              }}
+              accessibilityLabel={t("profilo.statisticheAnonime")}
+            />
           </View>
         </View>
 

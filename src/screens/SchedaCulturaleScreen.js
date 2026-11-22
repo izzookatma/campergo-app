@@ -17,6 +17,7 @@ import { luogoDaSchedaCulturale } from "../lib/bozzaVacanza";
 import { urlMappa } from "../lib/mappa";
 import { apriLink } from "../lib/linkEsterni";
 import { usePreferenze } from "../context/PreferenzeContext";
+import StatoErrore from "../components/ui/StatoErrore";
 
 function formattaDataEvento(iso) {
   const d = new Date(iso);
@@ -50,6 +51,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   const { session } = useAuth();
   const [scheda, setScheda] = useState(null);
   const [caricamento, setCaricamento] = useState(true);
+  const [tentativo, setTentativo] = useState(0);
   const [recensioni, setRecensioni] = useState([]);
   const [mostraModuloRecensione, setMostraModuloRecensione] = useState(false);
   const [struttureVicine, setStruttureVicine] = useState([]);
@@ -59,7 +61,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
       .then(setScheda)
       .catch((e) => console.error("Errore nel caricare la scheda culturale:", e))
       .finally(() => setCaricamento(false));
-  }, [id]);
+  }, [id, tentativo]);
 
   // Direzione "cultura -> struttura" (il cuore del sito, stessa logica di
   // "Puoi alloggiare qui" in Interessi.jsx): le strutture più vicine a
@@ -96,7 +98,21 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
     );
   }
 
-  if (!scheda) return null;
+  if (!scheda) {
+    return (
+      <View style={styles.schermo}>
+        <SafeAreaView edges={["top"]} style={{ flex: 1, justifyContent: "center" }}>
+          <StatoErrore
+            onRiprova={() => {
+              setCaricamento(true);
+              setTentativo((n) => n + 1);
+            }}
+            onIndietro={() => navigation.goBack()}
+          />
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   const meta = CATEGORIA_CULTURALE_META[scheda.categoria];
   const apriSito = (url) => apriLink(url.startsWith("http") ? url : `https://${url}`, t("comune.linkNonApribile"));

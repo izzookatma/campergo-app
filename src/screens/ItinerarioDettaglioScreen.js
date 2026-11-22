@@ -29,6 +29,7 @@ import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import RigaStelle from "../components/ui/RigaStelle";
 import { useT } from "../i18n/i18n";
 import { apriLink } from "../lib/linkEsterni";
+import StatoErrore from "../components/ui/StatoErrore";
 
 function formattaData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -44,6 +45,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
   const [itinerario, setItinerario] = useState(null);
   const [tappe, setTappe] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
+  const [tentativo, setTentativo] = useState(0);
   const [daCacheOffline, setDaCacheOffline] = useState(false);
   const [salvatoOffline, setSalvatoOffline] = useState(false);
   const [recensioni, setRecensioni] = useState([]);
@@ -84,7 +86,7 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
     return () => {
       attivo = false;
     };
-  }, [itinerarioId]);
+  }, [itinerarioId, tentativo]);
 
   const toggleSalvaOffline = async () => {
     vibraLeggera();
@@ -116,7 +118,21 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
     );
   }
 
-  if (!itinerario) return null;
+  if (!itinerario) {
+    return (
+      <View style={styles.schermo}>
+        <SafeAreaView edges={["top"]} style={{ flex: 1, justifyContent: "center" }}>
+          <StatoErrore
+            onRiprova={() => {
+              setCaricamento(true);
+              setTentativo((n) => n + 1);
+            }}
+            onIndietro={() => navigation.goBack()}
+          />
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   const metaDifficolta = DIFFICOLTA_META[itinerario.difficolta];
   const metaVeicolo = TIPO_VEICOLO_META[itinerario.tipoVeicolo];
@@ -192,11 +208,11 @@ export default function ItinerarioDettaglioScreen({ route, navigation }) {
                 <Text style={[styles.badgeTesto, { color: coloreAccento }]}>{itinerario.tempoStimato}</Text>
               </View>
             )}
-            {itinerario.lunghezzaKm && (
+            {itinerario.lunghezzaKm ? (
               <View style={[styles.badge, { backgroundColor: coloreAccento + "18" }]}>
                 <Text style={[styles.badgeTesto, { color: coloreAccento }]}>{itinerario.lunghezzaKm} km</Text>
               </View>
-            )}
+            ) : null}
             {itinerario.dislivelloM != null && (
               <View style={[styles.badge, { backgroundColor: coloreAccento + "18" }]}>
                 <Text style={[styles.badgeTesto, { color: coloreAccento }]}>↑ {itinerario.dislivelloM} m</Text>

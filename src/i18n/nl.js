@@ -1,5 +1,8 @@
 export default {
   "comune.chiudi": "Sluiten",
+  "comune.erroreCaricamento": "Kan de gegevens niet laden. Controleer je verbinding.",
+  "comune.riprova": "Opnieuw proberen",
+  "comune.erroreInatteso": "Er ging iets mis. Probeer het opnieuw.",
   "comune.crea": "Maken",
   "comune.nessunRisultatoTrovato": "Geen resultaten gevonden.",
   "comune.risultati": "{n} resultaten",
@@ -550,6 +553,8 @@ export default {
   "profilo.privacyPolicy": "Privacybeleid",
   "profilo.termini": "Algemene voorwaarden",
   "profilo.lingua": "Taal",
+  "profilo.statisticheAnonime": "Anonieme gebruiksstatistieken",
+  "profilo.statisticheAnonimeNota": "Ze helpen de app te verbeteren: geen naam, e-mail of locatie.",
   "profilo.esci": "Uitloggen",
   "profilo.eliminaAccount": "Mijn account verwijderen",
 };

@@ -3,6 +3,9 @@
 // nuda), così una schermata tradotta solo in parte resta leggibile.
 export default {
   "comune.chiudi": "Chiudi",
+  "comune.erroreCaricamento": "Non riesco a caricare i dati. Controlla la connessione.",
+  "comune.riprova": "Riprova",
+  "comune.erroreInatteso": "Qualcosa è andato storto. Riprova.",
   "comune.crea": "Crea",
   "comune.nessunRisultatoTrovato": "Nessun risultato trovato.",
   "comune.risultati": "{n} risultati",
@@ -553,6 +556,8 @@ export default {
   "profilo.privacyPolicy": "Privacy policy",
   "profilo.termini": "Termini e condizioni",
   "profilo.lingua": "Lingua",
+  "profilo.statisticheAnonime": "Statistiche anonime d'uso",
+  "profilo.statisticheAnonimeNota": "Aiutano a migliorare l'app: nessun nome, email o posizione.",
   "profilo.esci": "Esci",
   "profilo.eliminaAccount": "Elimina il mio account",
 };

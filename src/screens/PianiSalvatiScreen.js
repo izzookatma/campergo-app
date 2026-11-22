@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { caricaPianiSalvati, eliminaPianoSalvato } from "../lib/pianiSalvati";
 import { eVacanzaPersonale, intervalloDate } from "../lib/vacanza";
 import { useT } from "../i18n/i18n";
+import StatoErrore from "../components/ui/StatoErrore";
 
 function dataBreve(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
@@ -19,11 +20,16 @@ export default function PianiSalvatiScreen({ navigation }) {
   const t = useT();
   const { session } = useAuth();
   const [piani, setPiani] = useState(null);
+  const [errore, setErrore] = useState(false);
 
   const carica = useCallback(() => {
+    setErrore(false);
     caricaPianiSalvati(session.user.id)
       .then(setPiani)
-      .catch((e) => console.error("Errore nel caricare i piani salvati:", e));
+      .catch((e) => {
+        console.error("Errore nel caricare i piani salvati:", e);
+        setErrore(true);
+      });
   }, [session.user.id]);
 
   useFocusEffect(carica);
@@ -62,7 +68,9 @@ export default function PianiSalvatiScreen({ navigation }) {
         keyExtractor={(p) => String(p.id)}
         contentContainerStyle={styles.lista}
         ListEmptyComponent={
-          piani === null ? (
+          errore && piani === null ? (
+            <StatoErrore onRiprova={carica} />
+          ) : piani === null ? (
             <ActivityIndicator color={c.primario} style={{ marginTop: 30 }} />
           ) : (
             <Text style={styles.vuoto}>{t("pianiSalvati.nessunoSalvato")}</Text>

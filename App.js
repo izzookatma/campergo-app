@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated } from "react-native";
+import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer, createNavigationContainerRef, DefaultTheme, DarkTheme } from "@react-navigation/native";
@@ -34,6 +35,7 @@ import AnnuncioScreen from "./src/screens/AnnuncioScreen";
 import NuovoAnnuncioScreen from "./src/screens/NuovoAnnuncioScreen";
 import MessaggiScreen from "./src/screens/MessaggiScreen";
 import ConversazioneScreen from "./src/screens/ConversazioneScreen";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 import SchermataAvvio from "./src/screens/SchermataAvvio";
 import AccediScreen from "./src/screens/AccediScreen";
 import BlogScreen from "./src/screens/BlogScreen";
@@ -59,6 +61,34 @@ import { useT } from "./src/i18n/i18n";
 // Conteggio anonimo dell'uso (vedi src/lib/telemetria.js).
 attivaSegnalazioneErrori();
 const riferimentoNavigazione = createNavigationContainerRef();
+
+// Link in ingresso (naturago://… e https://www.naturago.it/…): aprono la
+// sezione giusta. Le schede singole (struttura, annuncio) richiedono i dati
+// completi e non sono apribili da un link: quei percorsi portano alla lista.
+const linking = {
+  prefixes: [Linking.createURL("/"), "naturago://", "https://www.naturago.it", "https://naturago.it"],
+  config: {
+    screens: {
+      Esplora: {
+        screens: {
+          EsploraHub: "esplora",
+          EsploraLista: "campeggi",
+          Sentieri: "sentieri",
+          Percorsi4x4: "percorsi-4x4",
+          Cultura: "cultura",
+          Blog: "blog",
+          ArticoloBlog: "blog/:slug",
+          CreaVacanza: "crea-vacanza",
+          Faq: "faq",
+        },
+      },
+      Mappa: "mappa",
+      Preferiti: "preferiti",
+      Mercatino: "mercatino",
+      Profilo: "profilo",
+    },
+  },
+};
 
 function segnaSchermataCorrente() {
   let stato = riferimentoNavigazione.getRootState();
@@ -230,6 +260,7 @@ function ContenutoApp() {
     <NavigationContainer
       ref={riferimentoNavigazione}
       theme={temaNavigazione}
+      linking={linking}
       onReady={segnaSchermataCorrente}
       onStateChange={segnaSchermataCorrente}
     >
@@ -263,7 +294,9 @@ export default function App() {
     <SafeAreaProvider>
       <PreferenzeProvider>
         <AuthProvider>
-          <ContenutoApp />
+          <ErrorBoundary>
+            <ContenutoApp />
+          </ErrorBoundary>
         </AuthProvider>
       </PreferenzeProvider>
     </SafeAreaProvider>

@@ -1,5 +1,8 @@
 export default {
   "comune.chiudi": "Fermer",
+  "comune.erroreCaricamento": "Impossible de charger les données. Vérifiez votre connexion.",
+  "comune.riprova": "Réessayer",
+  "comune.erroreInatteso": "Un problème est survenu. Réessayez.",
   "comune.crea": "Créer",
   "comune.nessunRisultatoTrovato": "Aucun résultat trouvé.",
   "comune.risultati": "{n} résultats",
@@ -550,6 +553,8 @@ export default {
   "profilo.privacyPolicy": "Politique de confidentialité",
   "profilo.termini": "Conditions générales",
   "profilo.lingua": "Langue",
+  "profilo.statisticheAnonime": "Statistiques d'usage anonymes",
+  "profilo.statisticheAnonimeNota": "Elles aident à améliorer l'app : ni nom, ni e-mail, ni position.",
   "profilo.esci": "Se déconnecter",
   "profilo.eliminaAccount": "Supprimer mon compte",
 };

@@ -342,7 +342,11 @@ export default function EsploraScreen({ navigation, route }) {
       (filtriTipo.includes("Bivacchi") && s.tipo === "Bivacco") ||
       (filtriTipo.includes("Camper service") && s.tipo === "Camper service") ||
       (filtriTipo.includes("Aree sosta") && s.tipo === "Area sosta");
+    // Da 2 lettere in su la ricerca è già fatta dal server (nome, località,
+    // zona, CAP, ambiente): rifiltrare qui per frase intera scartava risultati
+    // validi. Il filtro locale resta solo per la prima lettera.
     const passaRicerca =
+      ricercaAttiva ||
       ricerca.trim().length === 0 ||
       s.nome?.toLowerCase().includes(ricerca.toLowerCase()) ||
       s.localita?.toLowerCase().includes(ricerca.toLowerCase());

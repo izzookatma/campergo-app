@@ -17,6 +17,30 @@ import Constants from "expo-constants";
 import { supabase } from "./supabase";
 
 const CHIAVE_INSTALLAZIONE = "naturago_telemetria_installazione";
+const CHIAVE_CONSENSO = "naturago_telemetria_disattivata";
+
+// Statistiche anonime attive di default; l'utente le può spegnere dal Profilo.
+// Lo stato è tenuto in memoria e riletto all'avvio.
+let telemetriaDisattivata = false;
+const letturaConsenso = AsyncStorage.getItem(CHIAVE_CONSENSO)
+  .then((v) => {
+    telemetriaDisattivata = v === "1";
+  })
+  .catch(() => {});
+
+export async function telemetriaAttiva() {
+  await letturaConsenso;
+  return !telemetriaDisattivata;
+}
+
+export async function impostaTelemetriaAttiva(attiva) {
+  telemetriaDisattivata = !attiva;
+  try {
+    await AsyncStorage.setItem(CHIAVE_CONSENSO, attiva ? "0" : "1");
+  } catch {
+    // Resta valido per questa sessione.
+  }
+}
 
 function codiceCasuale() {
   const blocco = () => Math.random().toString(36).slice(2, 10);
@@ -49,6 +73,8 @@ function ottieniInstallazione() {
 async function invia(tipo, { schermata, oggettoTipo, oggettoId, dettaglio } = {}) {
   if (!piattaforma || __DEV__) return;
   try {
+    await letturaConsenso;
+    if (telemetriaDisattivata) return;
     const installazione = await ottieniInstallazione();
     await supabase.rpc("registra_evento_app", {
       p_installazione: installazione,

@@ -11,6 +11,7 @@ import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
 import { useT } from "../i18n/i18n";
+import StatoErrore from "../components/ui/StatoErrore";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -33,6 +34,8 @@ export default function Percorsi4x4Screen({ navigation, route }) {
   const { session } = useAuth();
   const [percorsi, setPercorsi] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
+  const [errore, setErrore] = useState(false);
+  const [tentativo, setTentativo] = useState(0);
   // Arrivando dalla ricerca IA con una difficoltà/regione già riconosciute:
   // partono già impostate, modificabili come sempre una volta qui.
   const [difficolta, setDifficolta] = useState(() => route.params?.difficoltaIniziale ?? null);
@@ -50,11 +53,16 @@ export default function Percorsi4x4Screen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       setCaricamento(true);
+      void tentativo; // «Riprova» cambia questo valore e rilancia il caricamento
+      setErrore(false);
       caricaPercorsi4x4({ difficolta, tipoVeicolo })
         .then(setPercorsi)
-        .catch((e) => console.error("Errore nel caricare i percorsi 4x4:", e))
+        .catch((e) => {
+          console.error("Errore nel caricare i percorsi 4x4:", e);
+          setErrore(true);
+        })
         .finally(() => setCaricamento(false));
-    }, [difficolta, tipoVeicolo])
+    }, [difficolta, tipoVeicolo, tentativo])
   );
 
   // Filtro lato app sui percorsi già caricati (al massimo poche centinaia
@@ -110,6 +118,13 @@ export default function Percorsi4x4Screen({ navigation, route }) {
 
       {caricamento ? (
         <ScheletroCard righe={4} />
+      ) : errore ? (
+        <StatoErrore
+          onRiprova={() => {
+            setCaricamento(true);
+            setTentativo((n) => n + 1);
+          }}
+        />
       ) : percorsiFiltrati.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="car-sport-outline" size={28} color={c.testoSecondario} />

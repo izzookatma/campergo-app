@@ -1,5 +1,8 @@
 export default {
   "comune.chiudi": "Schließen",
+  "comune.erroreCaricamento": "Daten konnten nicht geladen werden. Prüfe deine Verbindung.",
+  "comune.riprova": "Erneut versuchen",
+  "comune.erroreInatteso": "Etwas ist schiefgelaufen. Versuche es erneut.",
   "comune.crea": "Erstellen",
   "comune.nessunRisultatoTrovato": "Keine Ergebnisse gefunden.",
   "comune.risultati": "{n} Ergebnisse",
@@ -550,6 +553,8 @@ export default {
   "profilo.privacyPolicy": "Datenschutzerklärung",
   "profilo.termini": "Allgemeine Geschäftsbedingungen",
   "profilo.lingua": "Sprache",
+  "profilo.statisticheAnonime": "Anonyme Nutzungsstatistiken",
+  "profilo.statisticheAnonimeNota": "Sie helfen, die App zu verbessern: kein Name, keine E-Mail, kein Standort.",
   "profilo.esci": "Abmelden",
   "profilo.eliminaAccount": "Mein Konto löschen",
 };

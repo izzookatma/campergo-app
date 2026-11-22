@@ -24,6 +24,11 @@ export default function EliminaAccountScreen({ navigation }) {
   const [testoConferma, setTestoConferma] = useState("");
   const [eliminando, setEliminando] = useState(false);
   const [errore, setErrore] = useState(null);
+  const identita = session?.user?.identities;
+  const haPassword = Array.isArray(identita) && identita.length > 0
+    ? identita.some((i) => i.provider === "email")
+    : (session?.user?.app_metadata?.providers || ["email"]).includes("email");
+  const nonPronto = eliminando || testoConferma !== TESTO_RICHIESTO || (haPassword && !password);
 
   const elimina = async () => {
     setErrore(null);
@@ -33,11 +38,15 @@ export default function EliminaAccountScreen({ navigation }) {
     }
     setEliminando(true);
 
-    const { error: erroreLogin } = await accedi(session.user.email, password);
-    if (erroreLogin) {
-      setEliminando(false);
-      setErrore(t("eliminaAccount.passwordErrata"));
-      return;
+    // Chi è entrato con Apple/Google/Facebook non ha una password: per loro
+    // la parola di conferma è la verifica (la sessione è già recente e valida).
+    if (haPassword) {
+      const { error: erroreLogin } = await accedi(session.user.email, password);
+      if (erroreLogin) {
+        setEliminando(false);
+        setErrore(t("eliminaAccount.passwordErrata"));
+        return;
+      }
     }
 
     const { error } = await eliminaAccount(testoConferma);
@@ -70,8 +79,12 @@ export default function EliminaAccountScreen({ navigation }) {
 
         <Text style={styles.descrizione}>{t("eliminaAccount.descrizione")}</Text>
 
-        <Text style={styles.etichetta}>{t("eliminaAccount.confermaPassword")}</Text>
-        <TextInput style={styles.campo} value={password} onChangeText={setPassword} secureTextEntry />
+        {haPassword && (
+          <>
+            <Text style={styles.etichetta}>{t("eliminaAccount.confermaPassword")}</Text>
+            <TextInput style={styles.campo} value={password} onChangeText={setPassword} secureTextEntry />
+          </>
+        )}
 
         <Text style={styles.etichetta}>{t("eliminaAccount.digitaConferma", { testo: TESTO_RICHIESTO })}</Text>
         <TextInput style={styles.campo} value={testoConferma} onChangeText={setTestoConferma} autoCapitalize="characters" />
@@ -79,9 +92,9 @@ export default function EliminaAccountScreen({ navigation }) {
         {errore && <Text style={styles.errore}>{errore}</Text>}
 
         <Pressable
-          style={[styles.elimina, (eliminando || testoConferma !== TESTO_RICHIESTO || !password) && styles.eliminaDisabilitato]}
+          style={[styles.elimina, nonPronto && styles.eliminaDisabilitato]}
           onPress={elimina}
-          disabled={eliminando || testoConferma !== TESTO_RICHIESTO || !password}
+          disabled={nonPronto}
         >
           {eliminando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.eliminaTesto}>{t("eliminaAccount.eliminaDefinitivamente")}</Text>}
         </Pressable>

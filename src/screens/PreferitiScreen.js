@@ -11,6 +11,7 @@ import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import { useT } from "../i18n/i18n";
+import StatoErrore from "../components/ui/StatoErrore";
 
 export default function PreferitiScreen({ navigation }) {
   const { c, spazio, raggio } = useTema();
@@ -20,6 +21,8 @@ export default function PreferitiScreen({ navigation }) {
   const [preferiti, setPreferiti] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
   const [senzaConnessione, setSenzaConnessione] = useState(false);
+  const [errore, setErrore] = useState(false);
+  const [tentativo, setTentativo] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +37,8 @@ export default function PreferitiScreen({ navigation }) {
         // come già per la lista base di Esplora e la Mappa.
         const chiaveCache = `preferiti_${session.user.id}`;
         setCaricamento(true);
+        void tentativo; // «Riprova» cambia questo valore e rilancia il caricamento
+        setErrore(false);
         caricaStrutturePreferite(session.user.id)
           .then((dati) => {
             setPreferiti(dati);
@@ -45,11 +50,13 @@ export default function PreferitiScreen({ navigation }) {
             if (cache) {
               setPreferiti(cache.dati);
               setSenzaConnessione(true);
+            } else {
+              setErrore(true);
             }
           })
           .finally(() => setCaricamento(false));
       });
-    }, [session])
+    }, [session, tentativo])
   );
 
   return (
@@ -69,6 +76,13 @@ export default function PreferitiScreen({ navigation }) {
 
       {caricamento ? (
         <ScheletroCard righe={4} />
+      ) : errore ? (
+        <StatoErrore
+          onRiprova={() => {
+            setCaricamento(true);
+            setTentativo((n) => n + 1);
+          }}
+        />
       ) : !session ? (
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />

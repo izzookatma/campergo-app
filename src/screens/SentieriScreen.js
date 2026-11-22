@@ -11,6 +11,7 @@ import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
 import { useT } from "../i18n/i18n";
+import StatoErrore from "../components/ui/StatoErrore";
 
 const FILTRI = [
   { chiave: null, etichetta: "Tutti" },
@@ -24,6 +25,8 @@ export default function SentieriScreen({ navigation, route }) {
   const t = useT();
   const { session } = useAuth();
   const [sentieri, setSentieri] = useState([]);
+  const [errore, setErrore] = useState(false);
+  const [tentativo, setTentativo] = useState(0);
   const [caricamento, setCaricamento] = useState(true);
   // Arrivando dalla ricerca IA con una modalità/regione già riconosciute
   // (es. "percorso bici in Lombardia"): partono già impostate, modificabili
@@ -42,11 +45,16 @@ export default function SentieriScreen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       setCaricamento(true);
+      void tentativo; // «Riprova» cambia questo valore e rilancia il caricamento
+      setErrore(false);
       caricaSentieri({ modalita })
         .then(setSentieri)
-        .catch((e) => console.error("Errore nel caricare i sentieri:", e))
+        .catch((e) => {
+          console.error("Errore nel caricare i sentieri:", e);
+          setErrore(true);
+        })
         .finally(() => setCaricamento(false));
-    }, [modalita])
+    }, [modalita, tentativo])
   );
 
   // Filtro lato app sui sentieri già caricati (al massimo poche centinaia
@@ -94,6 +102,13 @@ export default function SentieriScreen({ navigation, route }) {
 
       {caricamento ? (
         <ScheletroCard righe={4} />
+      ) : errore ? (
+        <StatoErrore
+          onRiprova={() => {
+            setCaricamento(true);
+            setTentativo((n) => n + 1);
+          }}
+        />
       ) : sentieriFiltrati.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="trail-sign-outline" size={28} color={c.testoSecondario} />
@@ -130,7 +145,7 @@ export default function SentieriScreen({ navigation, route }) {
                         <Text style={styles.badgePillTesto}>{meta.etichetta}</Text>
                       </View>
                     )}
-                    {item.lunghezzaKm && <Text style={styles.cardDettaglio}>{item.lunghezzaKm} km</Text>}
+                    {item.lunghezzaKm ? <Text style={styles.cardDettaglio}>{item.lunghezzaKm} km</Text> : null}
                     {item.dislivelloM != null && <Text style={styles.cardDettaglio}>↑{item.dislivelloM} m</Text>}
                   </View>
                 </View>

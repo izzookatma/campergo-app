@@ -9,6 +9,7 @@ import ImmagineConRiserva from "../components/ImmagineConRiserva";
 import ScheletroCard from "../components/ScheletroCard";
 import Chip from "../components/ui/Chip";
 import { useT } from "../i18n/i18n";
+import StatoErrore from "../components/ui/StatoErrore";
 
 const CATEGORIE = Object.keys(CATEGORIA_CULTURALE_META);
 
@@ -20,16 +21,23 @@ export default function CulturaScreen({ route, navigation }) {
   const [termine, setTermine] = useState("");
   const [schede, setSchede] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
+  const [errore, setErrore] = useState(false);
+  const [tentativo, setTentativo] = useState(0);
 
   useEffect(() => {
     const scaduto = setTimeout(() => {
+      setErrore(false);
       caricaSchedeCulturali({ categoria, termine: termine.trim() || undefined })
         .then(setSchede)
-        .catch((e) => console.error("Errore nel caricare le schede culturali:", e))
+        .catch((e) => {
+          console.error("Errore nel caricare le schede culturali:", e);
+          setSchede([]);
+          setErrore(true);
+        })
         .finally(() => setCaricamento(false));
     }, 300);
     return () => clearTimeout(scaduto);
-  }, [categoria, termine]);
+  }, [categoria, termine, tentativo]);
 
   const meta = CATEGORIA_CULTURALE_META[categoria];
 
@@ -74,6 +82,13 @@ export default function CulturaScreen({ route, navigation }) {
 
       {caricamento ? (
         <ScheletroCard righe={4} />
+      ) : errore ? (
+        <StatoErrore
+          onRiprova={() => {
+            setCaricamento(true);
+            setTentativo((n) => n + 1);
+          }}
+        />
       ) : schede.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name={meta.icona} size={28} color={c.testoSecondario} />
