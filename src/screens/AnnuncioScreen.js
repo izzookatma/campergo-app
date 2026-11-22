@@ -65,7 +65,7 @@ export default function AnnuncioScreen({ route, navigation }) {
           ) : (
             <Ionicons name="image-outline" size={46} color="#60a5fa" />
           )}
-          <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>

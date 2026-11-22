@@ -102,7 +102,7 @@ export default function PrenotazioniScreen({ navigation }) {
   return (
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={20} color={c.testo} />
         </Pressable>
         <Text style={styles.titolo}>{t("profilo.leMiePrenotazioni")}</Text>

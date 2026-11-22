@@ -137,7 +137,7 @@ export default function NuovoItinerarioScreen({ route, navigation }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.schermo}>
         <SafeAreaView edges={["top"]} style={styles.intestazione}>
-          <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Indietro" hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
           <Text style={styles.titoloIntestazione}>{ePercorso4x4 ? "Nuovo percorso 4x4" : "Nuovo sentiero"}</Text>

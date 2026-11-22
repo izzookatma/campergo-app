@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Animated, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTema } from "../theme/tema";
 import { useT } from "../i18n/i18n";
 import { useAuth } from "../context/AuthContext";
@@ -35,6 +36,8 @@ import {
   spostaLuogo,
   trovaBersaglio,
 } from "../lib/vacanza";
+
+const CHIAVE_BOZZA = "naturago_bozza_vacanza_v1";
 
 // "Crea la tua vacanza". Dall'alto in basso:
 //  1. punto di PARTENZA;
@@ -115,6 +118,48 @@ export default function CreaVacanzaScreen({ navigation, route }) {
     setVacanza(nuova);
     setSalvato(false);
   };
+
+  // Bozza automatica: una vacanza nuova non ancora salvata si conserva sul
+  // telefono, così uscire (o chiudere l'app) non fa perdere il lavoro.
+  const haContenuto = (v) =>
+    !!(v.titolo?.trim() || v.partenza || v.arrivo || v.giorni.some((g) => g.luoghi.length > 0 || g.dormire || g.appunti?.trim()));
+  const [bozzaPronta, setBozzaPronta] = useState(!!pianoIniziale);
+  useEffect(() => {
+    if (pianoIniziale) return undefined;
+    let attivo = true;
+    AsyncStorage.getItem(CHIAVE_BOZZA)
+      .then((testoBozza) => {
+        if (!attivo) return;
+        const bozza = testoBozza ? JSON.parse(testoBozza) : null;
+        if (bozza && Array.isArray(bozza.giorni) && haContenuto(bozza)) {
+          Alert.alert(t("vacanza.bozzaTitolo"), t("vacanza.bozzaMessaggio"), [
+            {
+              text: t("vacanza.bozzaNuova"),
+              style: "cancel",
+              onPress: () => AsyncStorage.removeItem(CHIAVE_BOZZA).catch(() => {}),
+            },
+            { text: t("vacanza.bozzaRiprendi"), onPress: () => setVacanza(bozza) },
+          ]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => attivo && setBozzaPronta(true));
+    return () => {
+      attivo = false;
+    };
+    // Solo all'apertura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (pianoIniziale || !bozzaPronta) return undefined;
+    if (salvato || !haContenuto(vacanza)) {
+      if (salvato) AsyncStorage.removeItem(CHIAVE_BOZZA).catch(() => {});
+      return undefined;
+    }
+    const id = setTimeout(() => AsyncStorage.setItem(CHIAVE_BOZZA, JSON.stringify(vacanza)).catch(() => {}), 700);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vacanza, salvato, bozzaPronta]);
   const aggiornaGiorno = (numero, cambia) =>
     modifica({ ...vacanza, giorni: vacanza.giorni.map((g) => (g.numero === numero ? { ...g, ...cambia(g) } : g)) });
 

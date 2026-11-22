@@ -184,7 +184,7 @@ export default function MiaStrutturaScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={styles.schermo} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
-        <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Indietro" hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>La mia struttura</Text>

@@ -389,7 +389,10 @@ export default function EsploraScreen({ navigation, route }) {
       .catch((e) => console.error("Errore nel caricare i prezzi scontati:", e));
   }, [idsPromo]);
 
-  const testoConteggio = `${risultati.length}${altreDaCaricare ? "+" : ""}`;
+  // In ricerca e «vicino a me» il server restituisce al massimo 100/150
+  // schede: se si arriva al tetto il numero è «almeno», non il totale.
+  const tettoRaggiunto = (ricercaAttiva && strutture.length >= 100) || (posizione && strutture.length >= 150);
+  const testoConteggio = `${risultati.length}${altreDaCaricare || tettoRaggiunto ? "+" : ""}`;
   const filtriAttiviNumero = filtriServizi.length + (prezzoMax != null ? 1 : 0);
 
   // Nessuna scheda ha ancora un voto (verificato dal vivo: rating a zero su

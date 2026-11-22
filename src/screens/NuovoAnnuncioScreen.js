@@ -105,7 +105,7 @@ export default function NuovoAnnuncioScreen({ navigation }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <SafeAreaView style={styles.schermo} edges={["top"]}>
         <View style={styles.intestazione}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color={c.testo} />
           </Pressable>
           <Text style={styles.titoloSchermo}>{t("nuovoAnnuncio.titoloSchermo")}</Text>

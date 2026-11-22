@@ -15,14 +15,14 @@ import { useT } from "../../i18n/i18n";
 // Servizi che un camperista cerca per primi: mostrati come icone nella card
 // (max 5, nell'ordine di importanza) così non serve aprire la scheda.
 const SERVIZI_IN_CARD = [
-  ["elettricita", "flash", "Corrente"],
-  ["camperService", "color-fill", "Camper service"],
-  ["caricoAcqua", "water", "Carico acqua"],
-  ["docce", "rainy", "Docce"],
+  ["elettricita", "flash", "card.servCorrente"],
+  ["camperService", "color-fill", "card.servCamperService"],
+  ["caricoAcqua", "water", "card.servCaricoAcqua"],
+  ["docce", "rainy", "card.servDocce"],
   ["wifi", "wifi", "Wi-Fi"],
-  ["petFriendly", "paw", "Animali"],
-  ["animaliAmmessi", "paw", "Animali"],
-  ["piscina", "umbrella", "Piscina"],
+  ["petFriendly", "paw", "card.servAnimali"],
+  ["animaliAmmessi", "paw", "card.servAnimali"],
+  ["piscina", "umbrella", "card.servPiscina"],
 ];
 
 function iconeServizi(servizi) {
@@ -60,7 +60,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
       onPressOut={() => molla(1)}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${item.tipo} ${item.nome}, ${item.localita || ""}${item.prezzo ? `, da ${item.prezzo} euro a notte` : ""}`}
+      accessibilityLabel={`${item.tipo} ${item.nome}, ${item.localita || ""}${item.prezzo ? `, ${t("card.daEuroANotte", { prezzo: item.prezzo })}` : ""}`}
     >
       <View style={styles.cardFoto}>
         <ImmagineConRiserva uri={item.fotoUrl} larghezza={640} style={styles.cardImmagine} iconaColore={c.primario} iconaDimensione={34} />
@@ -70,7 +70,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
         <VeloSfumato altezza={110} forza={0.6} />
         {item.prezzo ? (
           <BlurView intensity={35} tint="dark" style={styles.cardPrezzoFoto}>
-            <Text style={styles.cardPrezzoFotoTesto}>da {promo ? promo.scontato : item.prezzo}€</Text>
+            <Text style={styles.cardPrezzoFotoTesto}>{t("card.daPrezzo", { prezzo: promo ? promo.scontato : item.prezzo })}</Text>
           </BlurView>
         ) : null}
         {item.haPromoAttiva && <BollinoPromo style={styles.cardBollinoPromo} />}
@@ -106,7 +106,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
         </View>
         <Text style={styles.cardLocalita} numberOfLines={1}>
           {item.localita}
-          {item.distanzaKm != null ? ` · a ${item.distanzaKm.toFixed(1)} km` : ""}
+          {item.distanzaKm != null ? ` · ${t("card.aKm", { km: item.distanzaKm.toFixed(1) })}` : ""}
         </Text>
         {promo && (
           <View style={styles.cardPromo}>
@@ -118,7 +118,7 @@ export default function CardStruttura({ item, preferito, onPress, onToggleFavori
             {visibili.map((sv) => (
               <View key={sv.chiave} style={styles.cardServizioPill}>
                 <Ionicons name={sv.icona} size={12} color={c.primario} />
-                <Text style={styles.cardServizioTesto}>{sv.etichetta}</Text>
+                <Text style={styles.cardServizioTesto}>{sv.etichetta === "Wi-Fi" ? sv.etichetta : t(sv.etichetta)}</Text>
               </View>
             ))}
             {altri > 0 && <Text style={styles.cardServiziAltri}>+{altri}</Text>}

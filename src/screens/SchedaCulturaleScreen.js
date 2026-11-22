@@ -133,7 +133,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
             iconaDimensione={46}
             iconaColore={meta.colore}
           />
-          <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>

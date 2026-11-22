@@ -59,7 +59,7 @@ export default function AvvisiScreen({ navigation }) {
   return (
     <View style={styles.schermo}>
       <View style={styles.intestazione}>
-        <Pressable style={styles.indietro} onPress={() => navigation.goBack()}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Indietro" hitSlop={8} style={styles.indietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={22} color={c.testo} />
         </Pressable>
         <Text style={styles.titolo}>Avvisi</Text>

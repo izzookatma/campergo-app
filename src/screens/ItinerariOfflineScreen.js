@@ -36,7 +36,7 @@ export default function ItinerariOfflineScreen({ navigation }) {
   return (
     <View style={styles.schermo}>
       <SafeAreaView edges={["top"]} style={styles.intestazione}>
-        <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={18} color={c.testo} />
         </Pressable>
         <Text style={styles.titoloIntestazione}>{t("profilo.itinerariOffline")}</Text>

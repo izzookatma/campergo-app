@@ -107,6 +107,9 @@ function MappaVera({ navigation, route }) {
   const t = useT();
   const { session } = useAuth();
   const mappaRef = useRef(null);
+  const richiestaDefaultRef = useRef(0);
+  const culturaVisibileRef = useRef([]);
+  const itinerariVisibiliRef = useRef([]);
   const [strutture, setStrutture] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
   const [termine, setTermine] = useState(() => route?.params?.ricerca || "");
@@ -143,6 +146,9 @@ function MappaVera({ navigation, route }) {
   const { motoreMappa } = usePreferenze();
   // Segnaposto toccato: { tipo, dato } -> scheda anteprima in basso.
   const [selezionato, setSelezionato] = useState(null);
+  // Segnaposto con tracksViewChanges attivo solo per un attimo dopo ogni cambio
+  // (altrimenti Android li ridisegna di continuo e la mappa rallenta).
+  const [tracciaMarker, setTracciaMarker] = useState(true);
   const seleziona = (tipo, dato) => {
     vibraLeggera();
     setSelezionato({ tipo, dato });
@@ -330,6 +336,10 @@ function MappaVera({ navigation, route }) {
       (it) => it.titolo?.toLowerCase().includes(pulitoMinuscolo) || it.regione?.toLowerCase().includes(pulitoMinuscolo)
     );
   }, [itinerari, categorieItinerarioAttive, nessunaSelezione, filtriServiziIA, pulitoMinuscolo, categoriaItinerarioCercata]);
+  useEffect(() => {
+    culturaVisibileRef.current = culturaVisibile;
+    itinerariVisibiliRef.current = itinerariVisibili;
+  }, [culturaVisibile, itinerariVisibili]);
 
   // Tutte le schede con coordinate (eventualmente filtrate per tipo/servizi),
   // non solo le "migliori" N per punteggio: a differenza di Esplora qui serve
@@ -339,21 +349,28 @@ function MappaVera({ navigation, route }) {
   // altrimenti sarebbero migliaia di puntini illeggibili e lenti da disegnare.
   const caricaDefault = (tipi, servizi) => {
     setCaricamento(true);
+    // Solo l'ultima richiesta vale: una risposta lenta non deve sovrascrivere
+    // una più recente (cambio filtro, ricerca svuotata...).
+    const numero = ++richiestaDefaultRef.current;
     caricaTutteLePosizioni({ tipi, servizi })
       .then((dati) => {
+        if (numero !== richiestaDefaultRef.current) return;
         const conPosizione = dati.filter((s) => s.lat && s.lng);
         setStrutture(conPosizione);
         setSenzaConnessione(false);
         salvaInCache("mappa_strutture", conPosizione);
       })
       .catch(async () => {
+        if (numero !== richiestaDefaultRef.current) return;
         const cache = await leggiDaCache("mappa_strutture");
         if (cache) {
           setStrutture(cache.dati);
           setSenzaConnessione(true);
         }
       })
-      .finally(() => setCaricamento(false));
+      .finally(() => {
+        if (numero === richiestaDefaultRef.current) setCaricamento(false);
+      });
   };
 
   // Ricerca per zona/regione/struttura su tutto il database (stessa
@@ -377,13 +394,14 @@ function MappaVera({ navigation, route }) {
     const scaduto = setTimeout(() => {
       cercaStrutture({ termine: pulito, tipi: filtriTipoIA, servizi: filtriServiziIA })
         .then((dati) => {
+          if (annullato) return;
           salvaRicercaRecente(pulito).then(setRicercheRecenti);
           const conPosizione = dati.filter((s) => s.lat && s.lng);
           setStrutture(conPosizione);
           // Inquadra anche musei/borghi/attività e sentieri/percorsi trovati dalla
           // stessa ricerca (già filtrati sopra, culturaVisibile/itinerariVisibili
           // dipendono dallo stesso testo), non solo le strutture.
-          const daInquadrare = [...conPosizione, ...culturaVisibile, ...itinerariVisibili];
+          const daInquadrare = [...conPosizione, ...culturaVisibileRef.current, ...itinerariVisibiliRef.current];
           if (daInquadrare.length > 0) {
             mappaRef.current?.fitToCoordinates(
               daInquadrare.map((p) => ({ latitude: p.lat, longitude: p.lng })),
@@ -398,7 +416,9 @@ function MappaVera({ navigation, route }) {
       annullato = true;
       clearTimeout(scaduto);
     };
-  }, [termine, filtriTipoIA, filtriServiziIA, culturaVisibile, itinerariVisibili]);
+    // culturaVisibile/itinerariVisibili si leggono dai ref: toccare un chip
+    // cultura/itinerari non deve riscaricare tutte le strutture.
+  }, [termine, filtriTipoIA, filtriServiziIA]);
 
   // Strutture, cultura e itinerari condividono lo stesso clustering: chiavi
   // diverse ("s-"/"c-"/"i-") perché gli id vengono da tabelle diverse e
@@ -451,6 +471,12 @@ function MappaVera({ navigation, route }) {
     ];
     return indiceCluster.getClusters(bbox, zoom);
   }, [indiceCluster, regione]);
+
+  useEffect(() => {
+    Promise.resolve().then(() => setTracciaMarker(true));
+    const id = setTimeout(() => setTracciaMarker(false), 700);
+    return () => clearTimeout(id);
+  }, [cluster, selezionato]);
 
   const vaiAlCluster = (cl) => {
     const [lng, lat] = cl.geometry.coordinates;
@@ -559,7 +585,7 @@ function MappaVera({ navigation, route }) {
         )}
         {routeTappe &&
           routeTappe.map((tp, i) => (
-            <Marker key={`tappa-${i}`} coordinate={{ latitude: tp.lat, longitude: tp.lng }} title={tp.nome}>
+            <Marker key={`tappa-${i}`} coordinate={{ latitude: tp.lat, longitude: tp.lng }} title={tp.nome} tracksViewChanges={tracciaMarker}>
               <View style={styles.pinTappa}>
                 <Text style={styles.pinTappaTesto}>{i + 1}</Text>
               </View>
@@ -574,6 +600,7 @@ function MappaVera({ navigation, route }) {
                 key={`cluster-${c.id}`}
                 coordinate={{ latitude: lat, longitude: lng }}
                 stopPropagation
+                tracksViewChanges={tracciaMarker}
                 onPress={() => vaiAlCluster(c)}
               >
                 <View style={[styles.cluster, misuraCluster(c.properties.point_count)]}>
@@ -594,6 +621,7 @@ function MappaVera({ navigation, route }) {
                 key={`c-${voce.id}`}
                 coordinate={{ latitude: voce.lat, longitude: voce.lng }}
                 stopPropagation
+                tracksViewChanges={tracciaMarker}
                 onPress={() => seleziona("cultura", voce)}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
@@ -610,6 +638,7 @@ function MappaVera({ navigation, route }) {
                 key={`i-${it.id}`}
                 coordinate={{ latitude: it.lat, longitude: it.lng }}
                 stopPropagation
+                tracksViewChanges={tracciaMarker}
                 onPress={() => seleziona("itinerario", it)}
               >
                 <View style={[styles.segnaposto, { backgroundColor: meta.colore }]}>
@@ -625,6 +654,7 @@ function MappaVera({ navigation, route }) {
               key={`s-${s.id}`}
               coordinate={{ latitude: s.lat, longitude: s.lng }}
               stopPropagation
+              tracksViewChanges={tracciaMarker}
               onPress={() => seleziona("struttura", s)}
             >
               <View style={[styles.segnaposto, { backgroundColor: stile.colore }, selezionato?.dato === s && styles.segnapostoSelezionato]}>

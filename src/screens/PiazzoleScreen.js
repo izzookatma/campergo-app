@@ -67,7 +67,7 @@ export default function PiazzoleScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={styles.schermo} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.intestazione}>
-        <Pressable style={styles.indietro} onPress={() => navigation.goBack()}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Indietro" hitSlop={8} style={styles.indietro} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={22} color={c.testo} />
         </Pressable>
         <Text style={styles.titolo}>Piazzole e alloggi</Text>

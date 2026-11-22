@@ -149,7 +149,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
     return (
       <View style={styles.schermo}>
         <SafeAreaView edges={["top"]} style={styles.intestazioneSemplice}>
-          <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={c.testo} />
           </Pressable>
         </SafeAreaView>
@@ -172,7 +172,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
           <View style={styles.hero}>
             <ImmagineConRiserva uri={articolo.foto_copertina} larghezza={900} style={styles.heroImmagine} icona={null} />
             <SafeAreaView edges={["top"]} style={styles.rigaIntestazione}>
-              <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
                 <Ionicons name="chevron-back" size={18} color={c.testo} />
               </Pressable>
               <Pressable style={styles.tornaIndietro} onPress={condividi}>
@@ -182,7 +182,7 @@ export default function ArticoloBlogScreen({ route, navigation }) {
           </View>
         ) : (
           <SafeAreaView edges={["top"]} style={[styles.intestazioneSemplice, styles.rigaIntestazione]}>
-            <Pressable style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
               <Ionicons name="chevron-back" size={18} color={c.testo} />
             </Pressable>
             <Pressable style={styles.tornaIndietro} onPress={condividi}>

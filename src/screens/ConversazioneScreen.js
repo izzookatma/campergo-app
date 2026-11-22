@@ -1,11 +1,12 @@
 import { useCallback, useState, useRef } from "react";
-import { View, Text, FlatList, Pressable, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, FlatList, Pressable, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
 import { caricaMessaggi, inviaMessaggio } from "../lib/mercatino";
+import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import { useT } from "../i18n/i18n";
 
 export default function ConversazioneScreen({ route, navigation }) {
@@ -27,7 +28,15 @@ export default function ConversazioneScreen({ route, navigation }) {
       .finally(() => setCaricamento(false));
   }, [conversazione.annuncioId, conversazione.controparteId, session.user.id]);
 
-  useFocusEffect(carica);
+  // Niente realtime sul database: finché la conversazione è aperta si
+  // ricontrolla ogni 8 secondi, così i messaggi nuovi arrivano da soli.
+  useFocusEffect(
+    useCallback(() => {
+      carica();
+      const id = setInterval(carica, 8000);
+      return () => clearInterval(id);
+    }, [carica])
+  );
 
   const invia = async () => {
     if (!testo.trim()) return;
@@ -44,6 +53,8 @@ export default function ConversazioneScreen({ route, navigation }) {
       carica();
     } catch (e) {
       console.error("Errore nell'invio del messaggio:", e);
+      // Il testo resta nel campo: si può riprovare senza riscriverlo.
+      Alert.alert(t("mercatino.erroreInvioTitolo"), messaggioErroreComprensibile(e, t("mercatino.erroreInvioTitolo")));
     } finally {
       setInviando(false);
     }
@@ -53,7 +64,7 @@ export default function ConversazioneScreen({ route, navigation }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <SafeAreaView style={styles.schermo} edges={["top", "bottom"]}>
         <View style={styles.intestazione}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color={c.testo} />
           </Pressable>
           <Text style={styles.titolo} numberOfLines={1}>
