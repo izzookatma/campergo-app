@@ -79,7 +79,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
         <View style={styles.rigaTitolo}>
           <Text style={styles.titolo}>{t("percorsi4x4.titolo")}</Text>
-          <Pressable style={styles.creaBottone} onPress={creaPercorso}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.crea")} style={styles.creaBottone} onPress={creaPercorso}>
             <Ionicons name="add" size={14} color={c.primario} />
             <Text style={styles.creaBottoneTesto}>{t("comune.crea")}</Text>
           </Pressable>
@@ -140,7 +140,7 @@ export default function Percorsi4x4Screen({ navigation, route }) {
             const metaDifficolta = DIFFICOLTA_META[item.difficolta];
             const metaVeicolo = TIPO_VEICOLO_META[item.tipoVeicolo];
             return (
-              <Pressable style={styles.card} onPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: item.id })}>
+              <Pressable accessibilityRole="button" accessibilityLabel={item.nome || item.titolo} style={styles.card} onPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: item.id })}>
                 <View style={styles.cardFoto}>
                   <ImmagineConRiserva
                     uri={item.fotoUrl}

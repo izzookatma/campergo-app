@@ -1,6 +1,9 @@
 export default {
   "comune.chiudi": "Close",
   "comune.erroreCaricamento": "Couldn't load the data. Check your connection.",
+  "comune.offline": "You're offline: some content may not load.",
+  "mappa.cancellaRicerca": "Clear search",
+  "mappa.vicinoAMe": "Near me",
   "comune.riprova": "Try again",
   "card.servCorrente": "Electricity",
   "card.servCamperService": "Camper service",

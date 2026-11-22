@@ -101,7 +101,7 @@ export default function CulturaScreen({ route, navigation }) {
           contentContainerStyle={{ padding: 20, gap: 10 }}
           ListHeaderComponent={<Text style={styles.contatore}>{t("comune.risultati", { n: schede.length })}</Text>}
           renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => navigation.navigate("SchedaCulturale", { id: item.id })}>
+            <Pressable accessibilityRole="button" accessibilityLabel={item.nome || item.titolo} style={styles.card} onPress={() => navigation.navigate("SchedaCulturale", { id: item.id })}>
               <View style={[styles.cardFoto, { backgroundColor: meta.colore + "18" }]}>
                 <ImmagineConRiserva
                   uri={item.fotoUrl}

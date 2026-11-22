@@ -1,6 +1,9 @@
 export default {
   "comune.chiudi": "Schließen",
   "comune.erroreCaricamento": "Daten konnten nicht geladen werden. Prüfe deine Verbindung.",
+  "comune.offline": "Du bist offline: Manche Inhalte werden eventuell nicht geladen.",
+  "mappa.cancellaRicerca": "Suche löschen",
+  "mappa.vicinoAMe": "In meiner Nähe",
   "comune.riprova": "Erneut versuchen",
   "card.servCorrente": "Strom",
   "card.servCamperService": "Camper-Service",

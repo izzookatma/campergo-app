@@ -682,7 +682,7 @@ function MappaVera({ navigation, route }) {
             {cercando ? (
               <ActivityIndicator size="small" color={c.primario} />
             ) : termine ? (
-              <Pressable onPress={svuotaRicerca} hitSlop={8}>
+              <Pressable onPress={svuotaRicerca} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("mappa.cancellaRicerca")}>
                 <Ionicons name="close-circle" size={16} color={c.testoSecondario} />
               </Pressable>
             ) : null}
@@ -727,7 +727,7 @@ function MappaVera({ navigation, route }) {
         />
 
         {!!piano?.giorni?.length && !modalPianoAperto && (
-          <Pressable style={styles.pillPiano} onPress={() => setModalPianoAperto(true)}>
+          <Pressable style={styles.pillPiano} onPress={() => setModalPianoAperto(true)} accessibilityRole="button" accessibilityLabel={t("mappa.vediIlPiano")}>
             <Ionicons name="calendar-outline" size={14} color={c.primario} />
             <Text style={styles.pillPianoTesto}>{t("mappa.vediIlPiano")}</Text>
           </Pressable>
@@ -738,7 +738,7 @@ function MappaVera({ navigation, route }) {
             {FILTRI.map((f) => {
               const attivo = f === "Tutti" ? nessunaSelezione : filtriTipoIA.includes(f);
               return (
-                <Pressable key={f} onPress={() => alternaFiltroTipo(f)} style={[styles.chip, attivo && styles.chipAttivo]}>
+                <Pressable key={f} onPress={() => alternaFiltroTipo(f)} accessibilityRole="button" accessibilityLabel={f} accessibilityState={{ selected: !!attivo }} style={[styles.chip, attivo && styles.chipAttivo]}>
                   <Text style={[styles.chipTesto, attivo && styles.chipTestoAttivo]}>{f}</Text>
                 </Pressable>
               );
@@ -750,6 +750,9 @@ function MappaVera({ navigation, route }) {
                 <Pressable
                   key={cat}
                   onPress={() => alternaCategoriaCultura(cat)}
+                  accessibilityRole="button"
+                  accessibilityLabel={meta.etichetta}
+                  accessibilityState={{ selected: !!attivo }}
                   style={[styles.chip, styles.chipConIcona, attivo && { backgroundColor: meta.colore, borderColor: meta.colore }]}
                 >
                   <Ionicons name={meta.icona} size={12} color={attivo ? "#FFFFFF" : meta.colore} />
@@ -764,6 +767,9 @@ function MappaVera({ navigation, route }) {
                 <Pressable
                   key={cat}
                   onPress={() => alternaCategoriaItinerario(cat)}
+                  accessibilityRole="button"
+                  accessibilityLabel={meta.etichetta}
+                  accessibilityState={{ selected: !!attivo }}
                   style={[styles.chip, styles.chipConIcona, attivo && { backgroundColor: meta.colore, borderColor: meta.colore }]}
                 >
                   <Ionicons name={meta.icona} size={12} color={attivo ? "#FFFFFF" : meta.colore} />
@@ -804,7 +810,7 @@ function MappaVera({ navigation, route }) {
         </View>
       )}
 
-      <Pressable style={styles.pulsanteVicinoAMe} onPress={vaiVicinoAMe} disabled={cercandoPosizione}>
+      <Pressable style={styles.pulsanteVicinoAMe} onPress={vaiVicinoAMe} disabled={cercandoPosizione} accessibilityRole="button" accessibilityLabel={t("mappa.vicinoAMe")}>
         {cercandoPosizione ? (
           <ActivityIndicator color={c.primario} size="small" />
         ) : (

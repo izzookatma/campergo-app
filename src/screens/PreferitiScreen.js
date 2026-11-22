@@ -87,7 +87,7 @@ export default function PreferitiScreen({ navigation }) {
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
           <Text style={styles.vuotoTesto}>{t("preferiti.accediMessaggio")}</Text>
-          <Pressable style={styles.pulsanteAccedi} onPress={() => navigation.navigate("Accedi")}>
+          <Pressable accessibilityRole="button" style={styles.pulsanteAccedi} onPress={() => navigation.navigate("Accedi")}>
             <Text style={styles.pulsanteAccediTesto}>{t("accedi.titoloAccedi")}</Text>
           </Pressable>
         </View>
@@ -105,6 +105,8 @@ export default function PreferitiScreen({ navigation }) {
           columnWrapperStyle={{ gap: 10 }}
           renderItem={({ item }) => (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={item.nome}
               style={styles.card}
               onPress={() => navigation.navigate("Scheda", { struttura: item })}
             >

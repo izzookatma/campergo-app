@@ -1,3 +1,4 @@
+import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator, Share, Animated } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -104,9 +105,21 @@ export default function SchedaScreen({ route, navigation }) {
   }, [session?.user?.id, struttura.idOriginale]);
 
   useEffect(() => {
+    // Ultima versione vista in cache: la scheda resta consultabile offline.
+    const chiave = `scheda_${struttura.origine}_${struttura.idOriginale}`;
+    let attivo = true;
     caricaDettaglioStruttura(struttura)
-      .then(setDettaglio)
-      .catch((e) => console.error("Errore nel caricare il dettaglio della struttura:", e));
+      .then((d) => {
+        if (!attivo) return;
+        setDettaglio(d);
+        salvaInCache(chiave, d);
+      })
+      .catch(async (e) => {
+        console.error("Errore nel caricare il dettaglio della struttura:", e);
+        const salvato = await leggiDaCache(chiave);
+        if (attivo && salvato?.dati) setDettaglio(salvato.dati);
+      });
+    return () => { attivo = false; };
   }, [struttura.origine, struttura.idOriginale]);
 
   // Piazzole e alloggi fissi: sempre visibili, con foto, senza bisogno di
@@ -114,9 +127,17 @@ export default function SchedaScreen({ route, navigation }) {
   // caricaPiazzoleStruttura in src/lib/strutture.js).
   useEffect(() => {
     if (struttura.origine !== "campeggi_pubblici") return;
+    const chiave = `piazzole_${struttura.idOriginale}`;
     caricaPiazzoleStruttura(struttura.idOriginale)
-      .then(setPiazzole)
-      .catch((e) => console.error("Errore nel caricare piazzole e alloggi:", e));
+      .then((p) => {
+        setPiazzole(p);
+        salvaInCache(chiave, p);
+      })
+      .catch(async (e) => {
+        console.error("Errore nel caricare piazzole e alloggi:", e);
+        const salvato = await leggiDaCache(chiave);
+        if (salvato?.dati) setPiazzole(salvato.dati);
+      });
   }, [struttura.origine, struttura.idOriginale]);
 
   // Offerte promo dell'host (stessa tabella del sito): errori ignorati,

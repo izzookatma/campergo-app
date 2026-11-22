@@ -71,7 +71,7 @@ export default function SentieriScreen({ navigation, route }) {
         <MarchioNaturaGo onPress={() => navigation.navigate("EsploraHub")} />
         <View style={styles.rigaTitolo}>
           <Text style={styles.titolo}>{t("sentieri.titolo")}</Text>
-          <Pressable style={styles.creaBottone} onPress={creaSentiero}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t("comune.crea")} style={styles.creaBottone} onPress={creaSentiero}>
             <Ionicons name="add" size={14} color="#2f6b3f" />
             <Text style={styles.creaBottoneTesto}>{t("comune.crea")}</Text>
           </Pressable>
@@ -123,7 +123,7 @@ export default function SentieriScreen({ navigation, route }) {
           renderItem={({ item }) => {
             const meta = MODALITA_SENTIERO_META[item.modalita];
             return (
-              <Pressable style={styles.card} onPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: item.id })}>
+              <Pressable accessibilityRole="button" accessibilityLabel={item.nome || item.titolo} style={styles.card} onPress={() => navigation.navigate("ItinerarioDettaglio", { itinerarioId: item.id })}>
                 <View style={styles.cardFoto}>
                   <ImmagineConRiserva
                     uri={item.fotoUrl}

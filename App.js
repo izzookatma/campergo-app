@@ -35,6 +35,7 @@ import AnnuncioScreen from "./src/screens/AnnuncioScreen";
 import NuovoAnnuncioScreen from "./src/screens/NuovoAnnuncioScreen";
 import MessaggiScreen from "./src/screens/MessaggiScreen";
 import ConversazioneScreen from "./src/screens/ConversazioneScreen";
+import BannerOffline from "./src/components/BannerOffline";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 import SchermataAvvio from "./src/screens/SchermataAvvio";
 import AccediScreen from "./src/screens/AccediScreen";
@@ -265,6 +266,7 @@ function ContenutoApp() {
       onStateChange={segnaSchermataCorrente}
     >
       <StatusBar style={scuro ? "light" : "dark"} />
+      <BannerOffline />
       <Tab.Navigator
         screenListeners={{ tabPress: () => vibraLeggera() }}
         screenOptions={({ route }) => ({

@@ -1,6 +1,9 @@
 export default {
   "comune.chiudi": "Fermer",
   "comune.erroreCaricamento": "Impossible de charger les données. Vérifiez votre connexion.",
+  "comune.offline": "Vous êtes hors ligne : certains contenus peuvent ne pas se charger.",
+  "mappa.cancellaRicerca": "Effacer la recherche",
+  "mappa.vicinoAMe": "Près de moi",
   "comune.riprova": "Réessayer",
   "card.servCorrente": "Électricité",
   "card.servCamperService": "Aire de service",

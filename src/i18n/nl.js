@@ -1,6 +1,9 @@
 export default {
   "comune.chiudi": "Sluiten",
   "comune.erroreCaricamento": "Kan de gegevens niet laden. Controleer je verbinding.",
+  "comune.offline": "Je bent offline: sommige inhoud wordt mogelijk niet geladen.",
+  "mappa.cancellaRicerca": "Zoekopdracht wissen",
+  "mappa.vicinoAMe": "Dichtbij mij",
   "comune.riprova": "Opnieuw proberen",
   "card.servCorrente": "Stroom",
   "card.servCamperService": "Camperservice",

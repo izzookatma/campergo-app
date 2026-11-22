@@ -4,6 +4,9 @@
 export default {
   "comune.chiudi": "Chiudi",
   "comune.erroreCaricamento": "Non riesco a caricare i dati. Controlla la connessione.",
+  "comune.offline": "Sei offline: alcuni contenuti potrebbero non caricarsi.",
+  "mappa.cancellaRicerca": "Cancella la ricerca",
+  "mappa.vicinoAMe": "Vicino a me",
   "comune.riprova": "Riprova",
   "card.servCorrente": "Corrente",
   "card.servCamperService": "Camper service",
