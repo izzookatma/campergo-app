@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { distanzaKm } from "./geo";
+import { conCache } from "./cacheOffline";
 
 // Musei, Borghi e Attività locali vivono nella stessa tabella del sito
 // `eventi_campeggio` (le "schede culturali" di CLAUDE.md), distinte dalla
@@ -62,7 +63,7 @@ function punteggioRicerca(scheda, termine) {
 // sotto il limite di Supabase, margine ampio anche per un termine molto
 // generico dentro una categoria), si ordinano per rilevanza come
 // risultatiCulturali sul sito, poi si tagliano le prime 200 per mostrarne.
-export async function caricaSchedeCulturali({ categoria, termine } = {}) {
+async function caricaSchedeCulturaliRete({ categoria, termine } = {}) {
   let query = supabase.from("eventi_campeggio").select(COLONNE_CULTURA).eq("stato", "approvato");
   if (categoria) query = query.eq("categoria", categoria);
   if (termine) {
@@ -79,7 +80,7 @@ export async function caricaSchedeCulturali({ categoria, termine } = {}) {
     .slice(0, 200);
 }
 
-export async function caricaSchedaCulturale(id) {
+async function caricaSchedaCulturaleRete(id) {
   const { data, error } = await supabase
     .from("eventi_campeggio")
     .select(COLONNE_CULTURA + ", indirizzo, note")
@@ -96,7 +97,7 @@ export async function caricaSchedaCulturale(id) {
 // un riquadro geografico, niente join con la struttura collegata — a
 // differenza del sito non serve paginare (il riquadro resta sotto le 1000
 // righe anche nelle zone più dense).
-export async function caricaCulturaVicina({ lat, lng, escludiCampeggioId, limite = 6 } = {}) {
+async function caricaCulturaVicinaRete({ lat, lng, escludiCampeggioId, limite = 6 } = {}) {
   if (lat == null || lng == null) return [];
   const deltaLat = RAGGIO_CULTURA_STRUTTURA_KM / 111;
   const deltaLng = RAGGIO_CULTURA_STRUTTURA_KM / (111 * Math.cos((lat * Math.PI) / 180) || 1);
@@ -153,3 +154,8 @@ export async function caricaTutteLePosizioniCulturali({ categorie = [] } = {}) {
   const dati = await paginaTutto(costruisciQuery);
   return dati.map(normalizzaSchedaCulturale);
 }
+
+// Con copia offline: se manca la rete si vede l'ultima versione già caricata.
+export const caricaSchedeCulturali = (...a) => conCache(`caricaSchedeCulturali_${JSON.stringify(a)}`, () => caricaSchedeCulturaliRete(...a), { salta: ((a) => !!(a[0] && a[0].termine))(a) });
+export const caricaSchedaCulturale = (...a) => conCache(`caricaSchedaCulturale_${JSON.stringify(a)}`, () => caricaSchedaCulturaleRete(...a));
+export const caricaCulturaVicina = (...a) => conCache(`caricaCulturaVicina_${JSON.stringify(a)}`, () => caricaCulturaVicinaRete(...a));

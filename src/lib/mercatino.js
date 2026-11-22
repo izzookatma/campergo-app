@@ -1,6 +1,7 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
+import { conCache } from "./cacheOffline";
 
 // Stesse categorie/stati del sito (src/Mercatino.jsx), stesso bucket
 // "fotografie" e stessa convenzione di percorso per le foto, così le due
@@ -20,7 +21,7 @@ export const STATO_PRODOTTO_META = {
   usato: "Usato",
 };
 
-export async function caricaAnnunciApprovati({ categoria, citta } = {}) {
+async function caricaAnnunciApprovatiRete({ categoria, citta } = {}) {
   let query = supabase.from("annunci_mercatino").select("*").eq("stato", "approvato").order("creato_il", { ascending: false });
   if (categoria) query = query.eq("categoria", categoria);
   if (citta) query = query.ilike("citta", `%${citta}%`);
@@ -29,7 +30,7 @@ export async function caricaAnnunciApprovati({ categoria, citta } = {}) {
   return data || [];
 }
 
-export async function caricaAnnuncio(id) {
+async function caricaAnnuncioRete(id) {
   const { data, error } = await supabase.from("annunci_mercatino").select("*").eq("id", id).single();
   if (error) throw error;
   return data;
@@ -169,3 +170,7 @@ export async function inviaMessaggio({ annuncioId, mittenteId, destinatarioId, n
   });
   if (error) throw error;
 }
+
+// Con copia offline: se manca la rete si vede l'ultima versione già caricata.
+export const caricaAnnunciApprovati = (...a) => conCache(`caricaAnnunciApprovati_${JSON.stringify(a)}`, () => caricaAnnunciApprovatiRete(...a), { salta: ((a) => !!(a[0] && a[0].citta))(a) });
+export const caricaAnnuncio = (...a) => conCache(`caricaAnnuncio_${JSON.stringify(a)}`, () => caricaAnnuncioRete(...a));

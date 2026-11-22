@@ -4,6 +4,7 @@
 // rigenerare a ogni apertura.
 
 import { supabase } from "./supabase";
+import { conCache } from "./cacheOffline";
 
 export async function salvaPianoViaggio(utenteId, { richiesta, tappe, giorniRichiesti, piano }) {
   const { error } = await supabase.from("piani_viaggio_salvati").insert({
@@ -16,7 +17,7 @@ export async function salvaPianoViaggio(utenteId, { richiesta, tappe, giorniRich
   if (error) throw error;
 }
 
-export async function caricaPianiSalvati(utenteId) {
+async function caricaPianiSalvatiRete(utenteId) {
   if (!utenteId) return [];
   const { data, error } = await supabase
     .from("piani_viaggio_salvati")
@@ -59,3 +60,6 @@ export async function aggiornaVacanzaPersonale(id, { titolo, tappe, giorniRichie
     .eq("id", id);
   if (error) throw error;
 }
+
+// Con copia offline: se manca la rete si vede l'ultima versione già caricata.
+export const caricaPianiSalvati = (...a) => conCache(`caricaPianiSalvati_${JSON.stringify(a)}`, () => caricaPianiSalvatiRete(...a));

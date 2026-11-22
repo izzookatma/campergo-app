@@ -2,7 +2,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 import { geocodificaOCoordinate } from "./geocodifica";
-import { salvaInCache, leggiDaCache, rimuoviDallaCache, elencaChiaviCache } from "./cacheOffline";
+import { salvaInCache, leggiDaCache, rimuoviDallaCache, elencaChiaviCache, conCache } from "./cacheOffline";
 
 // Stesse etichette del sito (DIFFICOLTA_4X4_META, TIPO_VEICOLO_4X4_META,
 // MODALITA_SENTIERO_META in src/App.jsx) — sentieri e percorsi 4x4 sono
@@ -107,7 +107,7 @@ async function arricchisciConTappe(itinerari) {
   }));
 }
 
-export async function caricaSentieri({ modalita } = {}) {
+async function caricaSentieriRete({ modalita } = {}) {
   let query = supabase.from("itinerari").select(COLONNE_ITINERARIO).eq("stato", "approvato").eq("categoria", "sentiero");
   if (modalita) query = query.or(`modalita.eq.${modalita},modalita.eq.entrambi`);
   const { data, error } = await query.order("creato_il", { ascending: false });
@@ -115,7 +115,7 @@ export async function caricaSentieri({ modalita } = {}) {
   return arricchisciConTappe((data || []).map(normalizzaItinerario));
 }
 
-export async function caricaPercorsi4x4({ difficolta, tipoVeicolo } = {}) {
+async function caricaPercorsi4x4Rete({ difficolta, tipoVeicolo } = {}) {
   let query = supabase.from("itinerari").select(COLONNE_ITINERARIO).eq("stato", "approvato").eq("categoria", "percorso_4x4");
   if (difficolta) query = query.eq("difficolta", difficolta);
   if (tipoVeicolo) query = query.or(`tipo_veicolo.eq.${tipoVeicolo},tipo_veicolo.eq.entrambi`);
@@ -179,7 +179,7 @@ export async function caricaTutteLePosizioniItinerari() {
     .filter((it) => it.lat != null && it.lng != null);
 }
 
-export async function caricaItinerarioDettaglio(id) {
+async function caricaItinerarioDettaglioRete(id) {
   const [itinerarioRes, tappeRes] = await Promise.all([
     supabase.from("itinerari").select(COLONNE_ITINERARIO).eq("id", id).single(),
     supabase
@@ -379,3 +379,8 @@ export async function creaItinerario({
 
   return itinerario;
 }
+
+// Con copia offline: se manca la rete si vede l'ultima versione già caricata.
+export const caricaSentieri = (...a) => conCache(`caricaSentieri_${JSON.stringify(a)}`, () => caricaSentieriRete(...a));
+export const caricaPercorsi4x4 = (...a) => conCache(`caricaPercorsi4x4_${JSON.stringify(a)}`, () => caricaPercorsi4x4Rete(...a));
+export const caricaItinerarioDettaglio = (...a) => conCache(`caricaItinerarioDettaglio_${JSON.stringify(a)}`, () => caricaItinerarioDettaglioRete(...a));

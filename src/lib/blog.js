@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { conCache } from "./cacheOffline";
 
 // Blog NaturaGo (tabella `articoli_blog`, sola lettura — stessa tabella e
 // stesse colonne di src/Blog.jsx / src/ArticoloBlog.jsx sul sito).
@@ -21,7 +22,7 @@ const COLONNE_ELENCO = "slug,titolo,estratto,rubrica,foto_copertina,in_evidenza,
 const COLONNE_SCHEDA =
   "id,slug,titolo,estratto,contenuto,rubrica,foto_copertina,foto_credito,regione,categoria_collegata,link_cta_href,link_cta_testo,mi_piace,data_pubblicazione";
 
-export async function caricaArticoli() {
+async function caricaArticoliRete() {
   const { data, error } = await supabase
     .from("articoli_blog")
     .select(COLONNE_ELENCO)
@@ -31,7 +32,7 @@ export async function caricaArticoli() {
   return data || [];
 }
 
-export async function caricaArticolo(slug) {
+async function caricaArticoloRete(slug) {
   const { data, error } = await supabase
     .from("articoli_blog")
     .select(COLONNE_SCHEDA)
@@ -42,7 +43,7 @@ export async function caricaArticolo(slug) {
   return data || null;
 }
 
-export async function caricaArticoliCorrelati(rubrica, slugDaEscludere) {
+async function caricaArticoliCorrelatiRete(rubrica, slugDaEscludere) {
   if (!rubrica) return [];
   const { data, error } = await supabase
     .from("articoli_blog")
@@ -93,3 +94,8 @@ export function testoCtaArticolo(articolo) {
   if (articolo.link_cta_testo) return articolo.link_cta_testo;
   return articolo.categoria_collegata ? "Scopri di più su NaturaGo.it" : null;
 }
+
+// Con copia offline: se manca la rete si vede l'ultima versione già caricata.
+export const caricaArticoli = (...a) => conCache(`caricaArticoli_${JSON.stringify(a)}`, () => caricaArticoliRete(...a));
+export const caricaArticolo = (...a) => conCache(`caricaArticolo_${JSON.stringify(a)}`, () => caricaArticoloRete(...a));
+export const caricaArticoliCorrelati = (...a) => conCache(`caricaArticoliCorrelati_${JSON.stringify(a)}`, () => caricaArticoliCorrelatiRete(...a));

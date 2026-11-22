@@ -42,3 +42,20 @@ export async function elencaChiaviCache(prefissoChiave) {
     return [];
   }
 }
+
+// Carica dalla rete e, se manca la connessione (o il server non risponde),
+// ricade sull'ultima copia salvata. Se non c'è nemmeno quella, l'errore
+// originale arriva alla schermata come prima. `salta`: ricerche libere e
+// simili, che non vale la pena tenere in memoria.
+export async function conCache(chiave, caricatore, { salta = false } = {}) {
+  if (salta) return caricatore();
+  try {
+    const dati = await caricatore();
+    salvaInCache(chiave, dati);
+    return dati;
+  } catch (errore) {
+    const copia = await leggiDaCache(chiave);
+    if (copia) return copia.dati;
+    throw errore;
+  }
+}
