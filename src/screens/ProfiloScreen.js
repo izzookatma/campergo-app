@@ -13,7 +13,7 @@ import Testo from "../components/ui/Testo";
 import Pulsante from "../components/ui/Pulsante";
 import Chip from "../components/ui/Chip";
 import { Gruppo, Riga } from "../components/ui/Gruppo";
-import { caricaMiaStruttura } from "../lib/host";
+import { caricaMiaStruttura, contaAvvisiNonLetti } from "../lib/host";
 import { registraNotifichePush } from "../lib/notifichePush";
 import { telemetriaAttiva, impostaTelemetriaAttiva } from "../lib/telemetria";
 import { useT, useLingua, impostaLingua } from "../i18n/i18n";
@@ -69,6 +69,7 @@ export default function ProfiloScreen({ navigation }) {
     telemetriaAttiva().then(setStatisticheAttive);
   }, []);
   const [struttura, setStruttura] = useState(null);
+  const [avvisiNuovi, setAvvisiNuovi] = useState(0);
   useFocusEffect(
     useCallback(() => {
       let attivo = true;
@@ -80,6 +81,8 @@ export default function ProfiloScreen({ navigation }) {
         .then((s) => {
           if (attivo) setStruttura(s);
           if (attivo && s) registraNotifichePush(utenteId);
+          if (s) return contaAvvisiNonLetti(utenteId).then((n) => attivo && setAvvisiNuovi(n));
+          if (attivo) setAvvisiNuovi(0);
         })
         .catch((e) => console.error("[NaturaGo app] caricaMiaStruttura", e));
       return () => {
@@ -135,6 +138,15 @@ export default function ProfiloScreen({ navigation }) {
                 {struttura.nome} · foto e dati della vetrina
               </Testo>
             </View>
+            {avvisiNuovi > 0 && (
+              <View
+                accessible
+                accessibilityLabel={`${avvisiNuovi} avvisi non letti`}
+                style={{ minWidth: 22, height: 22, borderRadius: 11, backgroundColor: c.pericolo, alignItems: "center", justifyContent: "center", paddingHorizontal: 6, marginRight: 6 }}
+              >
+                <Testo style={{ color: "#fff", fontSize: 11.5, fontWeight: "800" }}>{avvisiNuovi > 99 ? "99+" : avvisiNuovi}</Testo>
+              </View>
+            )}
             <Ionicons name="chevron-forward" size={16} color={c.sulPrimario} />
           </Pressable>
         )}

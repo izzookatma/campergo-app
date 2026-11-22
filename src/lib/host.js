@@ -1,6 +1,7 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
+import { geocodificaOCoordinate } from "./geocodifica";
 
 // Lato gestore dell'app ("La mia struttura"): stesse tabelle, stesso bucket
 // "fotografie" e stesse convenzioni di percorso del pannello host del sito
@@ -18,7 +19,7 @@ const QUALITA_FOTO = 0.82;
 const CACHE_CONTROL_FOTO = "604800";
 
 const COLONNE_STRUTTURA =
-  "id, owner_id, nome, localita, tipo_struttura, tipo_host, stato, descrizione, telefono, sito_web, prezzo, foto_url, foto_generica, chi_siamo_foto";
+  "id, owner_id, nome, indirizzo, cap, localita, tipo_struttura, tipo_host, stato, descrizione, telefono, sito_web, prezzo, foto_url, foto_generica, chi_siamo_foto";
 
 // La struttura del gestore collegato, oppure null se l'account non ne ha
 // una (un cliente normale): è questo che decide se mostrare la voce
@@ -107,18 +108,39 @@ export async function togliFotoGalleria(struttura, url) {
   return nuove;
 }
 
-// Dati base della vetrina. Nome e indirizzo restano sul sito: cambiarli
-// fa ricalcolare la posizione sulla mappa, meglio farlo dal pannello completo.
-export async function salvaDatiStruttura(struttura, { descrizione, telefono, sitoWeb, prezzo }) {
+// Dati della vetrina. Se cambia l'indirizzo si ricalcola la posizione sulla mappa.
+export async function salvaDatiStruttura(struttura, { nome, indirizzo, cap, localita, descrizione, telefono, sitoWeb, prezzo }) {
   const aggiornamento = {
+    nome: nome.trim(),
+    indirizzo: indirizzo.trim(),
+    cap: cap.trim(),
+    localita: localita.trim(),
     descrizione: descrizione.trim(),
     telefono: telefono.trim() || null,
     sito_web: sitoWeb.trim() || null,
     prezzo: prezzo ? Number(prezzo) : null,
   };
+  // Come sul sito: se cambia l'indirizzo si ricalcola la posizione sulla
+  // mappa. Se la ricerca non trova nulla si lasciano le coordinate che
+  // c'erano, invece di cancellarle.
+  const indirizzoCambiato =
+    aggiornamento.indirizzo !== (struttura.indirizzo ?? "") ||
+    aggiornamento.cap !== (struttura.cap ?? "") ||
+    aggiornamento.localita !== (struttura.localita ?? "");
+  let posizioneAggiornata = true;
+  if (indirizzoCambiato) {
+    const completo = [aggiornamento.indirizzo, aggiornamento.cap, aggiornamento.localita].filter(Boolean).join(", ");
+    const coordinate = await geocodificaOCoordinate(completo);
+    if (coordinate) {
+      aggiornamento.lat = coordinate.lat;
+      aggiornamento.lng = coordinate.lng;
+    } else {
+      posizioneAggiornata = false;
+    }
+  }
   const { error } = await supabase.from("campeggi").update(aggiornamento).eq("id", struttura.id);
   if (error) throw error;
-  return aggiornamento;
+  return { aggiornamento, posizioneAggiornata };
 }
 
 // ---- Piazzole e alloggi ----------------------------------------------------
@@ -235,5 +257,79 @@ export async function segnaAvvisiLetti(hostId, ids) {
   let q = supabase.from("avvisi_host").update({ letto: true }).eq("host_id", hostId).eq("letto", false);
   if (ids) q = q.in("id", ids);
   const { error } = await q;
+  if (error) throw error;
+}
+
+// Recensioni ricevute dalla struttura del gestore (stessa tabella e stessa
+// risposta pubblica del pannello host del sito: RecensioniHost in HostArea.jsx).
+export async function caricaRecensioniHost(strutturaId) {
+  const { data, error } = await supabase
+    .from("recensioni")
+    .select("id, nome_cliente, testo, punteggio, creato_il, risposta_host")
+    .eq("campeggio_id", strutturaId)
+    .eq("tipo", "campeggio")
+    .eq("rimossa", false)
+    .order("creato_il", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function rispondiRecensione(recensioneId, testo) {
+  const { error } = await supabase.from("recensioni").update({ risposta_host: testo || null }).eq("id", recensioneId);
+  if (error) throw error;
+}
+
+// Offerte promo della struttura (stessa tabella e stesse regole del sito,
+// OffertePromoHost.jsx): il gestore le vede tutte, anche quelle sospese. Il
+// controllo del prezzo resta al database, che rifiuta importi non coerenti.
+export async function caricaOfferteHost(strutturaId) {
+  const { data, error } = await supabase
+    .from("offerte_promo")
+    .select("id, nome, ambito, giorno_arrivo, giorno_partenza, notti_minime, tipo_prezzo, prezzo_notte, sconto_percentuale, data_inizio, data_fine, attiva, descrizione")
+    .eq("campeggio_id", strutturaId)
+    .order("creato_il", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function creaOffertaHost(strutturaId, o) {
+  const { error } = await supabase.from("offerte_promo").insert({
+    campeggio_id: strutturaId,
+    nome: o.nome,
+    ambito: o.ambito,
+    giorno_arrivo: o.giornoArrivo,
+    giorno_partenza: o.giornoPartenza,
+    notti_minime: o.nottiMinime,
+    tipo_prezzo: o.tipoPrezzo,
+    prezzo_notte: o.tipoPrezzo === "prezzo_notte" ? o.prezzoNotte : null,
+    sconto_percentuale: o.tipoPrezzo === "percentuale" ? o.scontoPercentuale : null,
+    data_inizio: o.dataInizio,
+    data_fine: o.dataFine,
+    descrizione: o.descrizione || null,
+  });
+  if (error) throw error;
+}
+
+export async function impostaOffertaAttiva(id, attiva) {
+  const { error } = await supabase.from("offerte_promo").update({ attiva }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function eliminaOffertaHost(id) {
+  const { error } = await supabase.from("offerte_promo").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Servizi della struttura (colonna `amenities` di `campeggi`, come il pannello
+// «Servizi» del sito). Chi salva conserva le voci che l'app non conosce: il
+// gestore potrebbe averle messe dal sito.
+export async function caricaServiziHost(strutturaId) {
+  const { data, error } = await supabase.from("campeggi").select("amenities").eq("id", strutturaId).single();
+  if (error) throw error;
+  return Array.isArray(data?.amenities) ? data.amenities : [];
+}
+
+export async function salvaServiziHost(strutturaId, amenities) {
+  const { error } = await supabase.from("campeggi").update({ amenities }).eq("id", strutturaId);
   if (error) throw error;
 }

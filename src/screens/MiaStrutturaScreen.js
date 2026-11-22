@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -26,6 +27,7 @@ import {
   aggiungiFotoGalleria,
   togliFotoGalleria,
   salvaDatiStruttura,
+  contaAvvisiNonLetti,
 } from "../lib/host";
 
 const URL_PANNELLO_SITO = "https://www.naturago.it/host";
@@ -50,6 +52,11 @@ export default function MiaStrutturaScreen({ navigation }) {
   const [fotoInCorso, setFotoInCorso] = useState(null);
   const [erroreFoto, setErroreFoto] = useState(null);
 
+  const [avvisiNuovi, setAvvisiNuovi] = useState(0);
+  const [nome, setNome] = useState("");
+  const [indirizzo, setIndirizzo] = useState("");
+  const [cap, setCap] = useState("");
+  const [localita, setLocalita] = useState("");
   const [descrizione, setDescrizione] = useState("");
   const [telefono, setTelefono] = useState("");
   const [sitoWeb, setSitoWeb] = useState("");
@@ -58,6 +65,18 @@ export default function MiaStrutturaScreen({ navigation }) {
   const [salvato, setSalvato] = useState(false);
   const [erroreDati, setErroreDati] = useState(null);
 
+  useFocusEffect(
+    useCallback(() => {
+      let attivo = true;
+      contaAvvisiNonLetti(utenteId)
+        .then((n) => attivo && setAvvisiNuovi(n))
+        .catch(() => {});
+      return () => {
+        attivo = false;
+      };
+    }, [utenteId]),
+  );
+
   useEffect(() => {
     let attivo = true;
     caricaMiaStruttura(utenteId)
@@ -65,6 +84,10 @@ export default function MiaStrutturaScreen({ navigation }) {
         if (!attivo) return;
         setStruttura(s);
         if (s) {
+          setNome(s.nome ?? "");
+          setIndirizzo(s.indirizzo ?? "");
+          setCap(s.cap ?? "");
+          setLocalita(s.localita ?? "");
           setDescrizione(s.descrizione ?? "");
           setTelefono(s.telefono ?? "");
           setSitoWeb(s.sito_web ?? "");
@@ -166,11 +189,18 @@ export default function MiaStrutturaScreen({ navigation }) {
       setErroreDati("Il prezzo deve essere un numero intero, senza virgole (es. 25).");
       return;
     }
+    if (!nome.trim() || !indirizzo.trim() || !cap.trim() || !localita.trim() || !descrizione.trim()) {
+      setErroreDati("Nome, indirizzo, CAP, città e descrizione sono obbligatori.");
+      return;
+    }
     setSalvando(true);
     try {
-      const aggiornamento = await salvaDatiStruttura(struttura, { descrizione, telefono, sitoWeb, prezzo: prezzoPulito });
+      const { aggiornamento, posizioneAggiornata } = await salvaDatiStruttura(struttura, { nome, indirizzo, cap, localita, descrizione, telefono, sitoWeb, prezzo: prezzoPulito });
       setStruttura((s) => ({ ...s, ...aggiornamento }));
       setSalvato(true);
+      if (!posizioneAggiornata) {
+        Alert.alert("Posizione non aggiornata", "Ho salvato l'indirizzo, ma non sono riuscito a trovarlo sulla mappa: resta la posizione di prima. Controlla l'indirizzo e il CAP.");
+      }
     } catch (e) {
       setErroreDati(messaggioErroreComprensibile(e, "Non è stato possibile salvare."));
     } finally {
@@ -314,6 +344,48 @@ export default function MiaStrutturaScreen({ navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitolo}>Dati della vetrina</Text>
 
+            <Text style={styles.etichetta}>Nome</Text>
+            <TextInput
+              style={styles.campo}
+              value={nome}
+              onChangeText={(t) => {
+                setNome(t);
+                setSalvato(false);
+              }}
+            />
+
+            <Text style={styles.etichetta}>Indirizzo</Text>
+            <TextInput
+              style={styles.campo}
+              value={indirizzo}
+              onChangeText={(t) => {
+                setIndirizzo(t);
+                setSalvato(false);
+              }}
+            />
+
+            <Text style={styles.etichetta}>CAP</Text>
+            <TextInput
+              style={styles.campo}
+              value={cap}
+              onChangeText={(t) => {
+                setCap(t);
+                setSalvato(false);
+              }}
+              keyboardType="number-pad"
+              maxLength={5}
+            />
+
+            <Text style={styles.etichetta}>Città</Text>
+            <TextInput
+              style={styles.campo}
+              value={localita}
+              onChangeText={(t) => {
+                setLocalita(t);
+                setSalvato(false);
+              }}
+            />
+
             <Text style={styles.etichetta}>Descrizione</Text>
             <TextInput
               style={[styles.campo, styles.campoLungo]}
@@ -374,7 +446,27 @@ export default function MiaStrutturaScreen({ navigation }) {
 
           <Pressable style={styles.bottonePieno} onPress={() => navigation.navigate("AvvisiStruttura")}>
             <Ionicons name="notifications-outline" size={17} color={c.sulPrimario} />
-            <Text style={styles.bottonePienoTesto}>Avvisi</Text>
+            <Text style={styles.bottonePienoTesto}>{avvisiNuovi > 0 ? `Avvisi (${avvisiNuovi} nuovi)` : "Avvisi"}</Text>
+          </Pressable>
+
+          <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("RecensioniStruttura")}>
+            <Ionicons name="star-outline" size={17} color={c.primario} />
+            <Text style={styles.bottoneBordoTesto}>Recensioni e risposte</Text>
+          </Pressable>
+
+          <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("OfferteStruttura")}>
+            <Ionicons name="pricetag-outline" size={17} color={c.primario} />
+            <Text style={styles.bottoneBordoTesto}>Offerte promo</Text>
+          </Pressable>
+
+          <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("ServiziStruttura")}>
+            <Ionicons name="checkbox-outline" size={17} color={c.primario} />
+            <Text style={styles.bottoneBordoTesto}>Servizi offerti</Text>
+          </Pressable>
+
+          <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("GuidaGestore")}>
+            <Ionicons name="help-circle-outline" size={17} color={c.primario} />
+            <Text style={styles.bottoneBordoTesto}>Guida per i gestori</Text>
           </Pressable>
 
           <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("PiazzoleStruttura")}>

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
+import { eFavoritaScheda, impostaFavoritaScheda } from "../lib/preferiti";
 import { caricaSchedaCulturale, CATEGORIA_CULTURALE_META } from "../lib/cultura";
 import { caricaRecensioniEvento, inviaRecensioneEvento } from "../lib/recensioni";
 import { caricaStruttureVicine } from "../lib/strutture";
@@ -50,6 +51,7 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   const { id } = route.params;
   const { session } = useAuth();
   const [scheda, setScheda] = useState(null);
+  const [favorita, setFavorita] = useState(false);
   const [caricamento, setCaricamento] = useState(true);
   const [tentativo, setTentativo] = useState(0);
   const [recensioni, setRecensioni] = useState([]);
@@ -87,6 +89,32 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
   };
 
   useEffect(caricaRecensioniScheda, [id]);
+
+  useEffect(() => {
+    let attivo = true;
+    if (!session?.user?.id) return undefined;
+    eFavoritaScheda(session.user.id, id)
+      .then((f) => attivo && setFavorita(f))
+      .catch(() => {});
+    return () => {
+      attivo = false;
+    };
+  }, [session?.user?.id, id]);
+
+  const favoritaMostrata = !!session?.user?.id && favorita;
+  const alternaFavorita = async () => {
+    if (!session?.user?.id) {
+      navigation.navigate("Accedi");
+      return;
+    }
+    const nuova = !favoritaMostrata;
+    setFavorita(nuova);
+    const errore = await impostaFavoritaScheda(session.user.id, id, nuova);
+    if (errore) {
+      setFavorita(!nuova);
+      console.error("[NaturaGo app] impostaFavoritaScheda", errore);
+    }
+  };
 
   const miaRecensione = session?.user?.id ? recensioni.find((r) => r.clienteId === session.user.id) : null;
 
@@ -135,6 +163,16 @@ export default function SchedaCulturaleScreen({ route, navigation }) {
           />
           <Pressable accessibilityRole="button" accessibilityLabel={t("comune.indietro")} hitSlop={8} style={styles.tornaIndietro} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={18} color={c.testo} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={favoritaMostrata ? t("preferiti.togli") : t("preferiti.salva")}
+            accessibilityState={{ selected: favoritaMostrata }}
+            hitSlop={8}
+            style={[styles.tornaIndietro, { left: undefined, right: 16 }]}
+            onPress={alternaFavorita}
+          >
+            <Ionicons name={favoritaMostrata ? "heart" : "heart-outline"} size={18} color={favoritaMostrata ? "#D92D20" : c.testo} />
           </Pressable>
         </SafeAreaView>
 

@@ -7,6 +7,7 @@ import { NavigationContainer, createNavigationContainerRef, DefaultTheme, DarkTh
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
 import { vibraLeggera } from "./src/lib/vibrazione";
 
 import EsploraHubScreen from "./src/screens/EsploraHubScreen";
@@ -30,6 +31,10 @@ import MiaStrutturaScreen from "./src/screens/MiaStrutturaScreen";
 import ModificaProfiloScreen from "./src/screens/ModificaProfiloScreen";
 import PiazzoleScreen from "./src/screens/PiazzoleScreen";
 import AvvisiScreen from "./src/screens/AvvisiScreen";
+import GuidaGestoreScreen from "./src/screens/GuidaGestoreScreen";
+import ServiziStrutturaScreen from "./src/screens/ServiziStrutturaScreen";
+import OfferteStrutturaScreen from "./src/screens/OfferteStrutturaScreen";
+import RecensioniStrutturaScreen from "./src/screens/RecensioniStrutturaScreen";
 import MercatinoScreen from "./src/screens/MercatinoScreen";
 import AnnuncioScreen from "./src/screens/AnnuncioScreen";
 import NuovoAnnuncioScreen from "./src/screens/NuovoAnnuncioScreen";
@@ -175,6 +180,10 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="ModificaProfilo" component={ModificaProfiloScreen} />
       <ProfiloStack.Screen name="PiazzoleStruttura" component={PiazzoleScreen} />
       <ProfiloStack.Screen name="AvvisiStruttura" component={AvvisiScreen} />
+      <ProfiloStack.Screen name="GuidaGestore" component={GuidaGestoreScreen} />
+      <ProfiloStack.Screen name="ServiziStruttura" component={ServiziStrutturaScreen} />
+      <ProfiloStack.Screen name="OfferteStruttura" component={OfferteStrutturaScreen} />
+      <ProfiloStack.Screen name="RecensioniStruttura" component={RecensioniStrutturaScreen} />
       <ProfiloStack.Screen name="EliminaAccount" component={EliminaAccountScreen} />
       <ProfiloStack.Screen name="Faq" component={FaqScreen} />
       <ProfiloStack.Screen name="NuovaDomanda" component={NuovaDomandaScreen} />
@@ -248,6 +257,32 @@ function ContenutoApp() {
 
   useEffect(() => {
     segnaApertura();
+  }, []);
+
+  // Tocco su una notifica (avvisi del gestore): apre l'elenco avvisi, anche
+  // quando l'app era chiusa (ultima notifica toccata, appena la navigazione
+  // è pronta).
+  useEffect(() => {
+    const apriAvvisi = () => {
+      if (!riferimentoNavigazione.isReady()) return false;
+      riferimentoNavigazione.navigate("Profilo", { screen: "AvvisiStruttura" });
+      return true;
+    };
+    const iscrizione = Notifications.addNotificationResponseReceivedListener(() => {
+      apriAvvisi();
+    });
+    Notifications.getLastNotificationResponseAsync()
+      .then((risposta) => {
+        if (!risposta) return;
+        let tentativi = 0;
+        const prova = () => {
+          if (apriAvvisi() || ++tentativi > 20) return;
+          setTimeout(prova, 300);
+        };
+        prova();
+      })
+      .catch(() => {});
+    return () => iscrizione.remove();
   }, []);
 
   if (caricamento) {

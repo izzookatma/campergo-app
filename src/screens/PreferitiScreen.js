@@ -5,7 +5,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTema, ombra } from "../theme/tema";
 import { useAuth } from "../context/AuthContext";
-import { caricaStrutturePreferite } from "../lib/preferiti";
+import { caricaStrutturePreferite, caricaSchedePreferite } from "../lib/preferiti";
+import Chip from "../components/ui/Chip";
 import { salvaInCache, leggiDaCache } from "../lib/cacheOffline";
 import MarchioNaturaGo from "../components/MarchioNaturaGo";
 import ImmagineConRiserva from "../components/ImmagineConRiserva";
@@ -19,6 +20,8 @@ export default function PreferitiScreen({ navigation }) {
   const t = useT();
   const { session } = useAuth();
   const [preferiti, setPreferiti] = useState([]);
+  const [schede, setSchede] = useState([]);
+  const [tab, setTab] = useState("strutture");
   const [caricamento, setCaricamento] = useState(true);
   const [senzaConnessione, setSenzaConnessione] = useState(false);
   const [errore, setErrore] = useState(false);
@@ -39,6 +42,9 @@ export default function PreferitiScreen({ navigation }) {
         setCaricamento(true);
         void tentativo; // «Riprova» cambia questo valore e rilancia il caricamento
         setErrore(false);
+        caricaSchedePreferite(session.user.id)
+          .then(setSchede)
+          .catch(() => {});
         caricaStrutturePreferite(session.user.id)
           .then((dati) => {
             setPreferiti(dati);
@@ -64,7 +70,15 @@ export default function PreferitiScreen({ navigation }) {
       <View style={styles.intestazione}>
         <MarchioNaturaGo style={{ marginBottom: 10 }} />
         <Text style={styles.titolo}>{t("tab.preferiti")}</Text>
-        <Text style={styles.sottotitolo}>{t("preferiti.struttureSalvate", { n: preferiti.length })}</Text>
+        <Text style={styles.sottotitolo}>
+          {tab === "cultura" ? t("preferiti.schedeSalvate", { n: schede.length }) : t("preferiti.struttureSalvate", { n: preferiti.length })}
+        </Text>
+        {!!session && (
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 10 }}>
+            <Chip etichetta={t("preferiti.tabStrutture")} attivo={tab === "strutture"} onPress={() => setTab("strutture")} compatto />
+            <Chip etichetta={t("preferiti.tabCultura")} attivo={tab === "cultura"} onPress={() => setTab("cultura")} compatto />
+          </View>
+        )}
       </View>
 
       {senzaConnessione && (
@@ -91,6 +105,37 @@ export default function PreferitiScreen({ navigation }) {
             <Text style={styles.pulsanteAccediTesto}>{t("accedi.titoloAccedi")}</Text>
           </Pressable>
         </View>
+      ) : tab === "cultura" ? (
+        schede.length === 0 ? (
+          <View style={styles.vuoto}>
+            <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
+            <Text style={styles.vuotoTesto}>{t("preferiti.nessunaScheda")}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={schede}
+            keyExtractor={(item) => String(item.id)}
+            numColumns={2}
+            contentContainerStyle={{ padding: 20, gap: 10 }}
+            columnWrapperStyle={{ gap: 10 }}
+            renderItem={({ item }) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={item.titolo}
+                style={styles.card}
+                onPress={() => navigation.navigate("SchedaCulturale", { id: item.id })}
+              >
+                <View style={styles.cardFoto}>
+                  <ImmagineConRiserva uri={item.fotoUrl} larghezza={160} style={styles.cardImmagine} iconaColore={c.primario} />
+                </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardNome}>{item.titolo}</Text>
+                  <Text style={styles.cardLocalita}>{item.citta}</Text>
+                </View>
+              </Pressable>
+            )}
+          />
+        )
       ) : preferiti.length === 0 ? (
         <View style={styles.vuoto}>
           <Ionicons name="heart-outline" size={28} color={c.testoSecondario} />
