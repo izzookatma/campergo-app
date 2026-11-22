@@ -9,6 +9,21 @@ import { caricaMiaStruttura, caricaServiziHost, salvaServiziHost } from "../lib/
 import { CATEGORIE_FILTRI_SERVIZI } from "../lib/filtriServizi";
 import StatoErrore from "../components/ui/StatoErrore";
 
+const AMBIENTI = [
+  { chiave: "lago", etichetta: "Lago" },
+  { chiave: "mare", etichetta: "Mare" },
+  { chiave: "montagna", etichetta: "Montagna" },
+  { chiave: "collina", etichetta: "Collina" },
+  { chiave: "agriturismo", etichetta: "Agriturismo" },
+  { chiave: "valle", etichetta: "Valle" },
+];
+const CATEGORIE = [
+  { chiave: "relax", etichetta: "Relax" },
+  { chiave: "cultura", etichetta: "Attività e visite culturali" },
+  { chiave: "natura", etichetta: "Vivi nella natura" },
+];
+const uguali = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+
 // Servizi offerti dalla struttura (corrente, docce, wifi, camper service…):
 // sono quelli che i clienti filtrano nella ricerca, quindi tenerli giusti
 // porta più visite alla scheda.
@@ -20,6 +35,10 @@ export default function ServiziStrutturaScreen({ navigation }) {
   const [strutturaId, setStrutturaId] = useState(null);
   const [selezionati, setSelezionati] = useState([]);
   const [originali, setOriginali] = useState([]);
+  const [ambiente, setAmbiente] = useState([]);
+  const [ambienteOrig, setAmbienteOrig] = useState([]);
+  const [categorie, setCategorie] = useState([]);
+  const [categorieOrig, setCategorieOrig] = useState([]);
   const [caricando, setCaricando] = useState(true);
   const [errore, setErrore] = useState(false);
   const [tentativo, setTentativo] = useState(0);
@@ -40,8 +59,12 @@ export default function ServiziStrutturaScreen({ navigation }) {
         .then((r) => {
           if (!attivo || !r) return;
           setStrutturaId(r.id);
-          setSelezionati(r.servizi);
-          setOriginali(r.servizi);
+          setSelezionati(r.servizi.amenities);
+          setOriginali(r.servizi.amenities);
+          setAmbiente(r.servizi.tipoAmbiente);
+          setAmbienteOrig(r.servizi.tipoAmbiente);
+          setCategorie(r.servizi.categorie);
+          setCategorieOrig(r.servizi.categorie);
         })
         .catch((e) => {
           console.error("[NaturaGo app] servizi host", e);
@@ -58,12 +81,18 @@ export default function ServiziStrutturaScreen({ navigation }) {
     setSalvato(false);
     setSelezionati((s) => (s.includes(chiave) ? s.filter((x) => x !== chiave) : [...s, chiave]));
   };
+  const alternaIn = (imposta) => (chiave) => {
+    setSalvato(false);
+    imposta((s) => (s.includes(chiave) ? s.filter((x) => x !== chiave) : [...s, chiave]));
+  };
 
   const salva = async () => {
     setSalvando(true);
     try {
-      await salvaServiziHost(strutturaId, selezionati);
+      await salvaServiziHost(strutturaId, { amenities: selezionati, tipoAmbiente: ambiente, categorie });
       setOriginali(selezionati);
+      setAmbienteOrig(ambiente);
+      setCategorieOrig(categorie);
       setSalvato(true);
     } catch (e) {
       console.error("[NaturaGo app] salvaServiziHost", e);
@@ -73,7 +102,7 @@ export default function ServiziStrutturaScreen({ navigation }) {
     }
   };
 
-  const modificato = selezionati.length !== originali.length || selezionati.some((x) => !originali.includes(x));
+  const modificato = !uguali(selezionati, originali) || !uguali(ambiente, ambienteOrig) || !uguali(categorie, categorieOrig);
 
   return (
     <View style={styles.schermo}>
@@ -94,6 +123,33 @@ export default function ServiziStrutturaScreen({ navigation }) {
         <>
           <ScrollView contentContainerStyle={styles.lista}>
             <Text style={styles.nota}>Spunta ciò che la tua struttura offre davvero. I clienti cercano e filtrano per questi servizi.</Text>
+            {[
+              { titolo: "Ambiente", icona: "earth-outline", voci: AMBIENTI, valori: ambiente, imposta: setAmbiente },
+              { titolo: "Cosa possono fare i tuoi ospiti", icona: "compass-outline", voci: CATEGORIE, valori: categorie, imposta: setCategorie },
+            ].map((g) => (
+              <View key={g.titolo} style={styles.card}>
+                <View style={styles.rigaCat}>
+                  <Ionicons name={g.icona} size={16} color={c.primario} />
+                  <Text style={styles.catTitolo}>{g.titolo}</Text>
+                </View>
+                {g.voci.map((v) => {
+                  const on = g.valori.includes(v.chiave);
+                  return (
+                    <Pressable
+                      key={v.chiave}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                      accessibilityLabel={v.etichetta}
+                      style={styles.voce}
+                      onPress={() => alternaIn(g.imposta)(v.chiave)}
+                    >
+                      <Ionicons name={on ? "checkbox" : "square-outline"} size={22} color={on ? c.primario : c.testoSecondario} />
+                      <Text style={styles.voceTesto}>{v.etichetta}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
             {CATEGORIE_FILTRI_SERVIZI.map((cat) => (
               <View key={cat.titolo} style={styles.card}>
                 <View style={styles.rigaCat}>
@@ -120,14 +176,14 @@ export default function ServiziStrutturaScreen({ navigation }) {
             ))}
           </ScrollView>
           <View style={styles.piede}>
-            {salvato && <Text style={styles.conferma}>Salvato: i servizi sono già sulla tua scheda.</Text>}
+            {salvato && <Text style={styles.conferma}>Salvato: le modifiche sono già sulla tua scheda.</Text>}
             <Pressable
               accessibilityRole="button"
               style={[styles.bottonePieno, (!modificato || salvando) && { opacity: 0.45 }]}
               onPress={salva}
               disabled={!modificato || salvando}
             >
-              {salvando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottonePienoTesto}>Salva i servizi</Text>}
+              {salvando ? <ActivityIndicator color={c.sulPrimario} /> : <Text style={styles.bottonePienoTesto}>Salva</Text>}
             </Pressable>
           </View>
         </>

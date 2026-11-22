@@ -1,4 +1,5 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 import { geocodificaOCoordinate } from "./geocodifica";
@@ -21,21 +22,43 @@ const CACHE_CONTROL_FOTO = "604800";
 const COLONNE_STRUTTURA =
   "id, owner_id, nome, indirizzo, cap, localita, tipo_struttura, tipo_host, stato, descrizione, telefono, sito_web, prezzo, foto_url, foto_generica, chi_siamo_foto";
 
-// La struttura del gestore collegato, oppure null se l'account non ne ha
-// una (un cliente normale): è questo che decide se mostrare la voce
-// "La mia struttura" nel Profilo. Oggi ogni gestore ha una sola scheda;
-// se un giorno ne avesse più d'una si prende la più vecchia, come farebbe
-// il sito, invece di andare in errore.
-export async function caricaMiaStruttura(utenteId) {
-  if (!utenteId) return null;
+const CHIAVE_STRUTTURA_SCELTA = "struttura_scelta_host";
+
+// Tutte le strutture del gestore (di solito una sola), dalla più vecchia.
+export async function caricaMieStrutture(utenteId) {
+  if (!utenteId) return [];
   const { data, error } = await supabase
     .from("campeggi")
     .select(COLONNE_STRUTTURA)
     .eq("owner_id", utenteId)
-    .order("id", { ascending: true })
-    .limit(1);
+    .order("id", { ascending: true });
   if (error) throw error;
-  return data?.[0] ?? null;
+  return data ?? [];
+}
+
+// Ricorda quale struttura sta gestendo il telefono (per chi ne ha più d'una).
+export async function impostaStrutturaScelta(id) {
+  try {
+    await AsyncStorage.setItem(CHIAVE_STRUTTURA_SCELTA, String(id));
+  } catch {
+    // senza memoria locale si torna alla prima struttura
+  }
+}
+
+// La struttura attiva del gestore collegato, oppure null se l'account non
+// ne ha una (un cliente normale): è questo che decide se mostrare la voce
+// "La mia struttura" nel Profilo. Con più strutture vale quella scelta
+// sul telefono; se non c'è o non esiste più, la più vecchia.
+export async function caricaMiaStruttura(utenteId) {
+  const tutte = await caricaMieStrutture(utenteId);
+  if (tutte.length <= 1) return tutte[0] ?? null;
+  let scelta = null;
+  try {
+    scelta = await AsyncStorage.getItem(CHIAVE_STRUTTURA_SCELTA);
+  } catch {
+    scelta = null;
+  }
+  return tutte.find((x) => String(x.id) === scelta) ?? tutte[0];
 }
 
 // Le foto del telefono arrivano a 3-10 MB: prima di caricarle si riducono
@@ -323,13 +346,61 @@ export async function eliminaOffertaHost(id) {
 // Servizi della struttura (colonna `amenities` di `campeggi`, come il pannello
 // «Servizi» del sito). Chi salva conserva le voci che l'app non conosce: il
 // gestore potrebbe averle messe dal sito.
+// Servizi, tipo di ambiente e categorie di interesse della scheda: sono le
+// stesse tre colonne che il sito modifica da "La tua struttura".
 export async function caricaServiziHost(strutturaId) {
-  const { data, error } = await supabase.from("campeggi").select("amenities").eq("id", strutturaId).single();
+  const { data, error } = await supabase
+    .from("campeggi")
+    .select("amenities, tipo_ambiente, categorie_interesse")
+    .eq("id", strutturaId)
+    .single();
   if (error) throw error;
-  return Array.isArray(data?.amenities) ? data.amenities : [];
+  const lista = (v) => (Array.isArray(v) ? v : []);
+  return { amenities: lista(data?.amenities), tipoAmbiente: lista(data?.tipo_ambiente), categorie: lista(data?.categorie_interesse) };
 }
 
-export async function salvaServiziHost(strutturaId, amenities) {
-  const { error } = await supabase.from("campeggi").update({ amenities }).eq("id", strutturaId);
+export async function salvaServiziHost(strutturaId, { amenities, tipoAmbiente, categorie }) {
+  const { error } = await supabase
+    .from("campeggi")
+    .update({ amenities, tipo_ambiente: tipoAmbiente, categorie_interesse: categorie })
+    .eq("id", strutturaId);
   if (error) throw error;
+}
+
+// Registrazione di una nuova struttura dall'app: stessa funzione del sito
+// (registra_o_rivendica_campeggio) e stessi consensi, accettati qui con le
+// due caselle. Torna l'id della scheda, oppure null se il nome corrisponde a
+// una scheda già presente con un'altra email di riferimento: in quel caso la
+// richiesta resta in attesa della conferma del gestore ufficiale.
+export async function registraStruttura(dati) {
+  const indirizzoCompleto = [dati.indirizzo, dati.cap, dati.localita].filter(Boolean).join(", ");
+  const coordinate = await geocodificaOCoordinate(indirizzoCompleto);
+  const privacy = await supabase.rpc("accetta_privacy");
+  if (privacy.error) throw privacy.error;
+  await supabase.rpc("accetta_contratto_host");
+  const { data, error } = await supabase.rpc("registra_o_rivendica_campeggio", {
+    p_nome: dati.nome,
+    p_indirizzo: dati.indirizzo,
+    p_cap: dati.cap,
+    p_localita: dati.localita,
+    p_descrizione: dati.descrizione,
+    p_prezzo: dati.prezzo ? Number(dati.prezzo) : null,
+    p_telefono: dati.telefono || null,
+    p_sito_web: dati.sitoWeb || null,
+    p_amenities: [],
+    p_foto_url: null,
+    p_lat: coordinate?.lat ?? null,
+    p_lng: coordinate?.lng ?? null,
+    p_tipo_struttura: dati.tipoStruttura,
+    p_categorie_interesse: [],
+    p_segnalato_da: null,
+    p_tipo_host: "struttura",
+    p_periodo_apertura_tipo: "tutto_anno",
+    p_apertura_mese_inizio: null,
+    p_apertura_mese_fine: null,
+    p_mappa_url: null,
+    p_token: null,
+  });
+  if (error) throw error;
+  return { id: data ?? null, posizioneTrovata: !!coordinate };
 }

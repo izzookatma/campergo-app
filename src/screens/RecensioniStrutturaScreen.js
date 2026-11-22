@@ -97,7 +97,7 @@ export default function RecensioniStrutturaScreen({ navigation }) {
                     <Ionicons key={n} name={n <= item.punteggio ? "star" : "star-outline"} size={14} color={c.voto} />
                   ))}
                 </View>
-                <Text style={styles.data}>{new Date(item.creato_il).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</Text>
+                <Text style={styles.data}>{new Date(item.creato_il).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}</Text>
               </View>
               <Text style={styles.autore}>{item.nome_cliente || "Cliente"}</Text>
               {!!item.testo && <Text style={styles.testo}>{item.testo}</Text>}

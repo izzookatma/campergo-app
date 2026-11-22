@@ -28,6 +28,7 @@ import NuovaSegnalazioneScreen from "./src/screens/NuovaSegnalazioneScreen";
 import NuovoItinerarioScreen from "./src/screens/NuovoItinerarioScreen";
 import EliminaAccountScreen from "./src/screens/EliminaAccountScreen";
 import MiaStrutturaScreen from "./src/screens/MiaStrutturaScreen";
+import RegistraStrutturaScreen from "./src/screens/RegistraStrutturaScreen";
 import ModificaProfiloScreen from "./src/screens/ModificaProfiloScreen";
 import PiazzoleScreen from "./src/screens/PiazzoleScreen";
 import AvvisiScreen from "./src/screens/AvvisiScreen";
@@ -177,6 +178,7 @@ function ProfiloStackNavigator() {
       <ProfiloStack.Screen name="ItinerariOffline" component={ItinerariOfflineScreen} />
       <ProfiloStack.Screen name="NuovaSegnalazione" component={NuovaSegnalazioneScreen} />
       <ProfiloStack.Screen name="MiaStruttura" component={MiaStrutturaScreen} />
+      <ProfiloStack.Screen name="RegistraStruttura" component={RegistraStrutturaScreen} />
       <ProfiloStack.Screen name="ModificaProfilo" component={ModificaProfiloScreen} />
       <ProfiloStack.Screen name="PiazzoleStruttura" component={PiazzoleScreen} />
       <ProfiloStack.Screen name="AvvisiStruttura" component={AvvisiScreen} />

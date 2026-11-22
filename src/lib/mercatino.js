@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system/legacy";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 
@@ -48,11 +48,24 @@ export async function caricaMieiAnnunci(utenteId) {
 // Carica una foto scelta dal rullino (uri locale "file://...") sullo
 // stesso bucket pubblico "fotografie" usato dal sito, stessa convenzione
 // di percorso ({utenteId}/mercatino-...): le due app restano compatibili.
+// Le foto del telefono pesano 3-10 MB: si riducono a 1600 px di lato lungo in JPEG.
+const LATO_MASSIMO_FOTO = 1600;
+async function preparaFoto(uri) {
+  const originale = await ImageManipulator.manipulate(uri).renderAsync();
+  const contesto = ImageManipulator.manipulate(uri);
+  if (Math.max(originale.width, originale.height) > LATO_MASSIMO_FOTO) {
+    contesto.resize(originale.width >= originale.height ? { width: LATO_MASSIMO_FOTO } : { height: LATO_MASSIMO_FOTO });
+  }
+  const immagine = await contesto.renderAsync();
+  const risultato = await immagine.saveAsync({ format: SaveFormat.JPEG, compress: 0.8, base64: true });
+  if (!risultato.base64) throw new Error("foto vuota");
+  return risultato.base64;
+}
+
 async function caricaFoto(utenteId, uri) {
-  const estensione = (uri.split(".").pop() || "jpg").split("?")[0].toLowerCase();
-  const percorso = `${utenteId}/mercatino-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${estensione}`;
-  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-  const tipoMime = estensione === "png" ? "image/png" : "image/jpeg";
+  const percorso = `${utenteId}/mercatino-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const base64 = await preparaFoto(uri);
+  const tipoMime = "image/jpeg";
 
   const { error } = await supabase.storage.from("fotografie").upload(percorso, decode(base64), { contentType: tipoMime });
   if (error) throw error;

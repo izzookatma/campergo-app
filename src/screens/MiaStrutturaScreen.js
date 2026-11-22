@@ -18,11 +18,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useTema, ombra } from "../theme/tema";
+import Chip from "../components/ui/Chip";
 import { useAuth } from "../context/AuthContext";
 import { messaggioErroreComprensibile } from "../lib/erroriComprensibili";
 import {
   MASSIMO_FOTO_GALLERIA,
   caricaMiaStruttura,
+  caricaMieStrutture,
+  impostaStrutturaScelta,
   sostituisciFotoPrincipale,
   aggiungiFotoGalleria,
   togliFotoGalleria,
@@ -53,6 +56,8 @@ export default function MiaStrutturaScreen({ navigation }) {
   const [erroreFoto, setErroreFoto] = useState(null);
 
   const [avvisiNuovi, setAvvisiNuovi] = useState(0);
+  const [altreStrutture, setAltreStrutture] = useState([]);
+  const [cambio, setCambio] = useState(0);
   const [nome, setNome] = useState("");
   const [indirizzo, setIndirizzo] = useState("");
   const [cap, setCap] = useState("");
@@ -79,6 +84,9 @@ export default function MiaStrutturaScreen({ navigation }) {
 
   useEffect(() => {
     let attivo = true;
+    caricaMieStrutture(utenteId)
+      .then((tutte) => attivo && setAltreStrutture(tutte))
+      .catch(() => {});
     caricaMiaStruttura(utenteId)
       .then((s) => {
         if (!attivo) return;
@@ -103,7 +111,12 @@ export default function MiaStrutturaScreen({ navigation }) {
     return () => {
       attivo = false;
     };
-  }, [utenteId]);
+  }, [utenteId, cambio]);
+
+  const cambiaStruttura = async (id) => {
+    await impostaStrutturaScelta(id);
+    setCambio((n) => n + 1);
+  };
 
   // Chiede da dove prendere la foto e restituisce quella scelta (o null).
   const prendiFoto = async (origine) => {
@@ -236,12 +249,19 @@ export default function MiaStrutturaScreen({ navigation }) {
           <Text style={styles.vuotoTesto}>
             Questo account non gestisce ancora una struttura. Se ne hai una, registrala gratis dal sito.
           </Text>
-          <Pressable style={styles.bottonePieno} onPress={() => Linking.openURL(`${URL_PANNELLO_SITO}?modo=registrati`)}>
+          <Pressable style={styles.bottonePieno} onPress={() => navigation.navigate("RegistraStruttura")}>
             <Text style={styles.bottonePienoTesto}>Registra la tua struttura</Text>
           </Pressable>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.contenuto} keyboardShouldPersistTaps="handled">
+          {altreStrutture.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {altreStrutture.map((x) => (
+                <Chip key={x.id} etichetta={x.nome} attivo={x.id === struttura.id} onPress={() => cambiaStruttura(x.id)} />
+              ))}
+            </ScrollView>
+          )}
           <View>
             <Text style={styles.nomeStruttura}>{struttura.nome}</Text>
             {!!struttura.localita && <Text style={styles.localita}>{struttura.localita}</Text>}
@@ -461,7 +481,7 @@ export default function MiaStrutturaScreen({ navigation }) {
 
           <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("ServiziStruttura")}>
             <Ionicons name="checkbox-outline" size={17} color={c.primario} />
-            <Text style={styles.bottoneBordoTesto}>Servizi offerti</Text>
+            <Text style={styles.bottoneBordoTesto}>Servizi e ambiente</Text>
           </Pressable>
 
           <Pressable style={styles.bottoneBordo} onPress={() => navigation.navigate("GuidaGestore")}>
